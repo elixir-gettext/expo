@@ -9,9 +9,24 @@ defmodule Expo.Translation.Plural do
           msgid: Translation.msgid(),
           msgid_plural: [Translation.msgid()],
           msgstr: %{required(non_neg_integer()) => Translation.msgstr()},
-          context: Translation.msgctx() | nil
+          msgctx: Translation.msgctx() | nil,
+          comments: [String.t()],
+          extracted_comments: [String.t()],
+          flags: MapSet.t(String.t()),
+          previous_msgids: [String.t()],
+          references: [String.t()]
         }
 
   @enforce_keys [:msgid, :msgid_plural, :msgstr]
-  defstruct [:msgid, :msgid_plural, :msgstr, context: nil]
+  defstruct [
+    :msgid,
+    :msgid_plural,
+    :msgstr,
+    msgctx: nil,
+    comments: [],
+    extracted_comments: [],
+    flags: MapSet.new(),
+    previous_msgids: [],
+    references: []
+  ]
 end

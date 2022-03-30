@@ -1,20 +1,37 @@
 defmodule Expo.Parser.Mo do
-  @moduledoc false
+  @moduledoc """
+  `.mo` file parser
+  """
 
+  @behaviour Expo.Parser
+
+  alias Expo.Parser.Util
   alias Expo.Translation
   alias Expo.Translations
 
-  @spec parse(content :: binary()) ::
-          {:ok, Translations.t()}
-          | {:error,
-             :invalid_header
-             | {:unsupported_version, major :: non_neg_integer(), minor :: non_neg_integer()}}
+  @doc """
+  Parse `.mo` file
+
+  ### Examples
+
+      iex> Expo.Parser.Mo.parse(<<0xDE120495::size(4)-unit(8),
+      ...>   0::little-unsigned-integer-size(2)-unit(8),
+      ...>   0::little-unsigned-integer-size(2)-unit(8),
+      ...>   0::little-unsigned-integer-size(4)-unit(8),
+      ...>   28::little-unsigned-integer-size(4)-unit(8),
+      ...>   28::little-unsigned-integer-size(4)-unit(8),
+      ...>   28::little-unsigned-integer-size(4)-unit(8),
+      ...>   0::little-unsigned-integer-size(4)-unit(8)>>)
+      %Expo.Translations{headers: [], obsolete_translations: [], translations: []}
+
+  """
+  @impl Expo.Parser
   def parse(content) do
     with {:ok, {endian, header}} <- parse_header(binary_part(content, 0, 28)),
          :ok <-
            check_version(header.file_format_revision_major, header.file_format_revision_minor),
          translations <- parse_translations(endian, header, content),
-         {headers, translations} <- extract_meta_headers(translations) do
+         {headers, translations} <- Util.extract_meta_headers(translations) do
       %Translations{translations: translations, headers: headers}
     end
   end
@@ -131,7 +148,7 @@ defmodule Expo.Parser.Mo do
     {attrs, msgid} =
       case String.split(msgid, <<4::utf8>>, parts: 2) do
         [msgid] -> {%{}, msgid}
-        [context, msgid] -> {%{context: context}, msgid}
+        [msgctx, msgid] -> {%{msgctx: msgctx}, msgid}
       end
 
     case String.split(msgid, <<0>>, parts: 2) do
@@ -142,18 +159,6 @@ defmodule Expo.Parser.Mo do
         {Map.merge(attrs, %{msgid: msgid, msgid_plural: msgid_plural}), Translation.Plural}
     end
   end
-
-  defp extract_meta_headers(translations) do
-    [meta_translations, translations] = Enum.chunk_by(translations, &match?(%{msgid: ""}, &1))
-
-    {Enum.flat_map(meta_translations, &parse_meta_headers(&1.msgstr)), translations}
-  end
-
-  defp parse_meta_headers(headers),
-    do: headers |> String.split("\n", trim: true) |> Enum.map(&parse_meta_header/1)
-
-  defp parse_meta_header(header),
-    do: header |> String.split(":", parts: 2, trim: true) |> Enum.map(&String.trim/1)
 
   # TODO: Remove when requiring at least Elixir 1.12
   if function_exported?(Enum, :zip_with, 2) do
