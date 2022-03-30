@@ -14,11 +14,12 @@ defmodule Expo.Translations do
 
   @type t :: %__MODULE__{
           headers: [header],
-          translations: [Translation.t()]
+          translations: [Translation.t()],
+          obsolete_translations: [Translation.t()]
         }
 
   @enforce_keys [:headers, :translations]
-  defstruct headers: [], translations: []
+  defstruct headers: [], translations: [], obsolete_translations: []
 
   @spec get_header(translations :: t(), name :: header_name()) :: [header_value()]
   def get_header(%__MODULE__{headers: headers} = _translations, name) when is_binary(name) do

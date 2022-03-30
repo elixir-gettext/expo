@@ -17,6 +17,8 @@ msgstr ""
 # Ah, another comment!
 #. An extracted comment
 #: lib/foo.ex:32
+#, flag1, flag2
+#| msgid previous-untranslated-string
 msgid "foo"
 msgstr "bar"
 
@@ -24,3 +26,11 @@ msgid "{count} New Notification"
 msgid_plural "{count} New Notifications"
 msgstr[0] "{count} Nuova notifica"
 msgstr[1] "{count} Nuove notifiche"
+
+#~ msgid "hello"
+#~ msgstr "ciao"
+
+#~ msgid "{count} Test"
+#~ msgid_plural "{count} Tests"
+#~ msgstr[0] "{count} Test"
+#~ msgstr[1] "{count} Tests"
