@@ -4,7 +4,7 @@ defmodule Expo.MixProject do
 
   use Mix.Project
 
-  @version "0.0.0"
+  @version "0.1.0-beta.1"
   @url "https://github.com/jshmrtn/expo"
 
   def project do
