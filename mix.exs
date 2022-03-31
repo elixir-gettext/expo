@@ -15,6 +15,7 @@ defmodule Expo.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       test_coverage: [tool: ExCoveralls],
+      description: description(),
       dialyzer:
         [list_unused_filters: true] ++
           if (System.get_env("DIALYZER_PLT_PRIV") || "false") in ["1", "true"] do
@@ -40,6 +41,12 @@ defmodule Expo.MixProject do
       maintainers: ["Jonatan Männchen"],
       links: %{"GitHub" => @url}
     }
+  end
+
+  defp description do
+    """
+    Low Level Gettext (.po / .pot / .mo file writer / parser).
+    """
   end
 
   # Run "mix help compile.app" to learn about applications.
