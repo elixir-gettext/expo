@@ -15,194 +15,190 @@ defmodule Expo.Parser.Po do
   alias Expo.Translation
   alias Expo.Translations
 
-  defcombinatorp :newline, ascii_char([?\n]) |> label("newline") |> ignore()
+  newline = ascii_char([?\n]) |> label("newline") |> ignore()
 
-  defcombinatorp :optional_whitespace,
-                 ascii_char([?\s, ?\n, ?\r, ?\t])
-                 |> times(min: 0)
-                 |> label("whitespace")
-                 |> ignore()
+  optional_whitespace =
+    ascii_char([?\s, ?\n, ?\r, ?\t])
+    |> times(min: 0)
+    |> label("whitespace")
+    |> ignore()
 
-  defcombinatorp :whitespace_no_nl,
-                 ascii_char([?\s, ?\r, ?\t])
-                 |> times(min: 1)
-                 |> label("whitespace")
-                 |> ignore()
+  whitespace_no_nl =
+    ascii_char([?\s, ?\r, ?\t])
+    |> times(min: 1)
+    |> label("whitespace")
+    |> ignore()
 
-  defcombinatorp :double_quote, ascii_char([?"]) |> label("double quote") |> ignore()
+  double_quote = ascii_char([?"]) |> label("double quote") |> ignore()
 
-  defcombinatorp :escaped_char,
-                 choice([
-                   replace(string(~S(\n)), ?\n),
-                   replace(string(~S(\t)), ?\t),
-                   replace(string(~S(\r)), ?\r),
-                   replace(string(~S(\")), ?\"),
-                   replace(string(~S(\\)), ?\\)
-                 ])
+  escaped_char =
+    choice([
+      replace(string(~S(\n)), ?\n),
+      replace(string(~S(\t)), ?\t),
+      replace(string(~S(\r)), ?\r),
+      replace(string(~S(\")), ?\"),
+      replace(string(~S(\\)), ?\\)
+    ])
 
-  defcombinatorp :string,
-                 parsec(:double_quote)
-                 |> repeat(choice([parsec(:escaped_char), utf8_char(not: ?", not: ?\n)]))
-                 |> label(lookahead_not(parsec(:newline)), "newline inside string")
-                 |> concat(parsec(:double_quote))
-                 |> reduce(:to_string)
+  string =
+    double_quote
+    |> repeat(choice([escaped_char, utf8_char(not: ?", not: ?\n)]))
+    |> label(lookahead_not(newline), "newline inside string")
+    |> concat(double_quote)
+    |> reduce(:to_string)
 
-  defcombinatorp :strings,
-                 parsec(:string)
-                 |> concat(parsec(:optional_whitespace))
-                 |> times(min: 1)
-                 |> label("at least one string")
+  strings =
+    string
+    |> concat(optional_whitespace)
+    |> times(min: 1)
+    |> label("at least one string")
 
-  for keyword <- [:msgctxt, :msgid, :msgid_plural, :msgstr] do
-    defcombinatorp keyword,
-                   string(Atom.to_string(keyword))
-                   |> concat(parsec(:whitespace_no_nl))
-                   |> ignore()
-                   |> concat(parsec(:strings))
-                   |> tag(keyword)
-                   |> label("#{keyword} followed by strings")
-  end
+  [msgctxt, msgid, msgid_plural, msgstr] =
+    for keyword <- [:msgctxt, :msgid, :msgid_plural, :msgstr] do
+      string(Atom.to_string(keyword))
+      |> concat(whitespace_no_nl)
+      |> ignore()
+      |> concat(strings)
+      |> tag(keyword)
+      |> label("#{keyword} followed by strings")
+    end
 
-  defcombinatorp :comment_content,
-                 repeat(utf8_char(not: ?\n))
-                 |> concat(parsec(:newline))
-                 |> reduce(:to_string)
+  comment_content =
+    repeat(utf8_char(not: ?\n))
+    |> concat(newline)
+    |> reduce(:to_string)
 
-  defcombinatorp :comment,
-                 string("#")
-                 |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
-                 |> concat(optional(parsec(:whitespace_no_nl)))
-                 |> ignore()
-                 |> concat(parsec(:comment_content))
-                 |> unwrap_and_tag(:comment)
-                 |> label("comment")
+  comment =
+    string("#")
+    |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
+    |> concat(optional(whitespace_no_nl))
+    |> ignore()
+    |> concat(comment_content)
+    |> unwrap_and_tag(:comment)
+    |> label("comment")
 
-  defcombinatorp :extracted_comment,
-                 string("#.")
-                 |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
-                 |> concat(optional(parsec(:whitespace_no_nl)))
-                 |> ignore()
-                 |> concat(parsec(:comment_content))
-                 |> unwrap_and_tag(:extracted_comment)
-                 |> label("extracted_comment")
+  extracted_comment =
+    string("#.")
+    |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
+    |> concat(optional(whitespace_no_nl))
+    |> ignore()
+    |> concat(comment_content)
+    |> unwrap_and_tag(:extracted_comment)
+    |> label("extracted_comment")
 
-  defcombinatorp :previous_msgid,
-                 string("#|")
-                 |> parsec(:whitespace_no_nl)
-                 |> ignore()
-                 |> parsec(:msgid)
-                 |> unwrap_and_tag(:previous_msgid)
-                 |> label("previous_msgid")
+  previous_msgid =
+    string("#|")
+    |> concat(whitespace_no_nl)
+    |> ignore()
+    |> concat(msgid)
+    |> unwrap_and_tag(:previous_msgid)
+    |> label("previous_msgid")
 
-  defcombinatorp :flag_content,
-                 optional(parsec(:whitespace_no_nl))
-                 |> concat(utf8_char(not: ?\n, not: ?,) |> repeat() |> reduce(:to_string))
-                 |> concat(optional(parsec(:whitespace_no_nl)))
+  flag_content =
+    optional(whitespace_no_nl)
+    |> concat(utf8_char(not: ?\n, not: ?,) |> repeat() |> reduce(:to_string))
+    |> concat(optional(whitespace_no_nl))
 
-  defcombinatorp :flag,
-                 string("#")
-                 |> ignore()
-                 |> times(
-                   string(",")
-                   |> ignore()
-                   |> parsec(:flag_content),
-                   min: 1
-                 )
-                 |> concat(parsec(:newline))
-                 |> reduce(:remove_empty_flags)
-                 |> unwrap_and_tag(:flag)
-                 |> label("flag")
+  flag =
+    ignore(string("#"))
+    |> times(
+      string(",")
+      |> ignore()
+      |> concat(flag_content),
+      min: 1
+    )
+    |> concat(newline)
+    |> reduce(:remove_empty_flags)
+    |> unwrap_and_tag(:flag)
+    |> label("flag")
 
-  defcombinatorp :reference_entry_line,
-                 string(":")
-                 |> ignore()
-                 |> concat(unwrap_and_tag(integer(min: 1), :line))
+  reference_entry_line =
+    string(":")
+    |> ignore()
+    |> concat(unwrap_and_tag(integer(min: 1), :line))
 
-  defcombinatorp :reference_entry_file,
-                 choice([
-                   utf8_char(not: ?\n, not: ?,, not: ?:),
-                   lookahead_not(string(":"), integer(min: 1))
-                 ])
-                 |> times(min: 1)
-                 |> reduce(:to_string)
-                 |> unwrap_and_tag(:file)
+  reference_entry_file =
+    choice([
+      utf8_char(not: ?\n, not: ?,, not: ?:),
+      lookahead_not(string(":"), integer(min: 1))
+    ])
+    |> times(min: 1)
+    |> reduce(:to_string)
+    |> unwrap_and_tag(:file)
 
-  defcombinatorp :reference_entry,
-                 optional(parsec(:whitespace_no_nl))
-                 |> concat(parsec(:reference_entry_file))
-                 |> concat(optional(parsec(:reference_entry_line)))
-                 |> concat(
-                   ignore(choice([string(","), string(" "), lookahead(parsec(:newline))]))
-                 )
-                 |> reduce(:make_reference)
+  reference_entry =
+    optional(whitespace_no_nl)
+    |> concat(reference_entry_file)
+    |> concat(optional(reference_entry_line))
+    |> concat(ignore(choice([string(","), string(" "), lookahead(newline)])))
+    |> reduce(:make_reference)
 
-  defcombinatorp :reference,
-                 string("#:")
-                 |> ignore()
-                 |> times(parsec(:reference_entry), min: 1)
-                 |> concat(parsec(:newline))
-                 |> tag(:reference)
-                 |> label("reference")
+  reference =
+    string("#:")
+    |> ignore()
+    |> times(reference_entry, min: 1)
+    |> concat(newline)
+    |> tag(:reference)
+    |> label("reference")
 
-  defcombinatorp :translation_meta,
-                 choice([
-                   parsec(:comment),
-                   parsec(:extracted_comment),
-                   parsec(:reference),
-                   parsec(:flag),
-                   parsec(:previous_msgid)
-                 ])
+  translation_meta =
+    choice([
+      comment,
+      extracted_comment,
+      reference,
+      flag,
+      previous_msgid
+    ])
 
-  defcombinatorp :plural_form,
-                 ignore(string("["))
-                 |> integer(min: 1)
-                 |> ignore(string("]"))
-                 |> label("plural form (like [0])")
+  plural_form =
+    ignore(string("["))
+    |> integer(min: 1)
+    |> ignore(string("]"))
+    |> label("plural form (like [0])")
 
-  defcombinatorp :msgstr_with_plural_form,
-                 ignore(optional(parsec(:obsolete_prefix)))
-                 |> concat(ignore(string("msgstr")))
-                 |> concat(parsec(:plural_form))
-                 |> concat(parsec(:whitespace_no_nl))
-                 |> concat(parsec(:strings))
-                 |> reduce(:make_plural_form)
-                 |> unwrap_and_tag(:msgstr)
+  obsolete_prefix = string("#~") |> concat(whitespace_no_nl) |> ignore() |> tag(:obsolete)
 
-  defcombinatorp :obsolete_prefix,
-                 string("#~") |> concat(parsec(:whitespace_no_nl)) |> ignore() |> tag(:obsolete)
+  msgstr_with_plural_form =
+    ignore(optional(obsolete_prefix))
+    |> concat(ignore(string("msgstr")))
+    |> concat(plural_form)
+    |> concat(whitespace_no_nl)
+    |> concat(strings)
+    |> reduce(:make_plural_form)
+    |> unwrap_and_tag(:msgstr)
 
-  defcombinatorp :singular_translation,
-                 optional(parsec(:obsolete_prefix))
-                 |> concat(parsec(:msgstr))
-                 |> tag(Translation.Singular)
-                 |> label("translation")
+  singular_translation =
+    optional(obsolete_prefix)
+    |> concat(msgstr)
+    |> tag(Translation.Singular)
+    |> label("translation")
 
-  defcombinatorp :plural_translation,
-                 optional(parsec(:obsolete_prefix))
-                 |> concat(parsec(:msgid_plural))
-                 |> times(parsec(:msgstr_with_plural_form), min: 1)
-                 |> tag(Translation.Plural)
-                 |> label("plural translation")
+  plural_translation =
+    optional(obsolete_prefix)
+    |> concat(msgid_plural)
+    |> times(msgstr_with_plural_form, min: 1)
+    |> tag(Translation.Plural)
+    |> label("plural translation")
 
-  defcombinatorp :translation,
-                 repeat(parsec(:translation_meta))
-                 |> concat(optional(parsec(:obsolete_prefix)))
-                 |> optional(parsec(:msgctxt))
-                 |> concat(optional(parsec(:obsolete_prefix)))
-                 |> post_traverse(:attach_line_number)
-                 |> concat(parsec(:msgid))
-                 |> concat(choice([parsec(:singular_translation), parsec(:plural_translation)]))
-                 |> reduce(:make_translation)
-                 |> label("translation")
+  translation =
+    repeat(translation_meta)
+    |> concat(optional(obsolete_prefix))
+    |> optional(msgctxt)
+    |> concat(optional(obsolete_prefix))
+    |> post_traverse(:attach_line_number)
+    |> concat(msgid)
+    |> concat(choice([singular_translation, plural_translation]))
+    |> reduce(:make_translation)
+    |> label("translation")
 
-  defcombinatorp :po_entry,
-                 parsec(:optional_whitespace)
-                 |> concat(parsec(:translation))
-                 |> concat(parsec(:optional_whitespace))
-                 |> post_traverse(:register_duplicates)
+  po_entry =
+    optional_whitespace
+    |> concat(translation)
+    |> concat(optional_whitespace)
+    |> post_traverse(:register_duplicates)
 
   defparsecp :po_file,
-             times(parsec(:po_entry), min: 1)
+             times(po_entry, min: 1)
              |> reduce(:make_translations)
              |> unwrap_and_tag(:translations)
              |> eos()

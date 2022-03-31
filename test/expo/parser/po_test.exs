@@ -157,18 +157,25 @@ defmodule Expo.Parser.PoTest do
   end
 
   test "syntax error when there is no 'msgid'" do
-    assert {:error, {:parse_error, "expected msgid followed by strings", _context, 1}} =
-             Po.parse("msgstr \"foo\"")
+    assert {:error,
+            {:parse_error, "expected msgid followed by strings while processing translation",
+             _context, 1}} = Po.parse("msgstr \"foo\"")
 
-    assert {:error, {:parse_error, "expected msgid followed by strings", _context, 1}} =
-             Po.parse("msgstr \"foo\"")
+    assert {:error,
+            {:parse_error, "expected msgid followed by strings while processing translation",
+             _context, 1}} = Po.parse("msgstr \"foo\"")
 
-    assert {:error, {:parse_error, "expected msgid followed by strings", _context, 1}} =
-             Po.parse("\"foo\"")
+    assert {:error,
+            {:parse_error, "expected msgid followed by strings while processing translation",
+             _context, 1}} = Po.parse("\"foo\"")
   end
 
   test "if there's a msgid_plural, then plural forms must follow" do
-    assert {:error, {:parse_error, "expected plural form (like [0])", _context, 3}} =
+    assert {:error,
+            {:parse_error,
+             "expected plural form (like [0]) while processing plural translation inside translation",
+             _context,
+             3}} =
              Po.parse("""
              msgid "foo"
              msgid_plural "foos"
@@ -177,20 +184,27 @@ defmodule Expo.Parser.PoTest do
   end
 
   test "'msgid_plural' must come after 'msgid'" do
-    # TODO: Needs better message
-    assert {:error, {:parse_error, "expected whitespace", _context, 1}} =
-             Po.parse("msgid_plural ")
+    assert {:error,
+            {:parse_error,
+             "expected whitespace while processing msgid followed by strings inside translation",
+             _context, 1}} = Po.parse("msgid_plural ")
   end
 
   test "comments can't be placed between 'msgid' and 'msgstr'" do
-    assert {:error, {:parse_error, "expected msgid_plural followed by strings", _context, 2}} =
+    assert {:error,
+            {:parse_error,
+             "expected msgid_plural followed by strings while processing plural translation inside translation",
+             _context,
+             2}} =
              Po.parse("""
              msgid "foo"
              # Comment
              msgstr "bar"
              """)
 
-    assert {:error, {:parse_error, "expected string \"msgstr\"", _context, 3}} =
+    assert {:error,
+            {:parse_error, "expected plural translation while processing translation", _context,
+             3}} =
              Po.parse("""
              msgid "foo"
              msgid_plural "foo"
@@ -404,7 +418,11 @@ defmodule Expo.Parser.PoTest do
 
   test "msgctxt causes a syntax error when misplaced" do
     # Badly placed msgctxt still causes a syntax error
-    assert {:error, {:parse_error, "expected msgid_plural followed by strings", _context, 2}} =
+    assert {:error,
+            {:parse_error,
+             "expected msgid_plural followed by strings while processing plural translation inside translation",
+             _context,
+             2}} =
              Po.parse("""
              msgid "my_msgid"
              msgctxt "my_context"
