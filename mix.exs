@@ -5,7 +5,7 @@ defmodule Expo.MixProject do
   use Mix.Project
 
   @version "0.1.0-beta.1"
-  @url "https://github.com/jshmrtn/expo"
+  @source_url "https://github.com/jshmrtn/expo"
 
   def project do
     [
@@ -14,6 +14,7 @@ defmodule Expo.MixProject do
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      docs: docs(),
       test_coverage: [tool: ExCoveralls],
       description: description(),
       dialyzer:
@@ -39,7 +40,7 @@ defmodule Expo.MixProject do
     %{
       licenses: ["Apache-2.0"],
       maintainers: ["Jonatan Männchen"],
-      links: %{"GitHub" => @url}
+      links: %{"GitHub" => @source_url}
     }
   end
 
@@ -53,6 +54,13 @@ defmodule Expo.MixProject do
   def application do
     [
       extra_applications: [:logger]
+    ]
+  end
+
+  defp docs do
+    [
+      source_url: @source_url,
+      source_ref: "v" <> @version
     ]
   end
 
