@@ -12,79 +12,6 @@ defmodule Expo.Parser.PoTest do
 
   doctest Po
 
-  @example :expo |> Application.app_dir("priv/test/example.po") |> File.read!()
-
-  test "works" do
-    assert {:ok,
-            %Translations{
-              headers: [
-                "Project-Id-Version: Project\n",
-                "POT-Creation-Date: \n",
-                "PO-Revision-Date: \n",
-                "Last-Translator: \n",
-                "Language-Team: Language Team\n",
-                "Language: en\n",
-                "MIME-Version: 1.0\n",
-                "Content-Type: text/plain; charset=UTF-8\n",
-                "Content-Transfer-Encoding: 8bit\n",
-                "Plural-Forms: nplurals=2; plural=(n != 1);\n",
-                "X-Generator: Poedit 3.0.1\n",
-                "X-Poedit-SourceCharset: UTF-8\n"
-              ],
-              translations: [
-                %Translation.Singular{
-                  msgctxt: nil,
-                  msgid: ["foo"],
-                  msgstr: ["bar"],
-                  comments: ["This is a translation", "Ah, another comment!"],
-                  extracted_comments: ["An extracted comment"],
-                  flags: [["flag1", "flag2"]],
-                  previous_msgids: [
-                    ["previous-untranslated-string"],
-                    ["before-untranslated-string"]
-                  ],
-                  references: [[{"lib/foo.ex", 32}]],
-                  obsolete: false
-                },
-                %Translation.Plural{
-                  msgctxt: nil,
-                  msgid: ["{count} New Notification"],
-                  msgid_plural: ["{count} New Notifications"],
-                  msgstr: %{0 => ["{count} Nuova notifica"], 1 => ["{count} Nuove notifiche"]},
-                  comments: [],
-                  extracted_comments: [],
-                  flags: [],
-                  previous_msgids: [],
-                  references: [],
-                  obsolete: false
-                },
-                %Translation.Singular{
-                  comments: [],
-                  msgctxt: nil,
-                  extracted_comments: [],
-                  flags: [],
-                  msgid: ["hello"],
-                  msgstr: ["ciao"],
-                  previous_msgids: [],
-                  references: [],
-                  obsolete: true
-                },
-                %Translation.Plural{
-                  comments: [],
-                  msgctxt: nil,
-                  extracted_comments: [],
-                  flags: [],
-                  msgid: ["{count} Test"],
-                  msgid_plural: ["{count} Tests"],
-                  msgstr: %{0 => ["{count} Test"], 1 => ["{count} Tests"]},
-                  previous_msgids: [],
-                  references: [],
-                  obsolete: true
-                }
-              ]
-            }} = Po.parse(@example)
-  end
-
   test "parse/1 with single strings" do
     assert {:ok,
             %Translations{
@@ -93,6 +20,42 @@ defmodule Expo.Parser.PoTest do
              Po.parse("""
              msgid "hello"
              msgstr "ciao"
+             """)
+  end
+
+  test "parse/1 with previous msgid" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Singular{
+                  msgid: ["hello"],
+                  msgstr: ["ciao"],
+                  previous_msgids: [["holla"]]
+                }
+              ]
+            }} =
+             Po.parse("""
+             #| msgid "holla"
+             msgid "hello"
+             msgstr "ciao"
+             """)
+  end
+
+  test "parse/1 with obsolete translation" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Singular{
+                  msgid: ["hello"],
+                  msgstr: ["ciao"],
+                  comments: ["comment"]
+                }
+              ]
+            }} =
+             Po.parse("""
+             # comment
+             #~ msgid "hello"
+             #~ msgstr "ciao"
              """)
   end
 
@@ -254,6 +217,7 @@ defmodule Expo.Parser.PoTest do
              # Not a reference comment
              # : Not a reference comment either
              #: another/ref/comment.ex:83
+             #: reference_without_line
              msgid "foo"
              msgstr "bar"
              """)
@@ -262,7 +226,8 @@ defmodule Expo.Parser.PoTest do
              [{"foo.ex", 1}],
              [{"f", 2}],
              [{"filename with spaces.ex", 12}],
-             [{"another/ref/comment.ex", 83}]
+             [{"another/ref/comment.ex", 83}],
+             ["reference_without_line"]
            ]
 
     # All the reference comments are removed.

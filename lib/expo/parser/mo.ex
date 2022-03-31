@@ -22,19 +22,24 @@ defmodule Expo.Parser.Mo do
       ...>   28::little-unsigned-integer-size(4)-unit(8),
       ...>   28::little-unsigned-integer-size(4)-unit(8),
       ...>   0::little-unsigned-integer-size(4)-unit(8)>>)
-      %Expo.Translations{headers: [], translations: []}
+      {:ok, %Expo.Translations{headers: [], translations: []}}
 
   """
   @impl Expo.Parser
-  def parse(content) do
-    with {:ok, {endian, header}} <- parse_header(binary_part(content, 0, 28)),
+  def parse(content)
+
+  def parse(content) when byte_size(content) >= 28 do
+    with {:ok, {endianness, header}} <- parse_header(binary_part(content, 0, 28)),
          :ok <-
            check_version(header.file_format_revision_major, header.file_format_revision_minor),
-         translations <- parse_translations(endian, header, content),
+         translations <- parse_translations(endianness, header, content),
          {headers, top_comments, translations} <- Util.extract_meta_headers(translations) do
-      %Translations{translations: translations, headers: headers, top_comments: top_comments}
+      {:ok,
+       %Translations{translations: translations, headers: headers, top_comments: top_comments}}
     end
   end
+
+  def parse(_content), do: {:error, :invalid_file}
 
   defp parse_header(header_binary)
 
@@ -60,7 +65,8 @@ defmodule Expo.Parser.Mo do
            }}}
 
   defp parse_header(
-         <<0x950412DE::32, file_format_revision_major::big-unsigned-integer-size(2)-unit(8),
+         <<0x950412DE::size(4)-unit(8),
+           file_format_revision_major::big-unsigned-integer-size(2)-unit(8),
            file_format_revision_minor::big-unsigned-integer-size(2)-unit(8),
            number_of_strings::big-unsigned-integer-size(4)-unit(8),
            offset_of_table_with_original_strings::big-unsigned-integer-size(4)-unit(8),
@@ -84,29 +90,29 @@ defmodule Expo.Parser.Mo do
   defp check_version(major, minor)
   # Not checking minor since they must be BC compatible
   defp check_version(0, _minor), do: :ok
-  defp check_version(major, minor), do: {:unsupported_version, major, minor}
+  defp check_version(major, minor), do: {:error, {:unsupported_version, major, minor}}
 
-  defp parse_translations(endian, header, content) do
+  defp parse_translations(endianness, header, content) do
     [
       header.offset_of_table_with_original_strings,
       header.offset_of_table_with_translation_strings
     ]
-    |> Enum.map(&read_table(endian, content, &1, header.number_of_strings))
+    |> Enum.map(&read_table(endianness, content, &1, header.number_of_strings))
     |> zip_with(&to_translation/1)
   end
 
-  defp read_table(endian, content, start_offset, number_of_elements),
+  defp read_table(endianness, content, start_offset, number_of_elements),
     do:
-      endian
+      endianness
       |> read_table_headers(binary_part(content, start_offset, number_of_elements * 2 * 4), [])
       |> Enum.map(&read_table_cell(content, &1))
 
-  defp read_table_headers(endian, table_header, acc)
+  defp read_table_headers(endianness, table_header, acc)
 
   defp read_table_headers(
          :big,
-         <<cell_offset::big-unsigned-integer-size(4)-unit(8),
-           cell_length::big-unsigned-integer-size(4)-unit(8), rest::binary>>,
+         <<cell_length::big-unsigned-integer-size(4)-unit(8),
+           cell_offset::big-unsigned-integer-size(4)-unit(8), rest::binary>>,
          acc
        ),
        do: read_table_headers(:big, rest, [{cell_offset, cell_length} | acc])
@@ -119,7 +125,7 @@ defmodule Expo.Parser.Mo do
        ),
        do: read_table_headers(:little, rest, [{cell_offset, cell_length} | acc])
 
-  defp read_table_headers(_endian, <<>>, acc), do: Enum.reverse(acc)
+  defp read_table_headers(_endianness, <<>>, acc), do: Enum.reverse(acc)
 
   defp read_table_cell(content, position)
   defp read_table_cell(content, {offset, length}), do: binary_part(content, offset, length)
