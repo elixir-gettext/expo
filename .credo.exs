@@ -122,7 +122,6 @@
           {Credo.Check.Refactor.FunctionArity, []},
           {Credo.Check.Refactor.LongQuoteBlocks, []},
           {Credo.Check.Refactor.MatchInCondition, []},
-          {Credo.Check.Refactor.MapJoin, []},
           {Credo.Check.Refactor.NegatedConditionsInUnless, []},
           {Credo.Check.Refactor.NegatedConditionsWithElse, []},
           {Credo.Check.Refactor.Nesting, []},
@@ -204,6 +203,12 @@
           #
           # Custom checks can be created using `mix credo.gen.check`.
           #
+
+          #
+          # Disabled because this is not supported in elixir 1.6
+          #
+
+          {Credo.Check.Refactor.MapJoin, []},
         ]
       }
     }
