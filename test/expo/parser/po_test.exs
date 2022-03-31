@@ -213,14 +213,13 @@ defmodule Expo.Parser.PoTest do
              """)
   end
 
-  # TODO: Should work
-  # test "files with just comments are ok (the comments are discarded)" do
-  #   assert {:ok, _translations} =
-  #            Po.parse("""
-  #            # A comment
-  #            # Another comment
-  #            """)
-  # end
+  test "files with just comments are ok" do
+    assert {:ok, %Translations{top_comments: ["A comment", "Another comment"]}} =
+             Po.parse("""
+             # A comment
+             # Another comment
+             """)
+  end
 
   test "reference are extracted into the :reference field of a translation" do
     assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
@@ -346,10 +345,9 @@ defmodule Expo.Parser.PoTest do
              """)
   end
 
-  # TODO: Fix
-  # test "an empty list of tokens is parsed as an empty list of translations" do
-  #   assert {:ok, %Translations{translations: [], headers: []}} =      Po.parse("")
-  # end
+  test "an empty list of tokens is parsed as an empty list of translations" do
+    assert {:ok, %Translations{translations: [], headers: []}} = Po.parse("")
+  end
 
   test "multiple references on the same line are parsed correctly" do
     assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =

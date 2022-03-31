@@ -198,7 +198,12 @@ defmodule Expo.Parser.Po do
     |> post_traverse(:register_duplicates)
 
   defparsecp :po_file,
-             times(po_entry, min: 1)
+             repeat(
+               choice([
+                 po_entry,
+                 comment
+               ])
+             )
              |> reduce(:make_translations)
              |> unwrap_and_tag(:translations)
              |> eos()
@@ -260,10 +265,19 @@ defmodule Expo.Parser.Po do
     end
   end
 
-  defp make_translations(translations) do
+  defp make_translations(tokens) do
+    translations = Enum.reject(tokens, &match?({:comment, _comment}, &1))
+
+    root_top_comments =
+      tokens |> Enum.filter(&match?({:comment, _comment}, &1)) |> Keyword.values()
+
     {headers, top_comments, translations} = Util.extract_meta_headers(translations)
 
-    %Translations{translations: translations, headers: headers, top_comments: top_comments}
+    %Translations{
+      translations: translations,
+      headers: headers,
+      top_comments: root_top_comments ++ top_comments
+    }
   end
 
   defp make_translation(tokens) do
