@@ -56,6 +56,7 @@ defmodule Expo.Parser.Po do
   for keyword <- [:msgctxt, :msgid, :msgid_plural, :msgstr] do
     defcombinatorp keyword,
                    ignore(concat(string(Atom.to_string(keyword)), parsec(:whitespace_no_nl)))
+                   |> post_traverse(:attach_line_number)
                    |> concat(parsec(:strings))
                    |> tag(keyword)
                    |> label("#{keyword} followed by strings")
@@ -65,27 +66,17 @@ defmodule Expo.Parser.Po do
                  ignore(
                    optional(parsec(:whitespace_no_nl))
                    |> string("#")
-                   |> lookahead_not(
-                     choice([
-                       string("."),
-                       string(":"),
-                       string(","),
-                       string("| msgid"),
-                       string("~")
-                     ])
-                   )
-                   |> concat(parsec(:whitespace_no_nl))
+                   |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
+                   |> concat(optional(parsec(:whitespace_no_nl)))
                  )
                  |> repeat(utf8_char(not: ?\n))
                  |> concat(parsec(:newline))
                  |> reduce(:to_string)
-                 |> tag(:comment)
+                 |> unwrap_and_tag(:comment)
                  |> label("comment")
 
   for {meta_type, character} <- [
         extracted_comment: ".",
-        reference: ":",
-        flag: ",",
         previous_msgid: "| msgid"
       ] do
     defcombinatorp meta_type,
@@ -93,14 +84,72 @@ defmodule Expo.Parser.Po do
                      optional(parsec(:whitespace_no_nl))
                      |> string("#")
                      |> string(character)
-                     |> concat(parsec(:whitespace_no_nl))
+                     |> concat(optional(parsec(:whitespace_no_nl)))
                    )
                    |> repeat(utf8_char(not: ?\n))
                    |> concat(parsec(:newline))
                    |> reduce(:to_string)
-                   |> tag(meta_type)
+                   |> unwrap_and_tag(meta_type)
                    |> label(Atom.to_string(meta_type))
   end
+
+  defcombinatorp :flag,
+                 ignore(
+                   parsec(:whitespace_no_nl)
+                   |> optional()
+                   |> string("#")
+                 )
+                 |> times(
+                   ignore(string(","))
+                   |> concat(ignore(optional(parsec(:whitespace_no_nl))))
+                   |> concat(utf8_char(not: ?\n, not: ?,) |> repeat() |> reduce(:to_string))
+                   |> concat(ignore(optional(parsec(:whitespace_no_nl)))),
+                   min: 1
+                 )
+                 |> concat(parsec(:newline))
+                 |> reduce(:remove_empty_flags)
+                 |> unwrap_and_tag(:flag)
+                 |> label("flag")
+
+  defcombinatorp :reference,
+                 ignore(
+                   parsec(:whitespace_no_nl)
+                   |> optional()
+                   |> string("#:")
+                 )
+                 |> times(
+                   ignore(optional(parsec(:whitespace_no_nl)))
+                   |> concat(
+                     times(
+                       choice([
+                         utf8_char(not: ?\n, not: ?,, not: ?:),
+                         lookahead_not(string(":"), integer(min: 1))
+                       ]),
+                       min: 1
+                     )
+                     |> reduce(:to_string)
+                     |> unwrap_and_tag(:file)
+                   )
+                   |> concat(
+                     optional(
+                       string(":")
+                       |> ignore()
+                       |> concat(unwrap_and_tag(integer(min: 1), :line))
+                     )
+                   )
+                   |> concat(
+                     choice([
+                       ignore(string(",")),
+                       ignore(string(" ")),
+                       lookahead(parsec(:newline))
+                     ])
+                   )
+                   |> reduce(:make_reference),
+                   min: 1
+                 )
+                 |> concat(parsec(:newline))
+                 |> tag(:reference)
+                 |> label("reference")
 
   defcombinatorp :translation_meta,
                  choice([
@@ -118,70 +167,51 @@ defmodule Expo.Parser.Po do
                  |> label("plural form (like [0])")
 
   defcombinatorp :msgstr_with_plural_form,
-                 ignore(string("msgstr"))
+                 ignore(optional(parsec(:obsolete_prefix)))
+                 |> concat(ignore(string("msgstr")))
                  |> concat(parsec(:plural_form))
-                 |> concat(parsec(:whitespace_no_nl))
+                 |> concat(ignore(parsec(:whitespace_no_nl)))
                  |> concat(parsec(:strings))
                  |> reduce(:make_plural_form)
-                 |> tag(:msgstr)
+                 |> unwrap_and_tag(:msgstr)
+
+  defcombinatorp :obsolete_prefix,
+                 string("#~") |> concat(parsec(:whitespace_no_nl)) |> ignore() |> tag(:obsolete)
 
   defcombinatorp :singular_translation,
                  repeat(parsec(:translation_meta))
-                 |> ignore(optional(parsec(:msgctxt)))
+                 |> concat(optional(parsec(:obsolete_prefix)))
+                 |> optional(parsec(:msgctxt))
+                 |> concat(optional(parsec(:obsolete_prefix)))
                  |> concat(parsec(:msgid))
+                 |> concat(optional(parsec(:obsolete_prefix)))
                  |> concat(parsec(:msgstr))
                  |> reduce({:make_translation, [Translation.Singular]})
-                 |> tag(:singular_translation)
                  |> label("translation")
-
-  defcombinatorp :obsolete_prefix, ignore(concat(string("#~"), parsec(:whitespace_no_nl)))
-
-  defcombinatorp :obsolete_singular_translation,
-                 repeat(parsec(:translation_meta))
-                 |> ignore(optional(parsec(:msgctxt)))
-                 |> concat(parsec(:obsolete_prefix))
-                 |> concat(parsec(:msgid))
-                 |> concat(parsec(:obsolete_prefix))
-                 |> concat(parsec(:msgstr))
-                 |> reduce({:make_translation, [Translation.Singular]})
-                 |> tag(:obsolete_singular_translation)
-                 |> label("obsolete translation")
 
   defcombinatorp :plural_translation,
                  repeat(parsec(:translation_meta))
-                 |> ignore(optional(parsec(:msgctxt)))
+                 |> concat(optional(parsec(:obsolete_prefix)))
+                 |> optional(parsec(:msgctxt))
+                 |> concat(optional(parsec(:obsolete_prefix)))
                  |> concat(parsec(:msgid))
+                 |> concat(optional(parsec(:obsolete_prefix)))
                  |> concat(parsec(:msgid_plural))
                  |> times(parsec(:msgstr_with_plural_form), min: 1)
                  |> reduce({:make_translation, [Translation.Plural]})
-                 |> tag(:plural_translation)
                  |> label("plural translation")
 
-  defcombinatorp :obsolete_plural_translation,
-                 repeat(parsec(:translation_meta))
-                 |> ignore(optional(parsec(:msgctxt)))
-                 |> concat(parsec(:obsolete_prefix))
-                 |> concat(parsec(:msgid))
-                 |> concat(parsec(:obsolete_prefix))
-                 |> concat(parsec(:msgid_plural))
-                 |> times(
-                   concat(parsec(:obsolete_prefix), parsec(:msgstr_with_plural_form)),
-                   min: 1
-                 )
-                 |> reduce({:make_translation, [Translation.Plural]})
-                 |> tag(:obsolete_singular_translation)
-                 |> label("obsolete plural translation")
-
   defcombinatorp :translation,
-                 choice([
-                   parsec(:singular_translation),
-                   parsec(:plural_translation),
-                   parsec(:obsolete_singular_translation),
-                   parsec(:obsolete_plural_translation)
-                 ])
+                 label(
+                   choice([parsec(:singular_translation), parsec(:plural_translation)]),
+                   "translation"
+                 )
 
   defparsecp :po_file,
-             times(parsec(:translation), min: 1) |> parsec(:optional_whitespace) |> eos()
+             parsec(:optional_whitespace)
+             |> concat(times(parsec(:translation), min: 1))
+             |> parsec(:optional_whitespace)
+             |> eos()
 
   @doc """
   Parse `.po` file
@@ -192,101 +222,139 @@ defmodule Expo.Parser.Po do
       ...> msgid "foo"
       ...> msgstr "bar"
       ...> \""")
-      %Expo.Translations{
+      {:ok, %Expo.Translations{
         headers: [],
-        obsolete_translations: [],
         translations: [
           %Expo.Translation.Singular{
             comments: [],
-            msgctx: nil,
+            msgctxt: nil,
             extracted_comments: [],
-            flags: MapSet.new([]),
-            msgid: "foo",
-            msgstr: "bar",
+            flags: [],
+            msgid: ["foo"],
+            msgstr: ["bar"],
             previous_msgids: [],
-            references: []
+            references: [],
+            obsolete: false,
+            meta: %Expo.Translation.Meta{msgctxt_source_line: nil, msgid_plural_source_line: nil, msgid_source_line: 1, msgstr_source_line: 2}
           }
         ]
-      }
+      }}
   """
   @impl Expo.Parser
   def parse(content) do
-    case po_file(content) do
-      {:ok, translations, "", _context, _line, _offset} ->
-        {obsolete, translations} = filter_obsolete_translations(translations)
+    with {:ok, translations, "", _context, _line, _offset} <- po_file(content),
+         {headers, top_comments, translations} <- Util.extract_meta_headers(translations),
+         :ok <- check_for_duplicates(translations) do
+      {:ok,
+       %Translations{translations: translations, headers: headers, top_comments: top_comments}}
+    else
+      {:error, message, offending_content, _context, {line, _offset_line}, _offset} ->
+        {:error, {:parse_error, message, offending_content, line}}
 
-        {headers, translations} = Util.extract_meta_headers(translations)
-
-        %Translations{
-          translations: translations,
-          obsolete_translations: obsolete,
-          headers: headers
-        }
-
-      {:error, message, offending_content, _context, {line, offset}, offset} ->
-        {:error, {:parse_error, message, offending_content, line, offset}}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   defp make_plural_form([plural_form | strings]), do: {plural_form, strings}
 
+  defp make_reference(tokens) do
+    case Keyword.fetch(tokens, :line) do
+      {:ok, line} -> {Keyword.fetch!(tokens, :file), line}
+      :error -> Keyword.fetch!(tokens, :file)
+    end
+  end
+
   defp make_translation(tokens, type) do
-    struct!(
-      type,
+    attrs =
       tokens
       |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-      |> Enum.map(fn {key, values} ->
-        {key, Enum.flat_map(values, & &1)}
-      end)
-      |> Enum.map(&make_translation_attribute(type, elem(&1, 0), elem(&1, 1)))
-    )
+      |> Enum.flat_map(&make_translation_attribute(type, elem(&1, 0), elem(&1, 1)))
+
+    meta =
+      struct(
+        Translation.Meta,
+        attrs |> Enum.filter(&match?({:meta, _value}, &1)) |> Keyword.values()
+      )
+
+    attrs = [{:meta, meta} | Enum.reject(attrs, &match?({:meta, _value}, &1))]
+
+    struct!(type, attrs)
   end
 
   defp make_translation_attribute(type, key, value)
-  defp make_translation_attribute(_type, :msgid, value), do: {:msgid, Enum.join(value, "")}
 
-  defp make_translation_attribute(Translation.Plural, :msgid_plural, value),
-    do: {:msgid_plural, Enum.join(value, "")}
+  defp make_translation_attribute(_type, :msgid, [[{:source_line, source_line} | value]]),
+    do: [{:msgid, value}, {:meta, {:msgid_source_line, source_line}}]
 
-  defp make_translation_attribute(Translation.Singular, :msgstr, value),
-    do: {:msgstr, Enum.join(value, "")}
+  defp make_translation_attribute(_type, :msgctxt, [[{:source_line, source_line} | value]]),
+    do: [{:msgctxt, value}, {:meta, {:msgctxt_source_line, source_line}}]
+
+  defp make_translation_attribute(Translation.Plural, :msgid_plural, [
+         [{:source_line, source_line} | value]
+       ]),
+       do: [{:msgid_plural, value}, {:meta, {:msgid_plural_source_line, source_line}}]
+
+  defp make_translation_attribute(Translation.Singular, :msgstr, [
+         [{:source_line, source_line} | value]
+       ]),
+       do: [{:msgstr, value}, {:meta, {:msgstr_source_line, source_line}}]
 
   defp make_translation_attribute(Translation.Plural, :msgstr, value),
-    do: {:msgstr, Map.new(value, fn {key, values} -> {key, Enum.join(values, "")} end)}
+    do: [{:msgstr, Map.new(value, fn {key, values} -> {key, values} end)}]
 
-  defp make_translation_attribute(_type, :comment, value), do: {:comments, value}
+  defp make_translation_attribute(_type, :comment, value), do: [{:comments, value}]
 
   defp make_translation_attribute(_type, :extracted_comment, value),
-    do: {:extracted_comments, value}
+    do: [{:extracted_comments, value}]
 
   defp make_translation_attribute(_type, :flag, value),
-    do:
-      {:flags,
-       value |> Enum.flat_map(&String.split(&1, ",")) |> Enum.map(&String.trim/1) |> MapSet.new()}
+    do: [{:flags, value}]
 
   defp make_translation_attribute(_type, :previous_msgid, value),
-    do: {:previous_msgids, value}
+    do: [{:previous_msgids, value}]
 
   defp make_translation_attribute(_type, :reference, value),
-    do: {:references, value}
+    do: [{:references, value}]
 
-  defp filter_obsolete_translations(translations) do
-    {obsolete, translations} =
-      translations
-      |> Enum.chunk_by(
-        &match?(
-          {type, _translation}
-          when type in [:obsolete_singular_translation, :obsolete_plural_translation],
-          &1
-        )
-      )
-      |> case do
-        [translations] -> {[], translations}
-        [translations, obsolete] -> {obsolete, translations}
-        [] -> {[], []}
-      end
+  defp make_translation_attribute(_type, :obsolete, _value),
+    do: [{:obsolete, true}]
 
-    {obsolete |> Keyword.values() |> List.flatten(),
-     translations |> Keyword.values() |> List.flatten()}
+  defp remove_empty_flags(tokens), do: Enum.reject(tokens, &match?("", &1))
+
+  defp attach_line_number(rest, args, context, {line, _line_offset}, _offset),
+    do: {rest, [{:source_line, line} | args], context}
+
+  defp check_for_duplicates(translations, existing \\ %{})
+
+  defp check_for_duplicates([%struct{} = translation | rest], existing) do
+    key = struct.key(translation)
+
+    case Map.fetch(existing, key) do
+      {:ok, old_line} ->
+        build_duplicated_error(translation, old_line)
+
+      :error ->
+        check_for_duplicates(rest, Map.put(existing, key, translation.meta.msgid_source_line))
+    end
+  end
+
+  defp check_for_duplicates([], _existing) do
+    :ok
+  end
+
+  defp build_duplicated_error(%Translation.Singular{} = translation, old_line) do
+    id = IO.iodata_to_binary(translation.msgid)
+
+    {:error,
+     {:duplicate_translation, "found duplicate on line #{old_line} for msgid: '#{id}'",
+      translation.meta.msgid_source_line}}
+  end
+
+  defp build_duplicated_error(%Translation.Plural{} = translation, old_line) do
+    id = IO.iodata_to_binary(translation.msgid)
+    idp = IO.iodata_to_binary(translation.msgid_plural)
+    msg = "found duplicate on line #{old_line} for msgid: '#{id}' and msgid_plural: '#{idp}'"
+    {:error, {:duplicate_translation, msg, translation.meta.msgid_source_line}}
   end
 end

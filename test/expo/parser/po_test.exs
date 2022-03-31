@@ -1,78 +1,520 @@
 defmodule Expo.Parser.PoTest do
   @moduledoc false
 
+  # Tests taken & adapted from
+  # https://github.com/elixir-gettext/gettext/blob/600e4630fb7db514d464f92e2069a138cf9c68a1/test/gettext/po/parser_test.exs
+
   use ExUnit.Case, async: true
 
   alias Expo.Parser.Po
+  alias Expo.Translation
+  alias Expo.Translations
 
   doctest Po
 
   @example :expo |> Application.app_dir("priv/test/example.po") |> File.read!()
 
-  describe "parses .po file" do
-    test "works" do
-      assert %Expo.Translations{
-               headers: [
-                 ["Project-Id-Version", "Project"],
-                 ["POT-Creation-Date", ""],
-                 ["PO-Revision-Date", ""],
-                 ["Last-Translator", ""],
-                 ["Language-Team", "Language Team"],
-                 ["Language", "en"],
-                 ["MIME-Version", "1.0"],
-                 ["Content-Type", "text/plain; charset=UTF-8"],
-                 ["Content-Transfer-Encoding", "8bit"],
-                 ["Plural-Forms", "nplurals=2; plural=(n != 1);"],
-                 ["X-Generator", "Poedit 3.0.1"],
-                 ["X-Poedit-SourceCharset", "UTF-8"]
-               ],
-               translations: [
-                 %Expo.Translation.Singular{
-                   msgctx: nil,
-                   msgid: "foo",
-                   msgstr: "bar",
-                   comments: ["This is a translation", "Ah, another comment!"],
-                   extracted_comments: ["An extracted comment"],
-                   flags: MapSet.new(["flag1", "flag2"]),
-                   previous_msgids: ["previous-untranslated-string"],
-                   references: ["lib/foo.ex:32"]
-                 },
-                 %Expo.Translation.Plural{
-                   msgctx: nil,
-                   msgid: "{count} New Notification",
-                   msgid_plural: "{count} New Notifications",
-                   msgstr: %{0 => "{count} Nuova notifica", 1 => "{count} Nuove notifiche"},
-                   comments: [],
-                   extracted_comments: [],
-                   flags: MapSet.new([]),
-                   previous_msgids: [],
-                   references: []
-                 }
-               ],
-               obsolete_translations: [
-                 %Expo.Translation.Singular{
-                   comments: [],
-                   msgctx: nil,
-                   extracted_comments: [],
-                   flags: MapSet.new([]),
-                   msgid: "hello",
-                   msgstr: "ciao",
-                   previous_msgids: [],
-                   references: []
-                 },
-                 %Expo.Translation.Plural{
-                   comments: [],
-                   msgctx: nil,
-                   extracted_comments: [],
-                   flags: MapSet.new([]),
-                   msgid: "{count} Test",
-                   msgid_plural: "{count} Tests",
-                   msgstr: %{0 => "{count} Test", 1 => "{count} Tests"},
-                   previous_msgids: [],
-                   references: []
-                 }
-               ]
-             } == Po.parse(@example)
-    end
+  test "works" do
+    assert {:ok,
+            %Translations{
+              headers: [
+                "Project-Id-Version: Project\n",
+                "POT-Creation-Date: \n",
+                "PO-Revision-Date: \n",
+                "Last-Translator: \n",
+                "Language-Team: Language Team\n",
+                "Language: en\n",
+                "MIME-Version: 1.0\n",
+                "Content-Type: text/plain; charset=UTF-8\n",
+                "Content-Transfer-Encoding: 8bit\n",
+                "Plural-Forms: nplurals=2; plural=(n != 1);\n",
+                "X-Generator: Poedit 3.0.1\n",
+                "X-Poedit-SourceCharset: UTF-8\n"
+              ],
+              translations: [
+                %Translation.Singular{
+                  msgctxt: nil,
+                  msgid: ["foo"],
+                  msgstr: ["bar"],
+                  comments: ["This is a translation", "Ah, another comment!"],
+                  extracted_comments: ["An extracted comment"],
+                  flags: [["flag1", "flag2"]],
+                  previous_msgids: ["previous-untranslated-string"],
+                  references: [[{"lib/foo.ex", 32}]],
+                  obsolete: false
+                },
+                %Translation.Plural{
+                  msgctxt: nil,
+                  msgid: ["{count} New Notification"],
+                  msgid_plural: ["{count} New Notifications"],
+                  msgstr: %{0 => ["{count} Nuova notifica"], 1 => ["{count} Nuove notifiche"]},
+                  comments: [],
+                  extracted_comments: [],
+                  flags: [],
+                  previous_msgids: [],
+                  references: [],
+                  obsolete: false
+                },
+                %Translation.Singular{
+                  comments: [],
+                  msgctxt: nil,
+                  extracted_comments: [],
+                  flags: [],
+                  msgid: ["hello"],
+                  msgstr: ["ciao"],
+                  previous_msgids: [],
+                  references: [],
+                  obsolete: true
+                },
+                %Translation.Plural{
+                  comments: [],
+                  msgctxt: nil,
+                  extracted_comments: [],
+                  flags: [],
+                  msgid: ["{count} Test"],
+                  msgid_plural: ["{count} Tests"],
+                  msgstr: %{0 => ["{count} Test"], 1 => ["{count} Tests"]},
+                  previous_msgids: [],
+                  references: [],
+                  obsolete: true
+                }
+              ]
+            }} = Po.parse(@example)
+  end
+
+  test "parse/1 with single strings" do
+    assert {:ok,
+            %Translations{
+              translations: [%Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]}]
+            }} =
+             Po.parse("""
+             msgid "hello"
+             msgstr "ciao"
+             """)
+  end
+
+  test "parse/1 with multiple concatenated strings" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Singular{msgid: ["hello", " world"], msgstr: ["ciao", " mondo"]}
+              ]
+            }} =
+             Po.parse("""
+             msgid "hello" " world"
+             msgstr "ciao" " mondo"
+             """)
+  end
+
+  test "parse/1 with multiple translations" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]},
+                %Translation.Singular{msgid: ["word"], msgstr: ["parola"]}
+              ]
+            }} =
+             Po.parse("""
+             msgid "hello"
+             msgstr "ciao"
+             msgid "word"
+             msgstr "parola"
+             """)
+  end
+
+  test "parse/1 with unicode characters in the strings" do
+    assert {:ok,
+            %Translations{translations: [%Translation.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]}} =
+             Po.parse("""
+             msgid "føø"
+             msgstr "bårπ"
+             """)
+  end
+
+  test "parse/1 with a pluralized string" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Plural{
+                  msgid: ["foo"],
+                  msgstr: %{0 => ["bar"], 1 => ["bars"], 2 => ["barres"]}
+                }
+              ]
+            }} =
+             Po.parse("""
+             msgid "foo"
+             msgid_plural "foos"
+             msgstr[0] "bar"
+             msgstr[1] "bars"
+             msgstr[2] "barres"
+             """)
+  end
+
+  test "comments are associated with translations" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Singular{
+                  msgid: ["foo"],
+                  msgstr: ["bar"],
+                  comments: ["This is a translation", "Ah, another comment!"],
+                  extracted_comments: ["An extracted comment"],
+                  references: [[{"lib/foo.ex", 32}]]
+                }
+              ]
+            }} =
+             Po.parse("""
+             # This is a translation
+             #: lib/foo.ex:32
+             # Ah, another comment!
+             #. An extracted comment
+             msgid "foo"
+             msgstr "bar"
+             """)
+  end
+
+  test "comments always belong to the next translation" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Singular{msgid: ["a"], msgstr: ["b"]},
+                %Translation.Singular{msgid: ["c"], msgstr: ["d"], comments: ["Comment"]}
+              ]
+            }} =
+             Po.parse("""
+             msgid "a"
+             msgstr "b"
+             # Comment
+             msgid "c"
+             msgstr "d"
+             """)
+  end
+
+  test "syntax error when there is no 'msgid'" do
+    assert {:error, {:parse_error, "expected msgid followed by strings", _context, 1}} =
+             Po.parse("msgstr \"foo\"")
+
+    assert {:error, {:parse_error, "expected msgid followed by strings", _context, 1}} =
+             Po.parse("msgstr \"foo\"")
+
+    assert {:error, {:parse_error, "expected msgid followed by strings", _context, 1}} =
+             Po.parse("\"foo\"")
+  end
+
+  test "if there's a msgid_plural, then plural forms must follow" do
+    assert {:error, {:parse_error, "expected plural form (like [0])", _context, 3}} =
+             Po.parse("""
+             msgid "foo"
+             msgid_plural "foos"
+             msgstr "bar"
+             """)
+  end
+
+  test "'msgid_plural' must come after 'msgid'" do
+    # TODO: Needs better message
+    assert {:error, {:parse_error, "expected whitespace", _context, 1}} =
+             Po.parse("msgid_plural ")
+  end
+
+  test "comments can't be placed between 'msgid' and 'msgstr'" do
+    assert {:error, {:parse_error, "expected msgid_plural followed by strings", _context, 2}} =
+             Po.parse("""
+             msgid "foo"
+             # Comment
+             msgstr "bar"
+             """)
+
+    assert {:error, {:parse_error, "expected string \"msgstr\"", _context, 3}} =
+             Po.parse("""
+             msgid "foo"
+             msgid_plural "foo"
+             # Comment
+             msgstr[0] "bar"
+             """)
+  end
+
+  # TODO: Should work
+  # test "files with just comments are ok (the comments are discarded)" do
+  #   assert {:ok, _translations} =
+  #            Po.parse("""
+  #            # A comment
+  #            # Another comment
+  #            """)
+  # end
+
+  test "reference are extracted into the :reference field of a translation" do
+    assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+             Po.parse("""
+             #: foo.ex:1
+             #: f:2
+             #: filename with spaces.ex:12
+             # Not a reference comment
+             # : Not a reference comment either
+             #: another/ref/comment.ex:83
+             msgid "foo"
+             msgstr "bar"
+             """)
+
+    assert translation.references == [
+             [{"foo.ex", 1}],
+             [{"f", 2}],
+             [{"filename with spaces.ex", 12}],
+             [{"another/ref/comment.ex", 83}]
+           ]
+
+    # All the reference comments are removed.
+    assert translation.comments == [
+             "Not a reference comment",
+             ": Not a reference comment either"
+           ]
+  end
+
+  test "extracted comments are extracted into the :extracted_comments field of a translation" do
+    assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+             Po.parse("""
+             #. Extracted comment
+             # Not an extracted comment
+             #.Another extracted comment
+             msgid "foo"
+             msgstr "bar"
+             """)
+
+    assert translation.extracted_comments == [
+             "Extracted comment",
+             "Another extracted comment"
+           ]
+
+    # All the reference comments are removed.
+    assert translation.comments == [
+             "Not an extracted comment"
+           ]
+  end
+
+  test "flags are extracted in to the :flags field of a translation" do
+    assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+             Po.parse("""
+             #, flag,a-flag b-flag, c-flag
+             # comment
+             #, flag,  ,d-flag ,, e-flag
+             msgid "foo"
+             msgstr "bar"
+             """)
+
+    assert Enum.sort(translation.flags) == [
+             ["flag", "a-flag b-flag", "c-flag"],
+             ["flag", "d-flag ", "e-flag"]
+           ]
+
+    assert translation.comments == ["comment"]
+  end
+
+  test "the line of a translation is the line of its msgid" do
+    assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+             Po.parse("""
+
+
+             msgid "foo"
+             msgstr "bar"
+             """)
+
+    assert translation.meta.msgid_source_line == 3
+  end
+
+  test "the line of a plural translation is the line of its msgid" do
+    assert {:ok, %Translations{translations: [%Translation.Plural{} = translation]}} =
+             Po.parse("""
+
+
+             msgid "foo"
+             msgid_plural "foos"
+             msgstr[0] "bar"
+             """)
+
+    assert translation.meta.msgid_source_line == 3
+  end
+
+  test "headers are parsed when present" do
+    assert {:ok, %Translations{translations: [], headers: headers}} =
+             Po.parse(~S"""
+             msgid ""
+             msgstr "Language: en_US\n"
+                    "Last-Translator: Jane Doe <jane@doe.com>\n"
+             """)
+
+    assert ["Language: en_US\n", "Last-Translator: Jane Doe <jane@doe.com>\n"] = headers
+  end
+
+  test "duplicated translations cause a parse error" do
+    assert {:error, {:duplicate_translation, "found duplicate on line 1 for msgid: 'foo'", 4}} =
+             Po.parse("""
+             msgid "foo"
+             msgstr "bar"
+
+             msgid "foo"
+             msgstr "baz"
+
+             msgid "foo"
+             msgstr "bong"
+             """)
+
+    # Works if the msgid is split differently as well
+    assert {:error, {:duplicate_translation, "found duplicate on line 1 for msgid: 'foo'", 4}} =
+             Po.parse("""
+             msgid "foo" ""
+             msgstr "bar"
+
+             msgid "" "foo"
+             msgstr "baz"
+             """)
+  end
+
+  test "duplicated plural translations cause a parse error" do
+    assert {:error,
+            {:duplicate_translation,
+             "found duplicate on line 1 for msgid: 'foo' and msgid_plural: 'foos'",
+             5}} =
+             Po.parse("""
+             msgid "foo"
+             msgid_plural "foos"
+             msgstr[0] "bar"
+
+             msgid "foo"
+             msgid_plural "foos"
+             msgstr[0] "baz"
+             """)
+  end
+
+  # TODO: Fix
+  # test "an empty list of tokens is parsed as an empty list of translations" do
+  #   assert {:ok, %Translations{translations: [], headers: []}} =      Po.parse("")
+  # end
+
+  test "multiple references on the same line are parsed correctly" do
+    assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+             Po.parse("""
+             #: foo.ex:1 bar.ex:2 with spaces.ex:3
+             #: baz.ex:3 with:colon.ex:12
+             msgid "foo"
+             msgstr "bar"
+             """)
+
+    assert translation.references == [
+             [{"foo.ex", 1}, {"bar.ex", 2}, {"with spaces.ex", 3}],
+             [{"baz.ex", 3}, {"with:colon.ex", 12}]
+           ]
+  end
+
+  test "top-of-the-file comments are extracted correctly" do
+    assert {:ok, %Translations{translations: [], top_comments: top_comments}} =
+             Po.parse("""
+             # Top of the file
+             ## Top of the file with two hashes
+             msgid ""
+             msgstr "Language: en_US\\n"
+             """)
+
+    assert ["Top of the file", "# Top of the file with two hashes"] = top_comments
+  end
+
+  test "msgctxt is parsed correctly for translations" do
+    assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+             Po.parse("""
+             msgctxt "my_" "context"
+             msgid "my_msgid"
+             msgstr "my_msgstr"
+             """)
+
+    assert translation.msgctxt == ["my_", "context"]
+    assert translation.msgid == ["my_msgid"]
+    assert translation.msgstr == ["my_msgstr"]
+  end
+
+  test "msgctxt is parsed correctly for plural translations" do
+    assert {:ok, %Translations{translations: [%Translation.Plural{} = translation]}} =
+             Po.parse("""
+             msgctxt "my_" "context"
+             msgid "my_msgid"
+             msgid_plural "my_msgid_plural"
+             msgstr[0] "my_msgstr"
+             """)
+
+    assert translation.msgctxt == ["my_", "context"]
+    assert translation.msgid == ["my_msgid"]
+    assert translation.msgid_plural == ["my_msgid_plural"]
+    assert translation.msgstr[0] == ["my_msgstr"]
+  end
+
+  test "msgctxt is nil when no msgctxt is present in a translation" do
+    assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+             Po.parse("""
+             msgid "my_msgid"
+             msgstr "my_msgstr"
+             """)
+
+    assert translation.msgctxt == nil
+  end
+
+  test "msgctxt causes a syntax error when misplaced" do
+    # Badly placed msgctxt still causes a syntax error
+    assert {:error, {:parse_error, "expected msgid_plural followed by strings", _context, 2}} =
+             Po.parse("""
+             msgid "my_msgid"
+             msgctxt "my_context"
+             msgstr "my_msgstr"
+             """)
+  end
+
+  test "msgctxt should not cause duplication translations" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Singular{} = translation1,
+                %Translation.Singular{} = translation2
+              ]
+            }} =
+             Po.parse("""
+             msgctxt "my_" "context"
+             msgid "my_msgid"
+             msgstr "my_msgstr"
+             msgid "my_msgid"
+             msgstr "my_msgstr"
+             """)
+
+    assert translation1.msgctxt == ["my_", "context"]
+    assert translation1.msgid == ["my_msgid"]
+    assert translation1.msgstr == ["my_msgstr"]
+
+    assert translation2.msgctxt == nil
+    assert translation2.msgid == ["my_msgid"]
+    assert translation2.msgstr == ["my_msgstr"]
+  end
+
+  test "msgctxt should not cause duplication for plural translations" do
+    assert {:ok,
+            %Translations{
+              translations: [
+                %Translation.Plural{} = translation1,
+                %Translation.Plural{} = translation2
+              ]
+            }} =
+             Po.parse("""
+             msgctxt "my_" "context"
+             msgid "my_msgid"
+             msgid_plural "my_msgid_plural"
+             msgstr[0] "my_msgstr"
+             msgid "my_msgid"
+             msgid_plural "my_msgid_plural"
+             msgstr[0] "my_msgstr"
+             """)
+
+    assert translation1.msgctxt == ["my_", "context"]
+    assert translation1.msgid == ["my_msgid"]
+    assert translation1.msgid_plural == ["my_msgid_plural"]
+    assert translation1.msgstr[0] == ["my_msgstr"]
+
+    assert translation2.msgctxt == nil
+    assert translation2.msgid == ["my_msgid"]
+    assert translation2.msgid_plural == ["my_msgid_plural"]
+    assert translation2.msgstr[0] == ["my_msgstr"]
   end
 end

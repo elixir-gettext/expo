@@ -6,9 +6,9 @@ defmodule Expo.Translation do
   alias Expo.Translation.Plural
   alias Expo.Translation.Singular
 
-  @type msgid :: String.t()
-  @type msgstr :: String.t()
-  @type msgctx :: String.t()
+  @type msgid :: [String.t()]
+  @type msgstr :: [String.t()]
+  @type msgctxt :: String.t()
 
   @type t :: Singular.t() | Plural.t()
 end
