@@ -11,6 +11,6 @@ defmodule Expo.Translations do
           translations: [Translation.t()]
         }
 
-  @enforce_keys [:headers, :translations]
+  @enforce_keys [:translations]
   defstruct headers: [], translations: [], top_comments: []
 end

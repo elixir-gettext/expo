@@ -10,10 +10,22 @@ defmodule Expo.Parser.Util do
   def extract_meta_headers([
         %Translation.Singular{msgid: [""], msgstr: msgstr, comments: comments} | translations
       ]),
-      do: {parse_meta_headers(msgstr), comments, translations}
+      do: {msgstr, comments, translations}
 
   def extract_meta_headers(translations), do: {[], [], translations}
 
-  defp parse_meta_headers(headers),
-    do: headers |> Enum.join("") |> String.split("\n", trim: true) |> Enum.map(&"#{&1}\n")
+  @spec inject_meta_headers(
+          headers :: [String.t()],
+          comments :: [[String.t()]],
+          translations :: [Translation.t()]
+        ) :: [Translation.t()]
+  def inject_meta_headers(headers, comments, translations)
+  def inject_meta_headers([], [], translations), do: translations
+
+  def inject_meta_headers(headers, comments, translations) do
+    [
+      %Translation.Singular{msgid: [""], msgstr: IO.iodata_to_binary(headers), comments: comments}
+      | translations
+    ]
+  end
 end
