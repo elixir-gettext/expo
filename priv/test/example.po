@@ -18,7 +18,8 @@ msgstr ""
 #. An extracted comment
 #: lib/foo.ex:32
 #, flag1, flag2
-#| msgid previous-untranslated-string
+#| msgid "previous-untranslated-string"
+#| msgid "before-untranslated-string"
 msgid "foo"
 msgstr "bar"
 
