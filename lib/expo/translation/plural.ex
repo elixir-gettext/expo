@@ -14,7 +14,7 @@ defmodule Expo.Translation.Plural do
           extracted_comments: [String.t()],
           flags: [[String.t()]],
           previous_msgids: [[String.t()]],
-          references: [[String.t()]],
+          references: [[file :: String.t() | {file :: String.t(), line :: pos_integer()}]],
           obsolete: boolean()
         }
 

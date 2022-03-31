@@ -24,7 +24,7 @@ defmodule Expo.Parser.Util do
 
   def inject_meta_headers(headers, comments, translations) do
     [
-      %Translation.Singular{msgid: [""], msgstr: IO.iodata_to_binary(headers), comments: comments}
+      %Translation.Singular{msgid: [""], msgstr: headers, comments: comments}
       | translations
     ]
   end
