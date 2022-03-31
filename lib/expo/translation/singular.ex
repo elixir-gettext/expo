@@ -4,27 +4,36 @@ defmodule Expo.Translation.Singular do
   """
 
   alias Expo.Translation
+  alias Expo.Translation.Meta
 
   @type t :: %__MODULE__{
           msgid: Translation.msgid(),
           msgstr: Translation.msgstr(),
-          msgctx: Translation.msgctx() | nil,
+          msgctxt: Translation.msgctxt() | nil,
           comments: [String.t()],
           extracted_comments: [String.t()],
-          flags: MapSet.t(String.t()),
+          flags: [[String.t()]],
           previous_msgids: [String.t()],
-          references: [String.t()]
+          references: [String.t()],
+          obsolete: boolean(),
+          meta: Meta.t()
         }
 
   @enforce_keys [:msgid, :msgstr]
   defstruct [
     :msgid,
     :msgstr,
-    msgctx: nil,
+    msgctxt: nil,
     comments: [],
     extracted_comments: [],
-    flags: MapSet.new(),
+    flags: [],
     previous_msgids: [],
-    references: []
+    references: [],
+    obsolete: false,
+    meta: %Meta{}
   ]
+
+  @spec key(t()) :: {String.t() | nil, String.t()}
+  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid} = _translation),
+    do: {IO.iodata_to_binary(msgctxt || []), IO.iodata_to_binary(msgid)}
 end

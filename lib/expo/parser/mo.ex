@@ -22,7 +22,7 @@ defmodule Expo.Parser.Mo do
       ...>   28::little-unsigned-integer-size(4)-unit(8),
       ...>   28::little-unsigned-integer-size(4)-unit(8),
       ...>   0::little-unsigned-integer-size(4)-unit(8)>>)
-      %Expo.Translations{headers: [], obsolete_translations: [], translations: []}
+      %Expo.Translations{headers: [], translations: []}
 
   """
   @impl Expo.Parser
@@ -31,8 +31,8 @@ defmodule Expo.Parser.Mo do
          :ok <-
            check_version(header.file_format_revision_major, header.file_format_revision_minor),
          translations <- parse_translations(endian, header, content),
-         {headers, translations} <- Util.extract_meta_headers(translations) do
-      %Translations{translations: translations, headers: headers}
+         {headers, top_comments, translations} <- Util.extract_meta_headers(translations) do
+      %Translations{translations: translations, headers: headers, top_comments: top_comments}
     end
   end
 
@@ -130,13 +130,13 @@ defmodule Expo.Parser.Mo do
     attrs =
       case translation_type do
         Translation.Singular ->
-          Map.merge(attrs, %{msgstr: msgstr})
+          Map.merge(attrs, %{msgstr: [msgstr]})
 
         Translation.Plural ->
           msgstr =
             for {msgstr, index} <- Enum.with_index(String.split(msgstr, <<0>>)),
                 into: %{},
-                do: {index, msgstr}
+                do: {index, [msgstr]}
 
           Map.merge(attrs, %{msgstr: msgstr})
       end
@@ -148,15 +148,15 @@ defmodule Expo.Parser.Mo do
     {attrs, msgid} =
       case String.split(msgid, <<4::utf8>>, parts: 2) do
         [msgid] -> {%{}, msgid}
-        [msgctx, msgid] -> {%{msgctx: msgctx}, msgid}
+        [msgctxt, msgid] -> {%{msgctxt: msgctxt}, msgid}
       end
 
     case String.split(msgid, <<0>>, parts: 2) do
       [msgid] ->
-        {Map.merge(attrs, %{msgid: msgid}), Translation.Singular}
+        {Map.merge(attrs, %{msgid: [msgid]}), Translation.Singular}
 
       [msgid, msgid_plural] ->
-        {Map.merge(attrs, %{msgid: msgid, msgid_plural: msgid_plural}), Translation.Plural}
+        {Map.merge(attrs, %{msgid: [msgid], msgid_plural: [msgid_plural]}), Translation.Plural}
     end
   end
 
