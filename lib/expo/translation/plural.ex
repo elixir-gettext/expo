@@ -4,7 +4,6 @@ defmodule Expo.Translation.Plural do
   """
 
   alias Expo.Translation
-  alias Expo.Translation.Meta
 
   @type t :: %__MODULE__{
           msgid: Translation.msgid(),
@@ -14,10 +13,9 @@ defmodule Expo.Translation.Plural do
           comments: [String.t()],
           extracted_comments: [String.t()],
           flags: [[String.t()]],
-          previous_msgids: [String.t()],
-          references: [String.t()],
-          obsolete: boolean(),
-          meta: Meta.t()
+          previous_msgids: [[String.t()]],
+          references: [[String.t()]],
+          obsolete: boolean()
         }
 
   @enforce_keys [:msgid, :msgid_plural, :msgstr]
@@ -31,8 +29,7 @@ defmodule Expo.Translation.Plural do
     flags: [],
     previous_msgids: [],
     references: [],
-    obsolete: false,
-    meta: %Meta{}
+    obsolete: false
   ]
 
   @spec key(t()) :: {String.t() | nil, String.t(), String.t()}

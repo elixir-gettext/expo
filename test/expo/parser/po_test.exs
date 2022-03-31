@@ -39,7 +39,10 @@ defmodule Expo.Parser.PoTest do
                   comments: ["This is a translation", "Ah, another comment!"],
                   extracted_comments: ["An extracted comment"],
                   flags: [["flag1", "flag2"]],
-                  previous_msgids: ["previous-untranslated-string"],
+                  previous_msgids: [
+                    ["previous-untranslated-string"],
+                    ["before-untranslated-string"]
+                  ],
                   references: [[{"lib/foo.ex", 32}]],
                   obsolete: false
                 },
@@ -308,31 +311,6 @@ defmodule Expo.Parser.PoTest do
     assert translation.comments == ["comment"]
   end
 
-  test "the line of a translation is the line of its msgid" do
-    assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
-             Po.parse("""
-
-
-             msgid "foo"
-             msgstr "bar"
-             """)
-
-    assert translation.meta.msgid_source_line == 3
-  end
-
-  test "the line of a plural translation is the line of its msgid" do
-    assert {:ok, %Translations{translations: [%Translation.Plural{} = translation]}} =
-             Po.parse("""
-
-
-             msgid "foo"
-             msgid_plural "foos"
-             msgstr[0] "bar"
-             """)
-
-    assert translation.meta.msgid_source_line == 3
-  end
-
   test "headers are parsed when present" do
     assert {:ok, %Translations{translations: [], headers: headers}} =
              Po.parse(~S"""
@@ -345,7 +323,12 @@ defmodule Expo.Parser.PoTest do
   end
 
   test "duplicated translations cause a parse error" do
-    assert {:error, {:duplicate_translation, "found duplicate on line 1 for msgid: 'foo'", 4}} =
+    assert {:error,
+            {:duplicate_translation,
+             [
+               {"found duplicate on line 4 for msgid: 'foo'", 4, 1},
+               {"found duplicate on line 7 for msgid: 'foo'", 7, 1}
+             ]}} =
              Po.parse("""
              msgid "foo"
              msgstr "bar"
@@ -358,7 +341,8 @@ defmodule Expo.Parser.PoTest do
              """)
 
     # Works if the msgid is split differently as well
-    assert {:error, {:duplicate_translation, "found duplicate on line 1 for msgid: 'foo'", 4}} =
+    assert {:error,
+            {:duplicate_translation, [{"found duplicate on line 4 for msgid: 'foo'", 4, 1}]}} =
              Po.parse("""
              msgid "foo" ""
              msgstr "bar"
@@ -371,8 +355,7 @@ defmodule Expo.Parser.PoTest do
   test "duplicated plural translations cause a parse error" do
     assert {:error,
             {:duplicate_translation,
-             "found duplicate on line 1 for msgid: 'foo' and msgid_plural: 'foos'",
-             5}} =
+             [{"found duplicate on line 5 for msgid: 'foo' and msgid_plural: 'foos'", 5, 1}]}} =
              Po.parse("""
              msgid "foo"
              msgid_plural "foos"

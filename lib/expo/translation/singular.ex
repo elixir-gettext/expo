@@ -4,7 +4,6 @@ defmodule Expo.Translation.Singular do
   """
 
   alias Expo.Translation
-  alias Expo.Translation.Meta
 
   @type t :: %__MODULE__{
           msgid: Translation.msgid(),
@@ -13,10 +12,9 @@ defmodule Expo.Translation.Singular do
           comments: [String.t()],
           extracted_comments: [String.t()],
           flags: [[String.t()]],
-          previous_msgids: [String.t()],
-          references: [String.t()],
-          obsolete: boolean(),
-          meta: Meta.t()
+          previous_msgids: [[String.t()]],
+          references: [[String.t()]],
+          obsolete: boolean()
         }
 
   @enforce_keys [:msgid, :msgstr]
@@ -29,8 +27,7 @@ defmodule Expo.Translation.Singular do
     flags: [],
     previous_msgids: [],
     references: [],
-    obsolete: false,
-    meta: %Meta{}
+    obsolete: false
   ]
 
   @spec key(t()) :: {String.t() | nil, String.t()}
