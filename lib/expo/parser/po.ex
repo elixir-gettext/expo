@@ -167,29 +167,32 @@ defmodule Expo.Parser.Po do
     |> reduce(:make_plural_form)
     |> unwrap_and_tag(:msgstr)
 
-  singular_translation =
-    optional(obsolete_prefix)
-    |> concat(msgstr)
-    |> tag(Translation.Singular)
-    |> label("translation")
-
-  plural_translation =
-    optional(obsolete_prefix)
-    |> concat(msgid_plural)
-    |> times(msgstr_with_plural_form, min: 1)
-    |> tag(Translation.Plural)
-    |> label("plural translation")
-
-  translation =
+  translation_base =
     repeat(translation_meta)
     |> concat(optional(obsolete_prefix))
     |> optional(msgctxt)
     |> concat(optional(obsolete_prefix))
     |> post_traverse(:attach_line_number)
     |> concat(msgid)
-    |> concat(choice([singular_translation, plural_translation]))
+
+  singular_translation =
+    translation_base
+    |> concat(optional(obsolete_prefix))
+    |> concat(msgstr)
+    |> tag(Translation.Singular)
     |> reduce(:make_translation)
-    |> label("translation")
+    |> label("singular translation")
+
+  plural_translation =
+    translation_base
+    |> concat(optional(obsolete_prefix))
+    |> concat(msgid_plural)
+    |> times(msgstr_with_plural_form, min: 1)
+    |> tag(Translation.Plural)
+    |> reduce(:make_translation)
+    |> label("plural translation")
+
+  translation = choice([singular_translation, plural_translation])
 
   po_entry =
     optional_whitespace
