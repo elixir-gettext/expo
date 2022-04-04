@@ -4,6 +4,7 @@ defmodule Expo.PluralFormsTest do
   use ExUnit.Case, async: true
 
   alias Expo.PluralForms
+  alias Expo.PluralForms.Known
 
   doctest PluralForms
 
@@ -58,15 +59,17 @@ defmodule Expo.PluralFormsTest do
                  0,
                  {
                    :if,
-                   {
-                     :||,
-                     {:==, :n, 0},
-                     {
-                       :&&,
-                       {:>, {:%, :n, 100}, 0},
-                       {:<, {:%, :n, 100}, 20}
-                     }
-                   },
+                   {:paren,
+                    {
+                      :||,
+                      {:==, :n, 0},
+                      {:paren,
+                       {
+                         :&&,
+                         {:>, {:%, :n, 100}, 0},
+                         {:<, {:%, :n, 100}, 20}
+                       }}
+                    }},
                    1,
                    2
                  }
@@ -93,11 +96,12 @@ defmodule Expo.PluralFormsTest do
                    {
                      :&&,
                      {:>=, {:%, :n, 10}, 2},
-                     {
-                       :||,
-                       {:<, {:%, :n, 100}, 10},
-                       {:>=, {:%, :n, 100}, 20}
-                     }
+                     {:paren,
+                      {
+                        :||,
+                        {:<, {:%, :n, 100}, 10},
+                        {:>=, {:%, :n, 100}, 20}
+                      }}
                    },
                    1,
                    2
@@ -130,11 +134,12 @@ defmodule Expo.PluralFormsTest do
                        {:>=, {:%, :n, 10}, 2},
                        {:<=, {:%, :n, 10}, 4}
                      },
-                     {
-                       :||,
-                       {:<, {:%, :n, 100}, 10},
-                       {:>=, {:%, :n, 100}, 20}
-                     }
+                     {:paren,
+                      {
+                        :||,
+                        {:<, {:%, :n, 100}, 10},
+                        {:>=, {:%, :n, 100}, 20}
+                      }}
                    },
                    1,
                    2
@@ -152,15 +157,16 @@ defmodule Expo.PluralFormsTest do
               {3,
                {
                  :if,
-                 {:==, :n, 1},
+                 {:paren, {:==, :n, 1}},
                  0,
                  {
                    :if,
-                   {
-                     :&&,
-                     {:>=, :n, 2},
-                     {:<=, :n, 4}
-                   },
+                   {:paren,
+                    {
+                      :&&,
+                      {:>=, :n, 2},
+                      {:<=, :n, 4}
+                    }},
                    1,
                    2
                  }
@@ -187,11 +193,12 @@ defmodule Expo.PluralFormsTest do
                        {:>=, {:%, :n, 10}, 2},
                        {:<=, {:%, :n, 10}, 4}
                      },
-                     {
-                       :||,
-                       {:<, {:%, :n, 100}, 10},
-                       {:>=, {:%, :n, 100}, 20}
-                     }
+                     {:paren,
+                      {
+                        :||,
+                        {:<, {:%, :n, 100}, 10},
+                        {:>=, {:%, :n, 100}, 20}
+                      }}
                    },
                    1,
                    2
@@ -490,5 +497,27 @@ defmodule Expo.PluralFormsTest do
   defp nplurals(code) do
     {:ok, {nplurals, _plural_form}} = PluralForms.plural_form(code)
     nplurals
+  end
+
+  describe "compose/1" do
+    test "converts plural form back to string" do
+      {:ok, plural_forms} =
+        PluralForms.parse(
+          "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);"
+        )
+
+      assert "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);" =
+               plural_forms |> PluralForms.compose() |> IO.iodata_to_binary()
+    end
+
+    for {language, plural_form} <- Known.known_plural_forms() do
+      test "repeated parse / compose yields same result for #{language}" do
+        assert {:ok, unquote(Macro.escape(plural_form))} ==
+                 unquote(Macro.escape(plural_form))
+                 |> PluralForms.compose()
+                 |> IO.iodata_to_binary()
+                 |> PluralForms.parse()
+      end
+    end
   end
 end

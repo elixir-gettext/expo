@@ -66,7 +66,10 @@ defmodule Expo.PluralForms.Parser do
 
   arithmetic_expression_factor =
     [
-      ignore(lparen) |> parsec(:arithmetic_expression) |> ignore(rparen),
+      ignore(lparen)
+      |> parsec(:arithmetic_expression)
+      |> ignore(rparen)
+      |> unwrap_and_tag(:paren),
       value_expression_num,
       value_expression_var
     ]
@@ -96,7 +99,10 @@ defmodule Expo.PluralForms.Parser do
 
   comparison_expression_term =
     [
-      ignore(lparen) |> parsec(:comparison_expression) |> ignore(rparen),
+      ignore(lparen)
+      |> parsec(:comparison_expression)
+      |> ignore(rparen)
+      |> unwrap_and_tag(:paren),
       comparison_expression_ord
     ]
     |> choice()
@@ -104,7 +110,7 @@ defmodule Expo.PluralForms.Parser do
 
   comparison_expression_factor =
     [
-      ignore(lparen) |> parsec(:boolean_expression) |> ignore(rparen),
+      ignore(lparen) |> parsec(:boolean_expression) |> ignore(rparen) |> unwrap_and_tag(:paren),
       comparison_expression_term,
       parsec(:arithmetic_expression),
       value_expression
@@ -135,7 +141,7 @@ defmodule Expo.PluralForms.Parser do
 
   boolean_expression_factor =
     choice([
-      ignore(lparen) |> parsec(:boolean_expression) |> ignore(rparen),
+      ignore(lparen) |> parsec(:boolean_expression) |> ignore(rparen) |> unwrap_and_tag(:paren),
       parsec(:comparison_expression),
       value_expression_num
     ])
@@ -189,7 +195,10 @@ defmodule Expo.PluralForms.Parser do
     |> concat(
       choice([
         parsec(:conditional_expression),
-        ignore(lparen) |> parsec(:conditional_expression) |> ignore(rparen)
+        ignore(lparen)
+        |> parsec(:conditional_expression)
+        |> ignore(rparen)
+        |> unwrap_and_tag(:paren)
       ])
     )
 
