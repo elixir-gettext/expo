@@ -28,4 +28,17 @@ defmodule Expo.Parser.Util do
       | translations
     ]
   end
+
+  @spec rebalance_strings(string :: iodata()) :: iodata()
+  def rebalance_strings(strings),
+    do: strings |> IO.iodata_to_binary() |> split_at_newline()
+
+  defp split_at_newline(subject, acc_string \\ "", acc_list \\ [])
+  defp split_at_newline(<<>>, acc_string, acc_list), do: Enum.reverse([acc_string | acc_list])
+
+  defp split_at_newline(<<?\n, rest::binary>>, acc_string, acc_list),
+    do: split_at_newline(rest, "", [acc_string <> "\n" | acc_list])
+
+  defp split_at_newline(<<character::utf8, rest::binary>>, acc_string, acc_list),
+    do: split_at_newline(rest, <<acc_string::binary, character::utf8>>, acc_list)
 end
