@@ -3,8 +3,8 @@ defmodule Expo.Translations do
   Translation List Struct for mo / po files
   """
 
-  alias Expo.Parser.Util
   alias Expo.Translation
+  alias Expo.Util
 
   @type t :: %__MODULE__{
           headers: [String.t()],

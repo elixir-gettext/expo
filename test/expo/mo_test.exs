@@ -1,17 +1,85 @@
-defmodule Expo.Parser.MoTest do
+defmodule Expo.MoTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
 
-  alias Expo.Parser.Mo
+  alias Expo.Mo
   alias Expo.Translation
   alias Expo.Translations
 
   doctest Mo
 
-  for endianness <- [:big, :little] do
-    describe "#{endianness}" do
-      test "parses headers" do
+  describe "compose/2" do
+    for {endianness, start} <- [
+          big: <<0x950412DE::size(4)-unit(8)>>,
+          little: <<0xDE120495::size(4)-unit(8)>>
+        ] do
+      test "#{endianness} encodes" do
+        translations = %Translations{
+          headers: [
+            "Plural-Forms: nplurals=2; plural=(n != 1);\nX-Poedit-SourceCharset: UTF-8\n"
+          ],
+          translations: [
+            %Translation.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"]},
+            %Translation.Singular{msgctxt: "ctx", msgid: ["foo"], msgstr: ["bar"]},
+            %Translation.Plural{
+              msgctxt: nil,
+              msgid: ["foo"],
+              msgid_plural: ["foos"],
+              msgstr: %{0 => ["bar"], 1 => ["bars"]}
+            },
+            %Translation.Plural{
+              msgctxt: "ctx",
+              msgid: ["foo"],
+              msgid_plural: ["foos"],
+              msgstr: %{0 => ["bar"], 1 => ["bars"]}
+            }
+          ]
+        }
+
+        assert <<unquote(start), _rest::binary>> =
+                 mo =
+                 translations
+                 |> Mo.compose(endianness: unquote(endianness))
+                 |> IO.iodata_to_binary()
+
+        assert {:ok, translations} == Mo.parse(mo)
+      end
+
+      test "#{endianness} encodes unicode correctly" do
+        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/unicode.mo")
+
+        translations = %Translations{
+          headers: [
+            "MIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+          ],
+          translations: [%Translation.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
+        }
+
+        encoded =
+          translations
+          |> Mo.compose(endianness: unquote(endianness))
+          |> IO.iodata_to_binary()
+
+        assert encoded == File.read!(file)
+      end
+    end
+
+    test "does not encode obsolete translations" do
+      translations = %Translations{
+        translations: [
+          %Translation.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"], obsolete: true}
+        ]
+      }
+
+      assert {:ok, %Translations{translations: []}} =
+               translations |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse()
+    end
+  end
+
+  describe "parse/1" do
+    for endianness <- [:big, :little] do
+      test "#{endianness} parses headers" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/headers.mo")
         assert {:ok, parsed} = Mo.parse(File.read!(file))
 
@@ -24,7 +92,7 @@ defmodule Expo.Parser.MoTest do
                } = parsed
       end
 
-      test "parses singular translation" do
+      test "#{endianness} parses singular translation" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/singular.mo")
         assert {:ok, parsed} = Mo.parse(File.read!(file))
 
@@ -47,7 +115,7 @@ defmodule Expo.Parser.MoTest do
                } = parsed
       end
 
-      test "parses singular with msgctxt translation" do
+      test "#{endianness} parses singular with msgctxt translation" do
         file =
           Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/singular-msgctxt.mo")
 
@@ -72,7 +140,7 @@ defmodule Expo.Parser.MoTest do
                } = parsed
       end
 
-      test "parses plural translation" do
+      test "#{endianness} parses plural translation" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/plural.mo")
         assert {:ok, parsed} = Mo.parse(File.read!(file))
 
@@ -96,7 +164,7 @@ defmodule Expo.Parser.MoTest do
                } = parsed
       end
 
-      test "parses plural with msgctxt translation" do
+      test "#{endianness} parses plural with msgctxt translation" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/plural-msgctxt.mo")
         assert {:ok, parsed} = Mo.parse(File.read!(file))
 
@@ -120,7 +188,7 @@ defmodule Expo.Parser.MoTest do
                } = parsed
       end
 
-      test "parses empty mo" do
+      test "#{endianness} parses empty mo" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/empty.mo")
         assert {:ok, parsed} = Mo.parse(File.read!(file))
 
@@ -131,7 +199,7 @@ defmodule Expo.Parser.MoTest do
                } = parsed
       end
 
-      test "parses mo with hash table" do
+      test "#{endianness} parses mo with hash table" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/hash-table.mo")
         assert {:ok, parsed} = Mo.parse(File.read!(file))
 
@@ -140,7 +208,7 @@ defmodule Expo.Parser.MoTest do
                } = parsed
       end
 
-      test "parses unicode translations" do
+      test "#{endianness} parses unicode translations" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/unicode.mo")
         assert {:ok, parsed} = Mo.parse(File.read!(file))
 
@@ -152,21 +220,21 @@ defmodule Expo.Parser.MoTest do
                } = parsed
       end
     end
-  end
 
-  test "does not parse with invalid header" do
-    assert {:error, :invalid_file} = Mo.parse(<<0>>)
-    assert {:error, :invalid_header} = Mo.parse(<<0::unit(8)-size(32)>>)
+    test "does not parse with invalid header" do
+      assert {:error, :invalid_file} = Mo.parse(<<0>>)
+      assert {:error, :invalid_header} = Mo.parse(<<0::unit(8)-size(32)>>)
 
-    assert {:error, {:unsupported_version, 1, 0}} =
-             Mo.parse(
-               <<0xDE120495::size(4)-unit(8), 1::little-unsigned-integer-size(2)-unit(8),
-                 0::little-unsigned-integer-size(2)-unit(8),
-                 0::little-unsigned-integer-size(4)-unit(8),
-                 28::little-unsigned-integer-size(4)-unit(8),
-                 28::little-unsigned-integer-size(4)-unit(8),
-                 28::little-unsigned-integer-size(4)-unit(8),
-                 0::little-unsigned-integer-size(4)-unit(8)>>
-             )
+      assert {:error, {:unsupported_version, 1, 0}} =
+               Mo.parse(
+                 <<0xDE120495::size(4)-unit(8), 1::little-unsigned-integer-size(2)-unit(8),
+                   0::little-unsigned-integer-size(2)-unit(8),
+                   0::little-unsigned-integer-size(4)-unit(8),
+                   28::little-unsigned-integer-size(4)-unit(8),
+                   28::little-unsigned-integer-size(4)-unit(8),
+                   28::little-unsigned-integer-size(4)-unit(8),
+                   0::little-unsigned-integer-size(4)-unit(8)>>
+               )
+    end
   end
 end

@@ -1,19 +1,12 @@
 # credo:disable-for-this-file Credo.Check.Refactor.PipeChainStart
-defmodule Expo.Parser.Po do
-  @moduledoc """
-  `.po` / `.pot` file parser
-  """
-
-  @behaviour Expo.Parser
-
-  # Code copied and adapted from:
-  # https://github.com/elixir-gettext/gettext/blob/d9faa55e67657f923f7f57dbf209ce36ec50f947/lib/gettext/nimble_parser.ex
+defmodule Expo.Po.Parser do
+  @moduledoc false
 
   import NimbleParsec
 
-  alias Expo.Parser.Util
   alias Expo.Translation
   alias Expo.Translations
+  alias Expo.Util
 
   newline = ascii_char([?\n]) |> label("newline") |> ignore()
 
@@ -206,33 +199,13 @@ defmodule Expo.Parser.Po do
              |> unwrap_and_tag(:translations)
              |> eos()
 
-  @doc """
-  Parse `.po` file
-
-  ### Examples
-
-      iex> Expo.Parser.Po.parse(\"""
-      ...> msgid "foo"
-      ...> msgstr "bar"
-      ...> \""")
-      {:ok, %Expo.Translations{
-        headers: [],
-        translations: [
-          %Expo.Translation.Singular{
-            comments: [],
-            msgctxt: nil,
-            extracted_comments: [],
-            flags: [],
-            msgid: ["foo"],
-            msgstr: ["bar"],
-            previous_msgids: [],
-            references: [],
-            obsolete: false
-          }
-        ]
-      }}
-  """
-  @impl Expo.Parser
+  @spec parse(content :: binary()) ::
+          {:ok, Translations.t()}
+          | {:error,
+             {:parse_error, message :: String.t(), offending_content :: String.t(),
+              line :: pos_integer()}
+             | {:duplicate_translation,
+                [{message :: String.t(), new_line :: pos_integer(), old_line :: pos_integer()}]}}
   def parse(content) do
     case po_file(content, context: %{detected_duplicates: []}) do
       {:ok, [{:translations, translations}], "", %{detected_duplicates: []}, _line, _offset} ->

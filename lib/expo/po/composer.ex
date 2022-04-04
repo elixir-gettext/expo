@@ -1,44 +1,16 @@
-defmodule Expo.Composer.Po do
-  @moduledoc """
-  Create `.po` / `.pot` string from translations
-  """
+defmodule Expo.Po.Composer do
+  @moduledoc false
 
-  @behaviour Expo.Composer
-
-  alias Expo.Parser.Util
   alias Expo.Translation
   alias Expo.Translations
+  alias Expo.Util
 
-  @type opts :: []
-
-  @doc """
-  Dumps a `Expo.Translations` struct as iodata.
-  This function dumps a `Expo.Translations` struct (representing a PO file) as iodata,
-  which can later be written to a file or converted to a string with
-  `IO.iodata_to_binary/1`.
-  ## Examples
-  After running the following code:
-      iodata = Expo.Exposer.Po.composer %Expo.Translations{
-        headers: ["Last-Translator: Jane Doe"],
-        translations: [
-          %Expo.Translation.Singular{msgid: ["foo"], msgstr: ["bar"], comments: "A comment"}
-        ]
-      }
-      File.write!("/tmp/test.po", iodata)
-  the `/tmp/test.po` file would look like this:
-      msgid ""
-      msgstr ""
-      "Last-Translator: Jane Doe"
-      # A comment
-      msgid "foo"
-      msgstr "bar"
-  """
-  @impl Expo.Composer
-  @spec compose(translations :: Translations.t(), opts :: opts()) :: iodata()
-  def compose(
-        %Translations{headers: headers, top_comments: top_comments, translations: translations},
-        _opts \\ []
-      ) do
+  @spec compose(translations :: Translations.t()) :: iodata()
+  def compose(%Translations{
+        headers: headers,
+        top_comments: top_comments,
+        translations: translations
+      }) do
     headers
     |> Util.inject_meta_headers(top_comments, translations)
     |> dump_translations()

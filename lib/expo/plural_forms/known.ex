@@ -164,4 +164,18 @@ defmodule Expo.PluralForms.Known do
   @doc false
   @spec known_plural_forms :: %{String.t() => PluralForms.t()}
   def known_plural_forms, do: unquote(Macro.escape(known_plural_forms))
+
+  @spec plural_form(iso_language_tag :: String.t()) :: {:ok, PluralForms.t()} | :error
+  def plural_form(iso_language_tag)
+
+  for {iso_language_tag, plural_form} <- known_plural_forms do
+    def plural_form(unquote(iso_language_tag)), do: {:ok, unquote(Macro.escape(plural_form))}
+  end
+
+  def plural_form(locale) do
+    case String.split(locale, "_", parts: 2, trim: true) do
+      [lang, _territory] -> plural_form(lang)
+      _other -> :error
+    end
+  end
 end

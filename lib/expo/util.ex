@@ -1,4 +1,4 @@
-defmodule Expo.Parser.Util do
+defmodule Expo.Util do
   @moduledoc false
 
   alias Expo.Translation

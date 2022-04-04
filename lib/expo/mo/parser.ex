@@ -1,31 +1,16 @@
-defmodule Expo.Parser.Mo do
-  @moduledoc """
-  `.mo` file parser
-  """
+defmodule Expo.Mo.Parser do
+  @moduledoc false
 
-  @behaviour Expo.Parser
-
-  alias Expo.Parser.Util
   alias Expo.Translation
   alias Expo.Translations
+  alias Expo.Util
 
-  @doc """
-  Parse `.mo` file
-
-  ### Examples
-
-      iex> Expo.Parser.Mo.parse(<<0xDE120495::size(4)-unit(8),
-      ...>   0::little-unsigned-integer-size(2)-unit(8),
-      ...>   0::little-unsigned-integer-size(2)-unit(8),
-      ...>   0::little-unsigned-integer-size(4)-unit(8),
-      ...>   28::little-unsigned-integer-size(4)-unit(8),
-      ...>   28::little-unsigned-integer-size(4)-unit(8),
-      ...>   28::little-unsigned-integer-size(4)-unit(8),
-      ...>   0::little-unsigned-integer-size(4)-unit(8)>>)
-      {:ok, %Expo.Translations{headers: [], translations: []}}
-
-  """
-  @impl Expo.Parser
+  @spec parse(content :: binary()) ::
+          {:ok, Translations.t()}
+          | {:error,
+             :invalid_file
+             | :invalid_header
+             | {:unsupported_version, major :: non_neg_integer(), minor :: non_neg_integer()}}
   def parse(content)
 
   def parse(content) when byte_size(content) >= 28 do

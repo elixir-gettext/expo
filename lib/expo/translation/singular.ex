@@ -3,8 +3,8 @@ defmodule Expo.Translation.Singular do
   Struct for non-plural translations
   """
 
-  alias Expo.Parser.Util
   alias Expo.Translation
+  alias Expo.Util
 
   @type t :: %__MODULE__{
           msgid: Translation.msgid(),

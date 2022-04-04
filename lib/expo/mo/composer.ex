@@ -1,18 +1,11 @@
-defmodule Expo.Composer.Mo do
-  @moduledoc """
-  Create `.mo` binary from translations
-  """
+defmodule Expo.Mo.Composer do
+  @moduledoc false
 
-  @behaviour Expo.Composer
-
-  alias Expo.Parser.Util
   alias Expo.Translation
   alias Expo.Translations
+  alias Expo.Util
 
-  @type opts :: [{:endianness, :little | :big}]
-
-  @impl Expo.Composer
-  @spec compose(translations :: Translations.t(), opts :: opts()) :: iodata()
+  @spec compose(translations :: Translations.t(), opts :: Expo.Mo.compose_opts()) :: iodata()
   def compose(translations, opts \\ []) do
     translations =
       Util.inject_meta_headers(
