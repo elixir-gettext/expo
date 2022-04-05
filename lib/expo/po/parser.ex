@@ -195,26 +195,26 @@ defmodule Expo.Po.Parser do
 
   defparsecp :po_file,
              times(po_entry, min: 1)
-             |> reduce(:make_translations)
+             |> post_traverse(:make_translations)
              |> unwrap_and_tag(:translations)
              |> eos()
 
-  @spec parse(content :: binary()) ::
+  @spec parse(content :: String.t(), opts :: Keyword.t()) ::
           {:ok, Translations.t()}
           | {:error,
              {:parse_error, message :: String.t(), offending_content :: String.t(),
               line :: pos_integer()}
-             | {:duplicate_translation,
+             | {:duplicate_translations,
                 [{message :: String.t(), new_line :: pos_integer(), old_line :: pos_integer()}]}}
-  def parse(content) do
-    case po_file(content, context: %{detected_duplicates: []}) do
+  def parse(content, opts \\ []) do
+    case po_file(content, context: %{detected_duplicates: [], file: Keyword.get(opts, :file)}) do
       {:ok, [{:translations, translations}], "", %{detected_duplicates: []}, _line, _offset} ->
         {:ok, translations}
 
       {:ok, _result, "", %{detected_duplicates: [_head | _rest] = detected_duplicates}, _line,
        _offset} ->
         {:error,
-         {:duplicate_translation,
+         {:duplicate_translations,
           detected_duplicates
           |> Enum.map(fn
             {translation, new_line, old_line} ->
@@ -236,10 +236,18 @@ defmodule Expo.Po.Parser do
     end
   end
 
-  defp make_translations(translations) do
-    {headers, top_comments, translations} = Util.extract_meta_headers(translations)
+  defp make_translations(rest, translations, context, _line, _offset) do
+    {headers, top_comments, translations} =
+      translations |> Enum.reverse() |> Util.extract_meta_headers()
 
-    %Translations{translations: translations, headers: headers, top_comments: top_comments}
+    tokens = %Translations{
+      translations: translations,
+      headers: headers,
+      top_comments: top_comments,
+      file: context[:file]
+    }
+
+    {rest, [tokens], context}
   end
 
   defp make_translation(tokens) do

@@ -9,11 +9,12 @@ defmodule Expo.Translations do
   @type t :: %__MODULE__{
           headers: [String.t()],
           top_comments: [[String.t()]],
-          translations: [Translation.t()]
+          translations: [Translation.t()],
+          file: nil | Path.t()
         }
 
   @enforce_keys [:translations]
-  defstruct headers: [], translations: [], top_comments: []
+  defstruct headers: [], translations: [], top_comments: [], file: nil
 
   @doc """
   Rebalances all strings
