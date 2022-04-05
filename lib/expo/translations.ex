@@ -64,4 +64,48 @@ defmodule Expo.Translations do
         translations: all_translations
     }
   end
+
+  @doc """
+  Get Header by name (case insensitive)
+
+  ### Examples
+
+      iex> translations = %Expo.Translations{headers: ["Language: en_US\\n"], translations: []}
+      iex> Expo.Translations.get_header(translations, "language")
+      ["en_US"]
+
+      iex> translations = %Expo.Translations{headers: ["Language: en_US\\n"], translations: []}
+      iex> Expo.Translations.get_header(translations, "invalid")
+      []
+
+  """
+  @spec get_header(translations :: t(), header_name :: String.t()) :: [String.t()]
+  def get_header(%__MODULE__{headers: headers}, header_name) do
+    header_name_match = Regex.escape(header_name)
+    escaped_newline = Regex.escape("\\\n")
+
+    ~r/
+      # Start of line
+      ^
+      # Header Name
+      (?<header>
+        #{header_name_match}
+      ):
+      # Ignore Whitespace
+      \s
+      (?<content>
+        (
+          # Allow an escaped newline in content
+          #{escaped_newline}
+          |
+          # Allow everything except a newline in content
+          [^\n]
+        )*
+      )
+      # Header must end with newline or end of string
+      (\n|\z)
+    /imx
+    |> Regex.scan(IO.iodata_to_binary(headers), capture: ["content"])
+    |> Enum.map(fn [content] -> content end)
+  end
 end
