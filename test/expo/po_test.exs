@@ -3,7 +3,11 @@ defmodule Expo.PoTest do
 
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureIO
+
   alias Expo.Po
+  alias Expo.Po.DuplicateTranslationsError
+  alias Expo.Po.SyntaxError
   alias Expo.Translation
   alias Expo.Translations
 
@@ -387,8 +391,8 @@ defmodule Expo.PoTest do
     end
   end
 
-  describe "parse/1" do
-    test "parse/1 with single strings" do
+  describe "parse_string/1" do
+    test "with single strings" do
       assert {:ok,
               %Translations{
                 translations: [%Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]}]
@@ -399,7 +403,7 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "parse/1 with previous msgid" do
+    test "with previous msgid" do
       assert {:ok,
               %Translations{
                 translations: [
@@ -417,7 +421,7 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "parse/1 with obsolete translation" do
+    test "with obsolete translation" do
       assert {:ok,
               %Translations{
                 translations: [
@@ -435,7 +439,7 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "parse/1 with multiple concatenated strings" do
+    test "with multiple concatenated strings" do
       assert {:ok,
               %Translations{
                 translations: [
@@ -448,7 +452,7 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "parse/1 with multiple translations" do
+    test "with multiple translations" do
       assert {:ok,
               %Translations{
                 translations: [
@@ -464,7 +468,7 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "parse/1 with unicode characters in the strings" do
+    test "with unicode characters in the strings" do
       assert {:ok,
               %Translations{
                 translations: [%Translation.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
@@ -475,7 +479,7 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "parse/1 with a pluralized string" do
+    test "with a pluralized string" do
       assert {:ok,
               %Translations{
                 translations: [
@@ -865,6 +869,178 @@ defmodule Expo.PoTest do
       assert translation2.msgid == ["my_msgid"]
       assert translation2.msgid_plural == ["my_msgid_plural"]
       assert translation2.msgstr[0] == ["my_msgstr"]
+    end
+  end
+
+  describe "parse_string!/1" do
+    test "valid strings" do
+      str = """
+      msgid "foo"
+      msgstr "bar"
+      """
+
+      assert %Translations{
+               translations: [%Translation.Singular{msgid: ["foo"], msgstr: ["bar"]}],
+               headers: []
+             } = Po.parse_string!(str)
+    end
+
+    test "invalid strings" do
+      str = "msg"
+
+      assert_raise SyntaxError,
+                   "1: expected msgid followed by strings while processing plural translation inside singular translation or plural translation",
+                   fn ->
+                     Po.parse_string!(str)
+                   end
+
+      str = """
+
+      msgid
+      msgstr "bar"
+      """
+
+      assert_raise SyntaxError,
+                   "2: expected whitespace while processing msgid followed by strings inside plural translation inside singular translation or plural translation",
+                   fn ->
+                     Po.parse_string!(str)
+                   end
+    end
+  end
+
+  test "parse_string(!)/1: headers" do
+    str = ~S"""
+    msgid ""
+    msgstr ""
+      "Project-Id-Version: xxx\n"
+      "Report-Msgid-Bugs-To: \n"
+      "POT-Creation-Date: 2010-07-06 12:31-0500\n"
+    msgid "foo"
+    msgstr "bar"
+    """
+
+    assert {:ok,
+            %Translations{
+              translations: [%Translation.Singular{msgid: ["foo"], msgstr: ["bar"]}],
+              headers: [
+                "",
+                "Project-Id-Version: xxx\n",
+                "Report-Msgid-Bugs-To: \n",
+                "POT-Creation-Date: 2010-07-06 12:31-0500\n"
+              ]
+            }} = Po.parse_string(str)
+  end
+
+  describe "parse_file/1" do
+    test "valid file contents" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+
+      assert {:ok,
+              %Translations{
+                headers: [],
+                translations: [
+                  %Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]},
+                  %Translation.Singular{
+                    msgid: ["how are you,", " friend?"],
+                    msgstr: ["come stai,", " amico?"]
+                  }
+                ]
+              }} = Po.parse_file(fixture_path)
+    end
+
+    test "invalid file contents" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_syntax_error.po")
+
+      assert Po.parse_file(fixture_path) ==
+               {:error, {:parse_error, "expected end of string", "msgstr \"bong\"\n", 4}}
+
+      fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_token_error.po")
+
+      assert Po.parse_file(fixture_path) ==
+               {:error,
+                {:parse_error,
+                 "expected msgid followed by strings while processing plural translation inside singular translation or plural translation",
+                 "msg\n", 3}}
+    end
+
+    test "missing file" do
+      assert Po.parse_file("nonexistent") == {:error, :enoent}
+    end
+
+    test "file starting with a BOM byte sequence" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/bom.po")
+
+      output =
+        capture_io(:stderr, fn ->
+          assert {:ok, po} = Po.parse_file(fixture_path)
+          assert [%Translation.Singular{msgid: ["foo"], msgstr: ["bar"]}] = po.translations
+        end)
+
+      assert output =~ "#{fixture_path}: warning: the file being parsed starts with a BOM"
+      refute output =~ "nofile: warning: the string being parsed"
+    end
+  end
+
+  describe "parse_file!/1" do
+    test "populates the :file field with the path of the parsed file" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+      assert %Translations{file: ^fixture_path} = Po.parse_file!(fixture_path)
+    end
+
+    test "valid file contents" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+
+      assert %Translations{
+               headers: [],
+               translations: [
+                 %Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]},
+                 %Translation.Singular{
+                   msgid: ["how are you,", " friend?"],
+                   msgstr: ["come stai,", " amico?"]
+                 }
+               ]
+             } = Po.parse_file!(fixture_path)
+    end
+
+    test "invalid file contents" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_syntax_error.po")
+
+      msg = "_build/test/lib/expo/priv/test/po/invalid_syntax_error.po:4: expected end of string"
+
+      assert_raise SyntaxError, msg, fn ->
+        Po.parse_file!(fixture_path)
+      end
+
+      fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_token_error.po")
+
+      msg =
+        "_build/test/lib/expo/priv/test/po/invalid_token_error.po:3: expected msgid followed by strings while processing plural translation inside singular translation or plural translation"
+
+      assert_raise SyntaxError, msg, fn ->
+        Po.parse_file!(fixture_path)
+      end
+    end
+
+    test "missing file" do
+      # We're using a regex because we want optional double quotes around the file
+      # path: the error message (for File.read!/1) in Elixir v1.2 doesn't have
+      # them, but it does in v1.3.
+      msg = ~r/could not parse "?nonexistent"?: no such file or directory/
+
+      assert_raise File.Error, msg, fn ->
+        Po.parse_file!("nonexistent")
+      end
+    end
+
+    test "file with duplicate translations" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/duplicate_translations.po")
+
+      msg =
+        "_build/test/lib/expo/priv/test/po/duplicate_translations.po:4: found duplicate on line 4 for msgid: 'test'"
+
+      assert_raise DuplicateTranslationsError, msg, fn ->
+        Po.parse_file!(fixture_path)
+      end
     end
   end
 end
