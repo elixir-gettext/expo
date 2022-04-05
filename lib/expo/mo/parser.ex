@@ -1,30 +1,34 @@
 defmodule Expo.Mo.Parser do
   @moduledoc false
 
+  alias Expo.Mo
   alias Expo.Translation
   alias Expo.Translations
   alias Expo.Util
 
-  @spec parse(content :: binary()) ::
+  @spec parse(content :: binary(), opts :: Keyword.t()) ::
           {:ok, Translations.t()}
-          | {:error,
-             :invalid_file
-             | :invalid_header
-             | {:unsupported_version, major :: non_neg_integer(), minor :: non_neg_integer()}}
-  def parse(content)
+          | Mo.invalid_file_error()
+          | Mo.unsupported_version_error()
+  def parse(content, opts \\ [])
 
-  def parse(content) when byte_size(content) >= 28 do
+  def parse(content, opts) when byte_size(content) >= 28 do
     with {:ok, {endianness, header}} <- parse_header(binary_part(content, 0, 28)),
          :ok <-
            check_version(header.file_format_revision_major, header.file_format_revision_minor),
          translations <- parse_translations(endianness, header, content),
          {headers, top_comments, translations} <- Util.extract_meta_headers(translations) do
       {:ok,
-       %Translations{translations: translations, headers: headers, top_comments: top_comments}}
+       %Translations{
+         translations: translations,
+         headers: headers,
+         top_comments: top_comments,
+         file: Keyword.get(opts, :file)
+       }}
     end
   end
 
-  def parse(_content), do: {:error, :invalid_file}
+  def parse(_content, _opts), do: {:error, :invalid_file}
 
   defp parse_header(header_binary)
 
@@ -70,7 +74,7 @@ defmodule Expo.Mo.Parser do
              offset_of_table_with_translation_strings: offset_of_table_with_translation_strings
            }}}
 
-  defp parse_header(_header_binary), do: {:error, :invalid_header}
+  defp parse_header(_header_binary), do: {:error, :invalid_file}
 
   defp check_version(major, minor)
   # Not checking minor since they must be BC compatible

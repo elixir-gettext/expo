@@ -85,10 +85,10 @@ defmodule Expo.Po do
   end
 
   @doc """
-  Parses a string into a `Expo.Po` struct, raising an exception if there are
+  Parses a string into a `Expo.Translations` struct, raising an exception if there are
   any errors.
 
-  Works exactly like `parse_string/1`, but returns a `Expo.Po` struct
+  Works exactly like `parse_string/1`, but returns a `Expo.Translations` struct
   if there are no errors or raises a `Expo.Po.SyntaxError` error if there
   are.
 
@@ -134,7 +134,7 @@ defmodule Expo.Po do
   end
 
   @doc """
-  Parses the contents of a file into a `Expo.Po` struct.
+  Parses the contents of a file into a `Expo.Translations` struct.
 
   This function works similarly to `parse_string/1` except that it takes a file
   and parses the contents of that file. It can return:
@@ -168,7 +168,7 @@ defmodule Expo.Po do
   end
 
   @doc """
-  Parses the contents of a file into a `Expo.Po` struct, raising if there
+  Parses the contents of a file into a `Expo.Translations` struct, raising if there
   are any errors.
 
   Works like `parse_file/1`, except that it raises a `Expo.Po.SyntaxError`
