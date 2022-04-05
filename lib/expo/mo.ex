@@ -64,10 +64,12 @@ defmodule Expo.Mo do
   Parses a string into a `Expo.Translations` struct, raising an exception if there are
   any errors.
 
-  TODO!!!!
   Works exactly like `parse_binary/1`, but returns a `Expo.Translations` struct
-  if there are no errors or raises a `Expo.Mo` error if there
+  if there are no errors or raises a `Expo.Mo.InvalidFileError` error if there
   are.
+
+  If the version of the `.mo` file is not supported, a
+  `Expo.Mo.UnsupportedVersionError` is raised.
 
   ## Examples
 

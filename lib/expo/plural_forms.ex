@@ -5,6 +5,8 @@ defmodule Expo.PluralForms do
   https://www.gnu.org/software/gettext/manual/html_node/Plural-forms.html
   """
 
+  alias Expo.PluralForms.SyntaxError
+
   @type t :: {nplurals :: pos_integer(), plural :: plural()}
   @type plural ::
           :n
@@ -13,19 +15,49 @@ defmodule Expo.PluralForms do
           | {:if, plural(), plural(), plural()}
           | {:paren, plural()}
 
+  @type parse_error ::
+          {:error,
+           {:parse_error, message :: String.t(), line :: pos_integer(), offset :: pos_integer()}}
+
   @doc """
   Parse Plural Forms Header
 
   ### Examples
 
-      iex> Expo.PluralForms.parse("nplurals=2; plural=n != 1;")
+      iex> Expo.PluralForms.parse_string("nplurals=2; plural=n != 1;")
       {:ok, {2, {:!=, :n, 1}}}
   """
-  @spec parse(content :: String.t()) ::
+  @spec parse_string(content :: String.t()) ::
           {:ok, t()}
-          | {:error,
-             {:parse_error, message :: String.t(), line :: pos_integer(), offset :: pos_integer()}}
-  defdelegate parse(content), to: Expo.PluralForms.Parser
+          | parse_error()
+  defdelegate parse_string(content), to: Expo.PluralForms.Parser, as: :parse
+
+  @doc """
+  Parse Plural Forms Header
+
+  Works exactly like `parse_string/1`, but returns a plural forms tuple
+   if there are no errors or raises a `Expo.PluralForms.SyntaxError` error
+   if there are.
+
+  ### Examples
+
+      iex> Expo.PluralForms.parse_string!("nplurals=2; plural=n != 1;")
+      {2, {:!=, :n, 1}}
+
+      iex> Expo.PluralForms.parse_string!("invalid")
+      ** (Expo.PluralForms.SyntaxError) 1:0 expected string \"nplurals=\"
+
+  """
+  @spec parse_string!(content :: String.t()) :: t() | no_return()
+  def parse_string!(content) do
+    case parse_string(content) do
+      {:ok, plural_forms} ->
+        plural_forms
+
+      {:error, {:parse_error, reason, line, offset}} ->
+        raise SyntaxError, line: line, reason: reason, offset: offset
+    end
+  end
 
   @doc """
   Convert parsed plural form to string
@@ -38,7 +70,7 @@ defmodule Expo.PluralForms do
 
   ### Examples
 
-      iex> {:ok, {2, plurals}} = Expo.PluralForms.parse("nplurals=2; plural=n != 1;")
+      iex> {:ok, {2, plurals}} = Expo.PluralForms.parse_string("nplurals=2; plural=n != 1;")
       iex> Expo.PluralForms.index(plurals, 4)
       1
 

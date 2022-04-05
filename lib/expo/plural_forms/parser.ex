@@ -216,8 +216,7 @@ defmodule Expo.PluralForms.Parser do
 
   @spec parse(content :: String.t()) ::
           {:ok, PluralForms.t()}
-          | {:error,
-             {:parse_error, message :: String.t(), line :: pos_integer(), offset :: pos_integer()}}
+          | PluralForms.parse_error()
   def parse(content) do
     case plural_forms(content) do
       {:ok, [result], "", _context, _line, _offset} ->

@@ -10,15 +10,15 @@ defmodule Expo.PluralFormsTest do
 
   describe "parse/1" do
     test "Only one form" do
-      assert {:ok, {1, 0}} = PluralForms.parse("nplurals=1; plural=0;")
+      assert {:ok, {1, 0}} = PluralForms.parse_string("nplurals=1; plural=0;")
     end
 
     test "Two forms, singular used for one only" do
-      assert {:ok, {2, {:!=, :n, 1}}} = PluralForms.parse("nplurals=2; plural=n != 1;")
+      assert {:ok, {2, {:!=, :n, 1}}} = PluralForms.parse_string("nplurals=2; plural=n != 1;")
     end
 
     test "Two forms, singular used for zero and one" do
-      assert {:ok, {2, {:>, :n, 1}}} = PluralForms.parse("nplurals=2; plural=n>1;")
+      assert {:ok, {2, {:>, :n, 1}}} = PluralForms.parse_string("nplurals=2; plural=n>1;")
     end
 
     test "Three forms, special case for zero" do
@@ -47,7 +47,9 @@ defmodule Expo.PluralFormsTest do
                    2
                  }
                }}} =
-               PluralForms.parse("nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2;")
+               PluralForms.parse_string(
+                 "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2;"
+               )
     end
 
     test "Three forms, special case for numbers ending in 00 or [2-9][0-9]" do
@@ -74,7 +76,7 @@ defmodule Expo.PluralFormsTest do
                    2
                  }
                }}} =
-               PluralForms.parse("""
+               PluralForms.parse_string("""
                nplurals=3; \
                     plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < 20)) ? 1 : 2;
                """)
@@ -107,7 +109,7 @@ defmodule Expo.PluralFormsTest do
                    2
                  }
                }}} =
-               PluralForms.parse("""
+               PluralForms.parse_string("""
                nplurals=3; \
                   plural=n%10==1 && n%100!=11 ? 0 : \
                         n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2;
@@ -145,7 +147,7 @@ defmodule Expo.PluralFormsTest do
                    2
                  }
                }}} =
-               PluralForms.parse("""
+               PluralForms.parse_string("""
                nplurals=3; \
                      plural=n%10==1 && n%100!=11 ? 0 : \
                          n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;
@@ -171,7 +173,7 @@ defmodule Expo.PluralFormsTest do
                    2
                  }
                }}} =
-               PluralForms.parse("""
+               PluralForms.parse_string("""
                nplurals=3; \
                      plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;
                """)
@@ -204,7 +206,7 @@ defmodule Expo.PluralFormsTest do
                    2
                  }
                }}} =
-               PluralForms.parse("""
+               PluralForms.parse_string("""
                nplurals=3; \
                      plural=n==1 ? 0 : \
                            n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;
@@ -234,7 +236,7 @@ defmodule Expo.PluralFormsTest do
                    }
                  }
                }}} =
-               PluralForms.parse("""
+               PluralForms.parse_string("""
                nplurals=4; \
                      plural=n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3;
                """)
@@ -273,7 +275,7 @@ defmodule Expo.PluralFormsTest do
                    }
                  }
                }}} =
-               PluralForms.parse("""
+               PluralForms.parse_string("""
                nplurals=6; \
                      plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 \
                      : n%100>=11 ? 4 : 5;
@@ -282,7 +284,7 @@ defmodule Expo.PluralFormsTest do
 
     test "invalid expression" do
       assert {:error, {:parse_error, _message, 1, 19}} =
-               PluralForms.parse("nplurals=6; plural=m % 20 == 1;")
+               PluralForms.parse_string("nplurals=6; plural=m % 20 == 1;")
     end
   end
 
@@ -341,7 +343,7 @@ defmodule Expo.PluralFormsTest do
 
   test "arabic" do
     assert {:ok, {6, plurals}} =
-             PluralForms.parse("""
+             PluralForms.parse_string("""
              nplurals=6; \
                    plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 \
                    : n%100>=11 ? 4 : 5;
@@ -502,7 +504,7 @@ defmodule Expo.PluralFormsTest do
   describe "compose/1" do
     test "converts plural form back to string" do
       {:ok, plural_forms} =
-        PluralForms.parse(
+        PluralForms.parse_string(
           "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);"
         )
 
@@ -516,7 +518,7 @@ defmodule Expo.PluralFormsTest do
                  unquote(Macro.escape(plural_form))
                  |> PluralForms.compose()
                  |> IO.iodata_to_binary()
-                 |> PluralForms.parse()
+                 |> PluralForms.parse_string()
       end
     end
   end
