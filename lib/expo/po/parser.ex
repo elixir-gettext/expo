@@ -66,7 +66,6 @@ defmodule Expo.Po.Parser do
   comment =
     string("#")
     |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
-    |> concat(optional(whitespace_no_nl))
     |> ignore()
     |> concat(comment_content)
     |> unwrap_and_tag(:comment)
@@ -75,7 +74,6 @@ defmodule Expo.Po.Parser do
   extracted_comment =
     string("#.")
     |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
-    |> concat(optional(whitespace_no_nl))
     |> ignore()
     |> concat(comment_content)
     |> unwrap_and_tag(:extracted_comment)

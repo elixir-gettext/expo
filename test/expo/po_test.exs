@@ -76,7 +76,7 @@ defmodule Expo.PoTest do
           %Translation.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
-            comments: ["comment", "another comment"]
+            comments: [" comment", " another comment"]
           }
         ]
       }
@@ -96,7 +96,7 @@ defmodule Expo.PoTest do
           %Translation.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
-            extracted_comments: ["some comment", "another comment"]
+            extracted_comments: [" some comment", " another comment"]
           }
         ]
       }
@@ -169,7 +169,7 @@ defmodule Expo.PoTest do
         translations: [
           %Translation.Singular{
             flags: [["bar", "baz", "foo"]],
-            comments: ["other comment"],
+            comments: [" other comment"],
             msgid: ["foo"],
             msgstr: ["bar"]
           }
@@ -246,13 +246,13 @@ defmodule Expo.PoTest do
           %Translation.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
-            comments: ["comment", "another comment"]
+            comments: [" comment", " another comment"]
           },
           %Translation.Plural{
             msgid: ["a foo, %{name}"],
             msgid_plural: ["%{count} foos, %{name}"],
             msgstr: %{0 => ["a bar, %{name}"], 1 => ["%{count} bars, %{name}"]},
-            comments: ["comment 1", "comment 2"]
+            comments: [" comment 1", " comment 2"]
           }
         ],
         headers: [
@@ -428,7 +428,7 @@ defmodule Expo.PoTest do
                   %Translation.Singular{
                     msgid: ["hello"],
                     msgstr: ["ciao"],
-                    comments: ["comment"]
+                    comments: [" comment"]
                   }
                 ]
               }} =
@@ -505,8 +505,8 @@ defmodule Expo.PoTest do
                   %Translation.Singular{
                     msgid: ["foo"],
                     msgstr: ["bar"],
-                    comments: ["This is a translation", "Ah, another comment!"],
-                    extracted_comments: ["An extracted comment"],
+                    comments: [" This is a translation", " Ah, another comment!"],
+                    extracted_comments: [" An extracted comment"],
                     references: [[{"lib/foo.ex", 32}]]
                   }
                 ]
@@ -526,7 +526,7 @@ defmodule Expo.PoTest do
               %Translations{
                 translations: [
                   %Translation.Singular{msgid: ["a"], msgstr: ["b"]},
-                  %Translation.Singular{msgid: ["c"], msgstr: ["d"], comments: ["Comment"]}
+                  %Translation.Singular{msgid: ["c"], msgstr: ["d"], comments: [" Comment"]}
                 ]
               }} =
                Po.parse_string("""
@@ -633,8 +633,8 @@ defmodule Expo.PoTest do
 
       # All the reference comments are removed.
       assert translation.comments == [
-               "Not a reference comment",
-               ": Not a reference comment either"
+               " Not a reference comment",
+               " : Not a reference comment either"
              ]
     end
 
@@ -649,13 +649,13 @@ defmodule Expo.PoTest do
                """)
 
       assert translation.extracted_comments == [
-               "Extracted comment",
+               " Extracted comment",
                "Another extracted comment"
              ]
 
       # All the reference comments are removed.
       assert translation.comments == [
-               "Not an extracted comment"
+               " Not an extracted comment"
              ]
     end
 
@@ -674,7 +674,7 @@ defmodule Expo.PoTest do
                ["flag", "d-flag ", "e-flag"]
              ]
 
-      assert translation.comments == ["comment"]
+      assert translation.comments == [" comment"]
     end
 
     test "headers are parsed when present" do
@@ -762,7 +762,7 @@ defmodule Expo.PoTest do
                msgstr "Language: en_US\\n"
                """)
 
-      assert ["Top of the file", "# Top of the file with two hashes"] = top_comments
+      assert [" Top of the file", "# Top of the file with two hashes"] = top_comments
     end
 
     test "msgctxt is parsed correctly for translations" do
