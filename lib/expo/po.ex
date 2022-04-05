@@ -10,9 +10,7 @@ defmodule Expo.Po do
 
   @type parse_options :: [{:file, Path.t()}]
 
-  @type parse_error ::
-          {:error,
-           {:parse_error, message :: String.t(), context :: String.t(), line :: pos_integer()}}
+  @type parse_error :: {:error, {:parse_error, message :: String.t(), line :: pos_integer()}}
   @type duplicate_messages_error ::
           {:error,
            {:duplicate_messages,
@@ -75,7 +73,7 @@ defmodule Expo.Po do
       []
 
       iex> Expo.Po.parse_string "foo"
-      {:error, {:parse_error, "expected msgid followed by strings while processing message", "foo", 1}}
+      {:error, {:parse_error, "unknown keyword 'foo'", 1}}
 
   """
   @spec parse_string(content :: binary(), opts :: parse_options()) ::
@@ -109,7 +107,7 @@ defmodule Expo.Po do
       []
 
       iex> Expo.Po.parse_string!("msgid")
-      ** (Expo.Po.SyntaxError) 1: expected whitespace while processing msgid followed by strings inside message
+      ** (Expo.Po.SyntaxError) 1: no space after 'msgid'
 
       iex> Expo.Po.parse_string!(\"""
       ...> msgid "test"
@@ -128,8 +126,8 @@ defmodule Expo.Po do
       {:ok, parsed} ->
         parsed
 
-      {:error, {:parse_error, reason, context, line}} ->
-        options = [line: line, reason: reason, context: context]
+      {:error, {:parse_error, reason, line}} ->
+        options = [line: line, reason: reason]
 
         options =
           case opts[:file] do
@@ -205,8 +203,8 @@ defmodule Expo.Po do
       {:ok, parsed} ->
         parsed
 
-      {:error, {:parse_error, reason, context, line}} ->
-        raise SyntaxError, line: line, reason: reason, file: path, context: context
+      {:error, {:parse_error, reason, line}} ->
+        raise SyntaxError, line: line, reason: reason, file: path
 
       {:error, {:duplicate_messages, duplicates}} ->
         raise DuplicateMessagesError,

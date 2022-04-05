@@ -1,390 +1,211 @@
-# credo:disable-for-this-file Credo.Check.Refactor.PipeChainStart
 defmodule Expo.Po.Parser do
   @moduledoc false
-
-  import NimbleParsec
 
   alias Expo.Message
   alias Expo.Messages
   alias Expo.Po
+  alias Expo.Po.Tokenizer
   alias Expo.Util
 
   @bom <<0xEF, 0xBB, 0xBF>>
 
-  newline = ascii_char([?\n]) |> label("newline") |> ignore()
-
-  optional_whitespace =
-    ascii_char([?\s, ?\n, ?\r, ?\t])
-    |> times(min: 0)
-    |> label("whitespace")
-    |> ignore()
-
-  optional_whitespace_no_nl =
-    ascii_char([?\s, ?\r, ?\t])
-    |> times(min: 0)
-    |> label("whitespace")
-    |> ignore()
-
-  whitespace_no_nl =
-    ascii_char([?\s, ?\r, ?\t])
-    |> times(min: 1)
-    |> label("whitespace")
-    |> ignore()
-
-  double_quote = ascii_char([?"]) |> label("double quote") |> ignore()
-
-  escaped_char =
-    choice([
-      replace(string(~S(\n)), ?\n),
-      replace(string(~S(\t)), ?\t),
-      replace(string(~S(\r)), ?\r),
-      replace(string(~S(\")), ?\"),
-      replace(string(~S(\\)), ?\\)
-    ])
-
-  string =
-    double_quote
-    |> repeat(choice([escaped_char, utf8_char(not: ?", not: ?\n)]))
-    |> label(lookahead_not(newline), "newline inside string")
-    |> concat(double_quote)
-    |> reduce(:to_string)
-
-  string_line =
-    optional_whitespace_no_nl
-    |> concat(string)
-    |> concat(optional_whitespace_no_nl)
-    |> repeat()
-
-  strings =
-    string_line
-    |> repeat(concat(newline, string_line))
-    |> label("at least one string")
-
-  [
-    msgctxt,
-    obsolete_msgctxt,
-    msgid,
-    obsolete_msgid,
-    previous_msgid,
-    obsolete_previous_msgid,
-    msgid_plural,
-    obsolete_msgid_plural,
-    previous_msgid_plural,
-    obsolete_previous_msgid_plural,
-    msgstr,
-    obsolete_msgstr
-  ] =
-    for {tag, {label, keyword, prepend, strings}} <- [
-          msgctxt: {"msgctxt", "msgctxt", empty(), strings},
-          msgctxt: {"obsolete msgctxt", "msgctxt", string("#~"), strings},
-          msgid: {"msgid", "msgid", empty(), strings},
-          msgid: {"obsolete msgid", "msgid", string("#~"), strings},
-          msgid: {"previous msgid", "msgid", string("#|"), strings},
-          msgid: {"obsolete & previous msgid", "msgid", string("#~|"), strings},
-          msgid_plural: {"msgid_plural", "msgid_plural", empty(), strings},
-          msgid_plural: {"obsolete msgid_plural", "msgid_plural", string("#~"), strings},
-          msgid_plural: {"previous msgid_plural", "msgid_plural", string("#|"), strings},
-          msgid_plural:
-            {"obsolete & previous msgid_plural", "msgid_plural", string("#~|"), strings},
-          msgstr: {"msgstr", "msgstr", empty(), strings},
-          msgstr: {"obsolete msgstr", "msgstr", string("#~"), strings}
-        ] do
-      prepend
-      |> concat(optional(whitespace_no_nl))
-      |> concat(string(keyword))
-      |> concat(whitespace_no_nl)
-      |> ignore()
-      |> concat(strings)
-      |> tag(tag)
-      |> label("#{label} followed by strings")
-    end
-
-  comment_content =
-    repeat(utf8_char(not: ?\n))
-    |> concat(newline)
-    |> reduce(:to_string)
-
-  [comment, extracted_comment] =
-    for {tag, start} <- [
-          comment: lookahead_not(string("#"), utf8_char([?., ?:, ?,, ?|, ?~])),
-          extracted_comment: string("#.")
-        ] do
-      start
-      |> ignore()
-      |> concat(comment_content)
-      |> unwrap_and_tag(tag)
-      |> label(Atom.to_string(tag))
-    end
-
-  flag_content =
-    optional(whitespace_no_nl)
-    |> concat(utf8_char(not: ?\n, not: ?,) |> repeat() |> reduce(:to_string))
-    |> concat(optional(whitespace_no_nl))
-
-  flag =
-    ignore(string("#"))
-    |> times(
-      string(",")
-      |> ignore()
-      |> concat(flag_content),
-      min: 1
-    )
-    |> concat(newline)
-    |> reduce(:remove_empty_flags)
-    |> unwrap_and_tag(:flag)
-    |> label("flag")
-
-  reference_entry_line =
-    string(":")
-    |> ignore()
-    |> concat(unwrap_and_tag(integer(min: 1), :line))
-
-  reference_entry_file =
-    choice([
-      utf8_char(not: ?\n, not: ?,, not: ?:),
-      lookahead_not(string(":"), integer(min: 1))
-    ])
-    |> times(min: 1)
-    |> reduce(:to_string)
-    |> unwrap_and_tag(:file)
-
-  reference_entry =
-    optional(whitespace_no_nl)
-    |> concat(reference_entry_file)
-    |> concat(optional(reference_entry_line))
-    |> concat(ignore(choice([string(","), string(" "), lookahead(newline)])))
-    |> reduce(:make_reference)
-
-  reference =
-    string("#:")
-    |> ignore()
-    |> times(reference_entry, min: 1)
-    |> concat(newline)
-    |> tag(:reference)
-    |> label("reference")
-
-  message_meta =
-    choice([
-      comment,
-      extracted_comment,
-      reference,
-      flag,
-      tag(tag(concat(previous_msgid, previous_msgid_plural), Message.Plural), :previous_messages),
-      tag(tag(previous_msgid, Message.Singular), :previous_messages),
-      tag(
-        tag(concat(obsolete_previous_msgid, obsolete_previous_msgid_plural), Message.Plural),
-        :previous_messages
-      ),
-      tag(tag(obsolete_previous_msgid, Message.Singular), :previous_messages)
-    ])
-
-  plural_form =
-    ignore(string("["))
-    |> integer(min: 1)
-    |> ignore(string("]"))
-    |> label("plural form (like [0])")
-
-  [msgstr_with_plural_form, obsolete_msgstr_with_plural_form] =
-    for prefix <- [empty(), string("#~")] do
-      prefix
-      |> concat(optional(whitespace_no_nl))
-      |> concat(ignore(string("msgstr")))
-      |> concat(plural_form)
-      |> concat(whitespace_no_nl)
-      |> concat(strings)
-      |> reduce(:make_plural_form)
-      |> unwrap_and_tag(:msgstr)
-    end
-
-  message_base =
-    repeat(message_meta)
-    |> optional(msgctxt)
-    |> post_traverse(:attach_line_number)
-    |> concat(msgid)
-
-  obsolete_message_base =
-    repeat(message_meta)
-    |> optional(obsolete_msgctxt)
-    |> post_traverse(:attach_line_number)
-    |> concat(obsolete_msgid)
-
-  singular_message =
-    message_base
-    |> concat(msgstr)
-    |> tag(Message.Singular)
-    |> reduce(:make_message)
-
-  obsolete_singular_message =
-    obsolete_message_base
-    |> concat(obsolete_msgstr)
-    |> tag(Message.Singular)
-    |> reduce(:make_message)
-
-  plural_message =
-    message_base
-    |> concat(msgid_plural)
-    |> times(msgstr_with_plural_form, min: 1)
-    |> tag(Message.Plural)
-    |> reduce(:make_message)
-
-  obsolete_plural_message =
-    obsolete_message_base
-    |> concat(obsolete_msgid_plural)
-    |> times(obsolete_msgstr_with_plural_form, min: 1)
-    |> tag(Message.Plural)
-    |> reduce(:make_message)
-
-  message =
-    [obsolete_singular_message, obsolete_plural_message, singular_message, plural_message]
-    |> choice()
-    |> label("message")
-
-  po_entry =
-    optional_whitespace
-    |> concat(message)
-    |> concat(optional_whitespace)
-    |> post_traverse(:register_duplicates)
-
-  defparsecp :po_file,
-             times(po_entry, min: 1)
-             |> post_traverse(:make_messages)
-             |> unwrap_and_tag(:messages)
-             |> eos()
-
-  @spec parse(content :: String.t(), opts :: Po.parse_options()) ::
+  @spec parse(content :: binary(), opts :: Po.parse_options()) ::
           {:ok, Messages.t()}
-          | {:error,
-             {:parse_error, message :: String.t(), offending_content :: String.t(),
-              line :: pos_integer()}
-             | {:duplicate_messages,
-                [{message :: String.t(), new_line :: pos_integer(), old_line :: pos_integer()}]}}
+          | Po.parse_error()
+          | Po.duplicate_messages_error()
   def parse(content, opts) do
     content = prune_bom(content, Keyword.get(opts, :file, "nofile"))
 
-    case po_file(content, context: %{detected_duplicates: [], file: Keyword.get(opts, :file)}) do
-      {:ok, [{:messages, messages}], "", %{detected_duplicates: []}, _line, _offset} ->
-        {:ok, messages}
+    with {:ok, tokens} <- tokenize(content),
+         {:ok, top_comments, headers, messages} <- parse_tokens(tokens) do
+      po = %Messages{
+        headers: headers,
+        messages: messages,
+        top_comments: top_comments,
+        file: Keyword.get(opts, :file)
+      }
 
-      {:ok, _result, "", %{detected_duplicates: [_head | _rest] = detected_duplicates}, _line,
-       _offset} ->
-        {:error,
-         {:duplicate_messages,
-          detected_duplicates
-          |> Enum.map(fn
-            {message, new_line, old_line} ->
-              {build_duplicated_error_message(message, new_line), new_line, old_line}
-          end)
-          |> Enum.reverse()}}
-
-      {:error, message, offending_content, _context, {line, _offset_line}, _offset} ->
-        {:error, {:parse_error, message, offending_content, line}}
+      {:ok, po}
     end
   end
 
-  defp make_plural_form([plural_form | strings]), do: {plural_form, strings}
-
-  defp make_reference(tokens) do
-    case Keyword.fetch(tokens, :line) do
-      {:ok, line} -> {Keyword.fetch!(tokens, :file), line}
-      :error -> Keyword.fetch!(tokens, :file)
+  defp tokenize(content) do
+    case Tokenizer.tokenize(content) do
+      {:error, line, message} -> {:error, {:parse_error, message, line}}
+      {:ok, tokens} -> {:ok, tokens}
     end
   end
 
-  defp make_messages(rest, messages, context, _line, _offset) do
-    {headers, top_comments, messages} = messages |> Enum.reverse() |> Util.extract_meta_headers()
+  defp parse_tokens(tokens) when is_list(tokens) do
+    case :expo_po_parser.parse(tokens) do
+      {:ok, po_entries} -> parse_yecc_result(po_entries)
+      {:error, _reason} = error -> parse_error(error)
+    end
+  end
 
-    tokens = %Messages{
-      messages: messages,
-      headers: headers,
-      top_comments: top_comments,
-      file: context[:file]
+  defp parse_yecc_result(po_entries) do
+    {root_comments, messages} = Enum.split_with(po_entries, &match?({:comments, _comments}, &1))
+
+    root_comments = Enum.flat_map(root_comments, &elem(&1, 1))
+
+    messages_with_source_line =
+      Enum.map(messages, fn {_type, %{po_source_line: po_source_line}} = tokens ->
+        {po_source_line, to_struct(tokens)}
+      end)
+
+    messages = Enum.map(messages_with_source_line, &elem(&1, 1))
+
+    with :ok <- check_for_duplicates(messages_with_source_line) do
+      {headers, top_comments, messages} = Util.extract_meta_headers(messages)
+      {:ok, root_comments ++ top_comments, headers, messages}
+    end
+  end
+
+  defp to_struct({:message, message}) do
+    Message.Singular
+    |> struct(message)
+    |> extract_comments()
+    |> extract_references()
+    |> extract_extracted_comments()
+    |> extract_flags()
+  end
+
+  defp to_struct({:plural_message, message}) do
+    Message.Plural
+    |> struct(message)
+    |> extract_comments()
+    |> extract_references()
+    |> extract_extracted_comments()
+    |> extract_flags()
+  end
+
+  defp parse_error({:error, {line, _module, reason}}) do
+    {:error, {:parse_error, parse_error_reason(reason), line}}
+  end
+
+  defp extract_comments(%_struct{comments: comments} = message) do
+    %{message | comments: Enum.map(comments, &strip_leading(&1, "#"))}
+  end
+
+  defp extract_references(%_struct{comments: comments} = message) do
+    {reference_comments, other_comments} = Enum.split_with(comments, &match?(":" <> _rest, &1))
+
+    references =
+      reference_comments
+      |> Enum.reject(fn ":" <> comm -> String.trim(comm) == "" end)
+      |> Enum.map(&parse_references/1)
+
+    %{message | references: references, comments: other_comments}
+  end
+
+  defp parse_references(":" <> comment) do
+    comment
+    # Reversing String so that regex lookahead works
+    # (negative does not support flexible size lookups)
+    |> String.reverse()
+    |> String.split(~r/(,|\s(?=\d+:))/, trim: true)
+    |> Enum.reverse()
+    |> Enum.map(fn reference ->
+      reference = reference |> String.reverse() |> String.trim()
+
+      case Regex.scan(~r/^(.+):(\d+)$/, reference) do
+        [] -> reference
+        [[_file_and_line, file, line]] -> {file, String.to_integer(line)}
+      end
+    end)
+  end
+
+  defp extract_extracted_comments(%_struct{comments: comments} = message) do
+    {extracted_comments, other_comments} = Enum.split_with(comments, &match?("." <> _rest, &1))
+
+    %{
+      message
+      | extracted_comments: Enum.map(extracted_comments, &strip_leading(&1, ".")),
+        comments: other_comments
     }
-
-    {rest, [tokens], context}
   end
 
-  defp make_message(tokens) do
-    {[{type, type_attrs}], attrs} = Keyword.split(tokens, [Message.Singular, Message.Plural])
-
-    attrs =
-      [attrs, type_attrs]
-      |> Enum.concat()
-      |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-      |> Enum.map(&make_message_attribute(type, elem(&1, 0), elem(&1, 1)))
-
-    struct!(type, attrs)
+  defp extract_flags(%_struct{comments: comments} = message) do
+    {flag_comments, other_comments} = Enum.split_with(comments, &match?("," <> _rest, &1))
+    %{message | flags: parse_flags(flag_comments), comments: other_comments}
   end
 
-  defp make_message_attribute(type, key, value)
+  defp parse_flags(flag_comments) do
+    Enum.map(flag_comments, fn "," <> content ->
+      content |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+    end)
+  end
 
-  defp make_message_attribute(_type, :msgid, [value]), do: {:msgid, value}
-  defp make_message_attribute(_type, :msgctxt, [value]), do: {:msgctxt, value}
+  defp check_for_duplicates(messages, existing \\ %{}, duplicates \\ [])
 
-  defp make_message_attribute(Message.Plural, :msgid_plural, [value]),
-    do: {:msgid_plural, value}
-
-  defp make_message_attribute(Message.Singular, :msgstr, [value]), do: {:msgstr, value}
-
-  defp make_message_attribute(Message.Plural, :msgstr, value),
-    do: {:msgstr, Map.new(value, fn {key, values} -> {key, values} end)}
-
-  defp make_message_attribute(_type, :comment, value), do: {:comments, value}
-
-  defp make_message_attribute(_type, :extracted_comment, value),
-    do: {:extracted_comments, value}
-
-  defp make_message_attribute(_type, :flag, value), do: {:flags, value}
-
-  defp make_message_attribute(_type, :reference, value), do: {:references, value}
-
-  defp make_message_attribute(_type, :previous_messages, value),
-    do: {:previous_messages, Enum.map(value, &make_message/1)}
-
-  defp remove_empty_flags(tokens), do: Enum.reject(tokens, &match?("", &1))
-
-  defp attach_line_number(rest, args, context, {line, _line_offset}, _offset),
-    do: {rest, args, Map.put(context, :entry_line_number, line)}
-
-  defp register_duplicates(
-         rest,
-         [%{} = message] = args,
-         %{entry_line_number: new_line} = context,
-         _line,
-         _offset
+  defp check_for_duplicates(
+         [{source_line, message} | messages],
+         existing,
+         duplicates
        ) do
     key = Message.key(message)
 
-    context =
-      case context[:duplicate_key_line_mapping][key] do
-        nil ->
-          context
+    duplicates =
+      case Map.fetch(existing, key) do
+        {:ok, old_line} ->
+          [
+            build_duplicated_error(message, old_line, source_line)
+            | duplicates
+          ]
 
-        old_line ->
-          Map.update!(context, :detected_duplicates, &[{message, new_line, old_line} | &1])
+        :error ->
+          duplicates
       end
 
-    context =
-      Map.update(
-        context,
-        :duplicate_key_line_mapping,
-        %{key => new_line},
-        &Map.put_new(&1, key, new_line)
-      )
-
-    {rest, args, context}
+    check_for_duplicates(messages, Map.put_new(existing, key, source_line), duplicates)
   end
 
-  defp build_duplicated_error_message(%Message.Singular{} = message, new_line) do
-    id = IO.iodata_to_binary(message.msgid)
+  defp check_for_duplicates([], _existing, []), do: :ok
 
-    "found duplicate on line #{new_line} for msgid: '#{id}'"
+  defp check_for_duplicates([], _existing, duplicates),
+    do: {:error, {:duplicate_messages, Enum.reverse(duplicates)}}
+
+  defp build_duplicated_error(%Message.Singular{} = t, old_line, new_line) do
+    id = IO.iodata_to_binary(t.msgid)
+    {"found duplicate on line #{new_line} for msgid: '#{id}'", new_line, old_line}
   end
 
-  defp build_duplicated_error_message(%Message.Plural{} = message, new_line) do
-    id = IO.iodata_to_binary(message.msgid)
-    idp = IO.iodata_to_binary(message.msgid_plural)
-    "found duplicate on line #{new_line} for msgid: '#{id}' and msgid_plural: '#{idp}'"
+  defp build_duplicated_error(%Message.Plural{} = t, old_line, new_line) do
+    id = IO.iodata_to_binary(t.msgid)
+    idp = IO.iodata_to_binary(t.msgid_plural)
+    msg = "found duplicate on line #{new_line} for msgid: '#{id}' and msgid_plural: '#{idp}'"
+    {msg, new_line, old_line}
   end
+
+  defp strip_leading(subject, to_strip) do
+    true = String.starts_with?(subject, to_strip)
+
+    String.slice(
+      subject,
+      String.length(to_strip),
+      String.length(subject) - String.length(to_strip)
+    )
+  end
+
+  # We need to explicitly parse the error reason that yecc spits out because a
+  # `{type, line, token}` token is printed as the Erlang term in the error (by
+  # yecc). So, for example, if a token has a binary value then yecc will return
+  # something like:
+  #
+  #     syntax error before: <<"my token">>
+  #
+  # which is not what we want, as we want the term to be printed as an Elixir
+  # term. While this is ugly, it's necessary (as yecc is not very extensible)
+  # and is what Elixir itself does
+  # (https://github.com/elixir-lang/elixir/blob/b80651/lib/elixir/src/elixir_errors.erl#L51-L103).
+  defp parse_error_reason([error, token]) do
+    IO.chardata_to_string(parse_error_reason(error, to_string(token)))
+  end
+
+  defp parse_error_reason('syntax error before: ' = prefix, "<<" <> rest),
+    do: [prefix, binary_part(rest, 0, byte_size(rest) - 2)]
+
+  defp parse_error_reason(error, token), do: [error, token]
 
   # This function removes a BOM byte sequence from the start of the given string
   # if this sequence is present. A BOM byte sequence
