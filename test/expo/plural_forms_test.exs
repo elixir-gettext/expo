@@ -522,4 +522,43 @@ defmodule Expo.PluralFormsTest do
       end
     end
   end
+
+  describe "compile_index/1" do
+    test "simple" do
+      assert {:ok, {2, plurals}} = PluralForms.parse_string("nplurals=2; plural=n>1;")
+
+      quoted = PluralForms.compile_index(plurals)
+
+      assert {1, _bindings} = Code.eval_quoted(quoted, n: 7)
+      assert {0, _bindings} = Code.eval_quoted(quoted, n: 0)
+    end
+
+    test "one form does not error" do
+      assert {:ok, {2, plurals}} = PluralForms.parse_string("nplurals=2; plural=0;")
+
+      quoted = PluralForms.compile_index(plurals)
+
+      assert {0, _bindings} = Code.eval_quoted(quoted, n: 7)
+    end
+
+    test "arabic" do
+      assert {:ok, {6, plurals}} =
+               PluralForms.parse_string("""
+               nplurals=6; \
+                     plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 \
+                     : n%100>=11 ? 4 : 5;
+               """)
+
+      quoted = PluralForms.compile_index(plurals)
+
+      assert {5, _bindings} = Code.eval_quoted(quoted, n: 3000)
+    end
+
+    test "compiled" do
+      assert index_simple(2) == 1
+    end
+  end
+
+  {:ok, {2, plurals}} = PluralForms.parse_string("nplurals=2; plural=n>1;")
+  defp index_simple(n), do: unquote(PluralForms.compile_index(plurals))
 end

@@ -79,6 +79,24 @@ defmodule Expo.PluralForms do
   defdelegate index(plural_form, n), to: Expo.PluralForms.Evaluator
 
   @doc """
+  Compile plural forms so that it returns the index
+
+  ### Bindings
+
+  * `n` - the number to get the index for
+
+  ### Usage
+
+      defmodule MyModule do
+        {:ok, {2, plurals}} = Expo.PluralForms.parse_string("nplurals=2; plural=n>1;")
+        def index(n), do: unquote(Expo.PluralForms.compile_index(plurals))
+      end
+
+  """
+  @spec compile_index(plural_forms :: plural()) :: Macro.t()
+  defdelegate compile_index(plural_forms), to: Expo.PluralForms.Evaluator
+
+  @doc """
   Get Plural Forms for language
 
   ### Examples
