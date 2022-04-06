@@ -77,6 +77,39 @@ defmodule Expo.MoTest do
       assert {:ok, %Translations{translations: []}} =
                translations |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse_binary()
     end
+
+    test "does not encode fuzzy translations except when requested" do
+      translations = %Translations{
+        translations: [
+          %Translation.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"], flags: [["fuzzy"]]}
+        ]
+      }
+
+      assert {:ok, %Translations{translations: []}} =
+               translations |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse_binary()
+
+      assert {:ok, %Translations{translations: [_fuzzy]}} =
+               translations
+               |> Mo.compose(use_fuzzy: true)
+               |> IO.iodata_to_binary()
+               |> Mo.parse_binary()
+    end
+
+    test "does send statistics when requested" do
+      translations = %Translations{
+        translations: [
+          %Translation.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"]}
+        ]
+      }
+
+      Mo.compose(translations, statistics: false)
+
+      refute_receive {Mo, :translation_count, 1}
+
+      Mo.compose(translations, statistics: true)
+
+      assert_receive {Mo, :translation_count, 1}
+    end
   end
 
   describe "parse_binary/1" do

@@ -1,11 +1,12 @@
 defmodule Expo.Mo.Composer do
   @moduledoc false
 
+  alias Expo.Mo
   alias Expo.Translation
   alias Expo.Translations
   alias Expo.Util
 
-  @spec compose(translations :: Translations.t(), opts :: Expo.Mo.compose_opts()) :: iodata()
+  @spec compose(translations :: Translations.t(), opts :: Mo.compose_opts()) :: iodata()
   def compose(translations, opts \\ []) do
     translations =
       Util.inject_meta_headers(
@@ -16,6 +17,22 @@ defmodule Expo.Mo.Composer do
 
     endianness = Keyword.get(opts, :endianness, :little)
     translations = Enum.reject(translations, & &1.obsolete)
+
+    translations =
+      if Keyword.get(opts, :use_fuzzy, false) do
+        translations
+      else
+        Enum.reject(translations, fn %_struct{flags: flags} ->
+          flags
+          |> List.flatten()
+          |> Enum.member?("fuzzy")
+        end)
+      end
+
+    if Keyword.get(opts, :statistics, false) do
+      send(self(), {Mo, :translation_count, length(translations)})
+    end
+
     number_of_translations = length(translations)
     header_length = 28
     offset_of_table_with_original_strings = header_length
