@@ -8,7 +8,11 @@ defmodule Expo.Mo do
   alias Expo.Mo.UnsupportedVersionError
   alias Expo.Translations
 
-  @type compose_opts :: [{:endianness, :little | :big}]
+  @type compose_opts :: [
+          {:endianness, :little | :big},
+          {:use_fuzzy, boolean()},
+          {:statistics, boolean()}
+        ]
 
   @type invalid_file_error :: {:error, :invalid_file}
   @type unsupported_version_error ::

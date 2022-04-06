@@ -1,6 +1,7 @@
 msgid "hello"
 msgstr "ciao"
 
+#, fuzzy
 msgid "how are you," " friend?"
 msgstr "come stai,"
   " amico?"

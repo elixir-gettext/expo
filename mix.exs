@@ -18,7 +18,7 @@ defmodule Expo.MixProject do
       test_coverage: [tool: ExCoveralls],
       description: description(),
       dialyzer:
-        [list_unused_filters: true] ++
+        [list_unused_filters: true, plt_add_apps: [:mix]] ++
           if (System.get_env("DIALYZER_PLT_PRIV") || "false") in ["1", "true"] do
             [plt_file: {:no_warn, "priv/plts/dialyzer.plt"}]
           else
