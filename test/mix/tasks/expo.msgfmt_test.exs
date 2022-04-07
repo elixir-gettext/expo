@@ -15,22 +15,18 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
     {:ok, temp_file: temp_file}
   end
 
-  # TODO: Fix
-  # ** (ArgumentError) argument error
-  # code: capture_io(:standard_io, fn ->
-  # stacktrace:
-  #   (stdlib 3.17.1) io.erl:99: :io.put_chars(:standard_io, <<222, 18, 4, ...>>)
-  #   (expo 0.1.0-beta.2) lib/mix/tasks/expo.msgmft.ex:63: Msgfmt.run/1
-  # test "exports mo to console" do
-  #   po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+  test "exports mo to console" do
+    po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
-  #   out =
-  #     capture_io(:standard_io, fn ->
-  #       Msgfmt.run([po_path])
-  #     end)
+    # Latin1 Encoding is needed so that the binary is untouched
+    # and does not acutally mean latin1.
+    out =
+      capture_io([encoding: :latin1], fn ->
+        Msgfmt.run([po_path])
+      end)
 
-  #   assert {:ok, _parsed} = Mo.parse_binary(out)
-  # end
+    assert {:ok, _parsed} = Mo.parse_binary(out)
+  end
 
   test "exports mo to file", %{temp_file: temp_file} do
     po_path = Application.app_dir(:expo, "priv/test/po/valid.po")

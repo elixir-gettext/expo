@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Expo.Msgfmt do
     output = Mo.compose(translations, mo_compose_opts)
 
     case output_file do
-      nil -> IO.write(:standard_io, IO.iodata_to_binary(output))
+      nil -> IO.binwrite(:standard_io, IO.iodata_to_binary(output))
       file -> File.write!(file, output)
     end
 
