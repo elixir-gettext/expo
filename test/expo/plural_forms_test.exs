@@ -4,7 +4,6 @@ defmodule Expo.PluralFormsTest do
   use ExUnit.Case, async: true
 
   alias Expo.PluralForms
-  alias Expo.PluralForms.Known
 
   doctest PluralForms
 
@@ -512,8 +511,10 @@ defmodule Expo.PluralFormsTest do
                plural_forms |> PluralForms.compose() |> IO.iodata_to_binary()
     end
 
-    for {language, plural_form} <- Known.known_plural_forms() do
-      test "repeated parse / compose yields same result for #{language}" do
+    for locale <- PluralForms.known_locales() do
+      {:ok, plural_form} = PluralForms.plural_form(locale)
+
+      test "repeated parse / compose yields same result for #{locale}" do
         assert {:ok, unquote(Macro.escape(plural_form))} ==
                  unquote(Macro.escape(plural_form))
                  |> PluralForms.compose()
@@ -557,6 +558,10 @@ defmodule Expo.PluralFormsTest do
     test "compiled" do
       assert index_simple(2) == 1
     end
+  end
+
+  describe "known_locales/0" do
+    assert "en" in Expo.PluralForms.known_locales()
   end
 
   {:ok, {2, plurals}} = PluralForms.parse_string("nplurals=2; plural=n>1;")

@@ -109,4 +109,19 @@ defmodule Expo.PluralForms do
   """
   @spec plural_form(iso_language_tag :: String.t()) :: {:ok, t()} | :error
   defdelegate plural_form(iso_language_tag), to: Expo.PluralForms.Known
+
+  @doc """
+  Get known locales where plural form information is available
+
+  ### Examples
+
+      iex> "de" in Expo.PluralForms.known_locales()
+      true
+
+      iex> "invalid" in Expo.PluralForms.known_locales()
+      false
+
+  """
+  @spec known_locales :: [String.t()]
+  defdelegate known_locales, to: Expo.PluralForms.Known
 end
