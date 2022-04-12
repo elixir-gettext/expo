@@ -4,7 +4,7 @@ defmodule Expo.MixProject do
 
   use Mix.Project
 
-  @version "0.1.0-beta.3"
+  @version "0.1.0-beta.4"
   @source_url "https://github.com/elixir-gettext/expo"
 
   def project do
