@@ -870,9 +870,23 @@ defmodule Expo.PoTest do
       assert translation2.msgid_plural == ["my_msgid_plural"]
       assert translation2.msgstr[0] == ["my_msgstr"]
     end
+
+    test "populates the :file field with the path of the parsed file if option is provided" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+
+      assert {:ok, %Translations{file: ^fixture_path}} =
+               Po.parse_string(File.read!(fixture_path), file: fixture_path)
+    end
   end
 
   describe "parse_string!/1" do
+    test "populates the :file field with the path of the parsed file if option is provided" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+
+      assert %Translations{file: ^fixture_path} =
+               Po.parse_string!(File.read!(fixture_path), file: fixture_path)
+    end
+
     test "valid strings" do
       str = """
       msgid "foo"
@@ -905,6 +919,22 @@ defmodule Expo.PoTest do
                    fn ->
                      Po.parse_string!(str)
                    end
+
+      assert_raise SyntaxError,
+                   "file:2: expected whitespace while processing msgid followed by strings inside plural translation inside singular translation or plural translation",
+                   fn ->
+                     Po.parse_string!(str, file: "file")
+                   end
+    end
+
+    test "file with duplicate translations" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/duplicate_translations.po")
+
+      msg = "file:4: found duplicate on line 4 for msgid: 'test'"
+
+      assert_raise DuplicateTranslationsError, msg, fn ->
+        Po.parse_string!(File.read!(fixture_path), file: "file")
+      end
     end
   end
 
@@ -932,6 +962,11 @@ defmodule Expo.PoTest do
   end
 
   describe "parse_file/1" do
+    test "populates the :file field with the path of the parsed file" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+      assert {:ok, %Translations{file: ^fixture_path}} = Po.parse_file(fixture_path)
+    end
+
     test "valid file contents" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 

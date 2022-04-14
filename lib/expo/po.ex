@@ -8,6 +8,8 @@ defmodule Expo.Po do
   alias Expo.Po.SyntaxError
   alias Expo.Translations
 
+  @type parse_options :: [{:file, Path.t()}]
+
   @type parse_error ::
           {:error,
            {:parse_error, message :: String.t(), context :: String.t(), line :: pos_integer()}}
@@ -76,12 +78,12 @@ defmodule Expo.Po do
       {:error, {:parse_error, "expected msgid followed by strings while processing plural translation inside singular translation or plural translation", "foo", 1}}
 
   """
-  @spec parse_string(content :: binary()) ::
+  @spec parse_string(content :: binary(), opts :: parse_options()) ::
           {:ok, Translations.t()}
           | parse_error()
           | duplicate_translations_error()
-  def parse_string(content) do
-    Parser.parse(content)
+  def parse_string(content, opts \\ []) do
+    Parser.parse(content, opts)
   end
 
   @doc """
@@ -119,17 +121,34 @@ defmodule Expo.Po do
       ** (Expo.Po.DuplicateTranslationsError) 4: found duplicate on line 4 for msgid: 'test'
 
   """
-  @spec parse_string!(content :: String.t()) :: Translations.t() | no_return
-  def parse_string!(str) do
-    case parse_string(str) do
+  @spec parse_string!(content :: String.t(), opts :: parse_options()) ::
+          Translations.t() | no_return
+  def parse_string!(str, opts \\ []) do
+    case parse_string(str, opts) do
       {:ok, parsed} ->
         parsed
 
       {:error, {:parse_error, reason, context, line}} ->
-        raise SyntaxError, line: line, reason: reason, context: context
+        options = [line: line, reason: reason, context: context]
+
+        options =
+          case opts[:file] do
+            nil -> options
+            path -> [{:file, path} | options]
+          end
+
+        raise SyntaxError, options
 
       {:error, {:duplicate_translations, duplicates}} ->
-        raise DuplicateTranslationsError, duplicates: duplicates
+        options = [duplicates: duplicates]
+
+        options =
+          case opts[:file] do
+            nil -> options
+            path -> [{:file, path} | options]
+          end
+
+        raise DuplicateTranslationsError, options
     end
   end
 
@@ -155,15 +174,14 @@ defmodule Expo.Po do
       #=> {:error, :enoent}
 
   """
-  @spec parse_file(path :: Path.t()) ::
+  @spec parse_file(path :: Path.t(), opts :: parse_options()) ::
           {:ok, Translations.t()}
           | parse_error()
           | duplicate_translations_error()
           | file_error()
-  def parse_file(path) do
-    with {:ok, contents} <- File.read(path),
-         {:ok, po} <- Parser.parse(contents, file: path) do
-      {:ok, %{po | file: path}}
+  def parse_file(path, opts \\ []) do
+    with {:ok, contents} <- File.read(path) do
+      Parser.parse(contents, Keyword.put_new(opts, :file, path))
     end
   end
 
@@ -181,9 +199,9 @@ defmodule Expo.Po do
       #=> ** (File.Error) could not parse "nonexistent.po": no such file or directory
 
   """
-  @spec parse_file!(Path.t()) :: Translations.t() | no_return
-  def parse_file!(path) do
-    case parse_file(path) do
+  @spec parse_file!(Path.t(), opts :: parse_options()) :: Translations.t() | no_return
+  def parse_file!(path, opts \\ []) do
+    case parse_file(path, opts) do
       {:ok, parsed} ->
         parsed
 
@@ -191,10 +209,12 @@ defmodule Expo.Po do
         raise SyntaxError, line: line, reason: reason, file: path, context: context
 
       {:error, {:duplicate_translations, duplicates}} ->
-        raise DuplicateTranslationsError, duplicates: duplicates, file: path
+        raise DuplicateTranslationsError,
+          duplicates: duplicates,
+          file: Keyword.get(opts, :file, path)
 
       {:error, reason} ->
-        raise File.Error, reason: reason, action: "parse", path: path
+        raise File.Error, reason: reason, action: "parse", path: Keyword.get(opts, :file, path)
     end
   end
 end

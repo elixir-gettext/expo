@@ -6,7 +6,7 @@ defmodule Expo.Mo.Composer do
   alias Expo.Translations
   alias Expo.Util
 
-  @spec compose(translations :: Translations.t(), opts :: Mo.compose_opts()) :: iodata()
+  @spec compose(translations :: Translations.t(), opts :: Mo.compose_options()) :: iodata()
   def compose(translations, opts \\ []) do
     translations =
       Util.inject_meta_headers(

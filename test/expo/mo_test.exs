@@ -291,6 +291,10 @@ defmodule Expo.MoTest do
       assert_raise InvalidFileError, "invalid file", fn ->
         Mo.parse_binary!("invalid")
       end
+
+      assert_raise InvalidFileError, "file: invalid file", fn ->
+        Mo.parse_binary!("invalid", file: "file")
+      end
     end
 
     test "raises for unsupported version" do
@@ -300,6 +304,12 @@ defmodule Expo.MoTest do
                    "invalid version, only ~> 0.0 is supported, 1.0 given",
                    fn ->
                      Mo.parse_binary!(File.read!(file))
+                   end
+
+      assert_raise UnsupportedVersionError,
+                   "file: invalid version, only ~> 0.0 is supported, 1.0 given",
+                   fn ->
+                     Mo.parse_binary!(File.read!(file), file: "file")
                    end
     end
   end
