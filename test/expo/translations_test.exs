@@ -87,4 +87,34 @@ defmodule Expo.TranslationsTest do
              ) == ["José", "Jonatan"]
     end
   end
+
+  describe "find/2" do
+    test "works with Translations struct" do
+      translations = %Translations{
+        translations: [
+          %Translation.Singular{msgid: ["foo"], msgstr: ["foo"]},
+          %Translation.Singular{msgid: ["bar"], msgstr: ["bar"]}
+        ]
+      }
+
+      assert %Translation.Singular{msgstr: ["foo"]} =
+               Translations.find(translations, %Translation.Singular{msgid: ["foo"], msgstr: []})
+
+      assert nil ==
+               Translations.find(translations, %Translation.Singular{msgid: ["baz"], msgstr: []})
+    end
+
+    test "works with list" do
+      translations = [
+        %Translation.Singular{msgid: ["foo"], msgstr: ["foo"]},
+        %Translation.Singular{msgid: ["bar"], msgstr: ["bar"]}
+      ]
+
+      assert %Translation.Singular{msgstr: ["foo"]} =
+               Translations.find(translations, %Translation.Singular{msgid: ["foo"], msgstr: []})
+
+      assert nil ==
+               Translations.find(translations, %Translation.Singular{msgid: ["baz"], msgstr: []})
+    end
+  end
 end

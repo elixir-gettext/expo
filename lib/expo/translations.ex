@@ -108,4 +108,21 @@ defmodule Expo.Translations do
     |> Regex.scan(IO.iodata_to_binary(headers), capture: ["content"])
     |> Enum.map(fn [content] -> content end)
   end
+
+  @doc """
+  Finds a given translation in a list of translations.
+
+  Equality between translations is checked using `Expo.Translation.same?/2`.
+  """
+  def find(translations, search_translation)
+
+  @spec find(translations :: [Translation.t()], search_translation :: Translation.t()) ::
+          Translation.t() | nil
+  def find(translations, search_translation) when is_list(translations),
+    do: Enum.find(translations, &Translation.same?(&1, search_translation))
+
+  @spec find(translations :: t(), search_translation :: Translation.t()) ::
+          Translation.t() | nil
+  def find(%__MODULE__{translations: translations}, search_translation),
+    do: find(translations, search_translation)
 end

@@ -165,7 +165,6 @@
           {Credo.Check.Readability.Specs, []},
           {Credo.Check.Readability.StrictModuleLayout, []},
           {Credo.Check.Refactor.ABCSize, max_size: 80},
-          {Credo.Check.Refactor.AppendSingleItem, []},
           {Credo.Check.Refactor.DoubleBooleanNegation, []},
           {Credo.Check.Refactor.NegatedIsNil, []},
           {Credo.Check.Refactor.PipeChainStart, []},
@@ -194,6 +193,7 @@
           {Credo.Check.Refactor.RejectFilter, []},
           {Credo.Check.Refactor.VariableRebinding, []},
           {Credo.Check.Refactor.IoPuts, []},
+          {Credo.Check.Refactor.AppendSingleItem, []},
 
           # No longer needed in Elixir 1.13
           # {Credo.Check.Warning.LazyLogging, []},

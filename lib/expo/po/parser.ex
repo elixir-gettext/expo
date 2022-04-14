@@ -298,12 +298,12 @@ defmodule Expo.Po.Parser do
 
   defp register_duplicates(
          rest,
-         [%struct{} = translation] = args,
+         [%{} = translation] = args,
          %{entry_line_number: new_line} = context,
          _line,
          _offset
        ) do
-    key = struct.key(translation)
+    key = Translation.key(translation)
 
     context =
       case context[:duplicate_key_line_mapping][key] do

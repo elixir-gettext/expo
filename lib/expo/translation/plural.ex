@@ -36,11 +36,11 @@ defmodule Expo.Translation.Plural do
   ]
 
   @doc false
-  @spec key(t()) :: {String.t() | nil, String.t(), String.t()}
+  @spec key(t()) :: {String.t(), {String.t(), String.t()}}
   def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid, msgid_plural: msgid_plural} = _translation),
     do:
-      {IO.iodata_to_binary(msgctxt || []), IO.iodata_to_binary(msgid),
-       IO.iodata_to_binary(msgid_plural)}
+      {IO.iodata_to_binary(msgctxt || []),
+       {IO.iodata_to_binary(msgid), IO.iodata_to_binary(msgid_plural)}}
 
   @doc """
   Rebalances all strings
