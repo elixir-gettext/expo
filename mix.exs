@@ -40,7 +40,11 @@ defmodule Expo.MixProject do
     %{
       licenses: ["Apache-2.0"],
       maintainers: ["Jonatan Männchen"],
-      links: %{"GitHub" => @source_url}
+      links: %{
+        "GitHub" => @source_url,
+        "Changelog" => @source_url <> "/releases",
+        "Issues" => @source_url <> "/issues"
+      }
     }
   end
 
