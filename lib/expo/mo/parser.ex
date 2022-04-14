@@ -6,11 +6,11 @@ defmodule Expo.Mo.Parser do
   alias Expo.Translations
   alias Expo.Util
 
-  @spec parse(content :: binary(), opts :: Keyword.t()) ::
+  @spec parse(content :: binary(), opts :: Mo.parse_options()) ::
           {:ok, Translations.t()}
           | Mo.invalid_file_error()
           | Mo.unsupported_version_error()
-  def parse(content, opts \\ [])
+  def parse(content, opts)
 
   def parse(content, opts) when byte_size(content) >= 28 do
     with {:ok, {endianness, header}} <- parse_header(binary_part(content, 0, 28)),

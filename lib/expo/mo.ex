@@ -8,11 +8,13 @@ defmodule Expo.Mo do
   alias Expo.Mo.UnsupportedVersionError
   alias Expo.Translations
 
-  @type compose_opts :: [
+  @type compose_options :: [
           {:endianness, :little | :big},
           {:use_fuzzy, boolean()},
           {:statistics, boolean()}
         ]
+
+  @type parse_options :: [{:file, Path.t()}]
 
   @type invalid_file_error :: {:error, :invalid_file}
   @type unsupported_version_error ::
@@ -39,7 +41,7 @@ defmodule Expo.Mo do
         32, 68, 111, 101, 0, 98, 97, 114, 0>>
 
   """
-  @spec compose(translations :: Translations.t(), opts :: compose_opts()) :: iodata()
+  @spec compose(translations :: Translations.t(), opts :: compose_options()) :: iodata()
   defdelegate compose(content, opts \\ []), to: Expo.Mo.Composer
 
   @doc """
@@ -58,11 +60,11 @@ defmodule Expo.Mo do
       {:ok, %Expo.Translations{headers: [], translations: []}}
 
   """
-  @spec parse_binary(content :: binary()) ::
+  @spec parse_binary(content :: binary(), opts :: parse_options()) ::
           {:ok, Translations.t()}
           | invalid_file_error()
           | unsupported_version_error()
-  def parse_binary(content), do: Parser.parse(content)
+  def parse_binary(content, opts \\ []), do: Parser.parse(content, opts)
 
   @doc """
   Parses a string into a `Expo.Translations` struct, raising an exception if there are
@@ -91,17 +93,32 @@ defmodule Expo.Mo do
       ** (Expo.Mo.InvalidFileError) invalid file
 
   """
-  @spec parse_binary!(content :: binary()) :: Translations.t() | no_return
-  def parse_binary!(str) do
-    case parse_binary(str) do
+  @spec parse_binary!(content :: binary(), options :: parse_options()) ::
+          Translations.t() | no_return
+  def parse_binary!(str, opts \\ []) do
+    case parse_binary(str, opts) do
       {:ok, parsed} ->
         parsed
 
       {:error, :invalid_file} ->
-        raise InvalidFileError
+        options =
+          case opts[:file] do
+            nil -> []
+            path -> [file: path]
+          end
+
+        raise InvalidFileError, options
 
       {:error, {:unsupported_version, major, minor}} ->
-        raise UnsupportedVersionError, major: major, minor: minor
+        options = [major: major, minor: minor]
+
+        options =
+          case opts[:file] do
+            nil -> options
+            path -> [{:file, path} | options]
+          end
+
+        raise UnsupportedVersionError, options
     end
   end
 
@@ -127,14 +144,14 @@ defmodule Expo.Mo do
       #=> {:error, :enoent}
 
   """
-  @spec parse_file(path :: Path.t()) ::
+  @spec parse_file(path :: Path.t(), opts :: parse_options()) ::
           {:ok, Translations.t()}
           | invalid_file_error()
           | unsupported_version_error()
           | file_error()
-  def parse_file(path) do
+  def parse_file(path, opts \\ []) do
     with {:ok, contents} <- File.read(path),
-         {:ok, po} <- Parser.parse(contents, file: path) do
+         {:ok, po} <- Parser.parse(contents, Keyword.put_new(opts, :file, path)) do
       {:ok, %{po | file: path}}
     end
   end
@@ -153,9 +170,9 @@ defmodule Expo.Mo do
       #=> ** (File.Error) could not parse "nonexistent.po": no such file or directory
 
   """
-  @spec parse_file!(Path.t()) :: Translations.t() | no_return
-  def parse_file!(path) do
-    case parse_file(path) do
+  @spec parse_file!(Path.t(), opts :: parse_options()) :: Translations.t() | no_return
+  def parse_file!(path, opts \\ []) do
+    case parse_file(path, opts) do
       {:ok, parsed} ->
         parsed
 
@@ -163,10 +180,13 @@ defmodule Expo.Mo do
         raise InvalidFileError, file: path
 
       {:error, {:unsupported_version, major, minor}} ->
-        raise UnsupportedVersionError, major: major, minor: minor, file: path
+        raise UnsupportedVersionError,
+          major: major,
+          minor: minor,
+          file: Keyword.get(opts, :file, path)
 
       {:error, reason} ->
-        raise File.Error, reason: reason, action: "parse", path: path
+        raise File.Error, reason: reason, action: "parse", path: Keyword.get(opts, :file, path)
     end
   end
 end
