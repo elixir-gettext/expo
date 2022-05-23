@@ -26,8 +26,8 @@ defmodule Expo.Po.Composer do
     [
       dump_comments(t.comments),
       dump_extracted_comments(t.extracted_comments),
-      dump_flags(t.flags),
       dump_references(t.references),
+      dump_flags(t.flags),
       dump_previous_msgids(t.previous_msgids),
       dump_msgctxt(t.msgctxt, t.obsolete),
       dump_kw_and_strings("msgid", t.msgid, t.obsolete),
@@ -39,8 +39,8 @@ defmodule Expo.Po.Composer do
     [
       dump_comments(t.comments),
       dump_comments(t.extracted_comments),
-      dump_flags(t.flags),
       dump_references(t.references),
+      dump_flags(t.flags),
       dump_previous_msgids(t.previous_msgids),
       dump_previous_msgids(t.previous_msgid_plurals, "msgid_plural"),
       dump_msgctxt(t.msgctxt, t.obsolete),
