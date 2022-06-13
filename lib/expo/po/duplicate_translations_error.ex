@@ -1,6 +1,6 @@
-defmodule Expo.Po.DuplicateTranslationsError do
+defmodule Expo.Po.DuplicateMessagesError do
   @moduledoc """
-  An error raised when duplicate translations are detected.
+  An error raised when duplicate messages are detected.
   """
 
   defexception [:message]

@@ -1,15 +1,15 @@
-defmodule Expo.Translation.Singular do
+defmodule Expo.Message.Singular do
   @moduledoc """
-  Struct for non-plural translations
+  Struct for non-plural messages
   """
 
-  alias Expo.Translation
+  alias Expo.Message
   alias Expo.Util
 
   @type t :: %__MODULE__{
-          msgid: Translation.msgid(),
-          msgstr: Translation.msgstr(),
-          msgctxt: Translation.msgctxt() | nil,
+          msgid: Message.msgid(),
+          msgstr: Message.msgstr(),
+          msgctxt: Message.msgctxt() | nil,
           comments: [String.t()],
           extracted_comments: [String.t()],
           flags: [[String.t()]],
@@ -32,7 +32,7 @@ defmodule Expo.Translation.Singular do
   ]
 
   @spec key(t()) :: {String.t(), String.t()}
-  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid} = _translation),
+  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid} = _message),
     do: {IO.iodata_to_binary(msgctxt || []), IO.iodata_to_binary(msgid)}
 
   @doc """
@@ -44,7 +44,7 @@ defmodule Expo.Translation.Singular do
 
   ### Examples
 
-      iex> Expo.Translation.Singular.rebalance(%Expo.Translation.Singular{
+      iex> Expo.Message.Singular.rebalance(%Expo.Message.Singular{
       ...>   msgid: ["", "hello", "\\n", "", "world", ""],
       ...>   msgstr: ["", "hello", "\\n", "", "world", ""],
       ...>   flags: [["one", "two"], ["three"]],
@@ -58,14 +58,14 @@ defmodule Expo.Translation.Singular do
       }
 
   """
-  @spec rebalance(translation :: t()) :: t()
+  @spec rebalance(message :: t()) :: t()
   def rebalance(
         %__MODULE__{
           msgid: msgid,
           msgstr: msgstr,
           flags: flags,
           references: references
-        } = translation
+        } = message
       ) do
     flags =
       case List.flatten(flags) do
@@ -74,7 +74,7 @@ defmodule Expo.Translation.Singular do
       end
 
     %__MODULE__{
-      translation
+      message
       | msgid: Util.rebalance_strings(msgid),
         msgstr: Util.rebalance_strings(msgstr),
         flags: flags,

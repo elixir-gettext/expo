@@ -1,28 +1,28 @@
 defmodule Expo.Po.Composer do
   @moduledoc false
 
-  alias Expo.Translation
-  alias Expo.Translations
+  alias Expo.Message
+  alias Expo.Messages
   alias Expo.Util
 
-  @spec compose(translations :: Translations.t()) :: iodata()
-  def compose(%Translations{
+  @spec compose(messages :: Messages.t()) :: iodata()
+  def compose(%Messages{
         headers: headers,
         top_comments: top_comments,
-        translations: translations
+        messages: messages
       }) do
     headers
-    |> Util.inject_meta_headers(top_comments, translations)
-    |> dump_translations()
+    |> Util.inject_meta_headers(top_comments, messages)
+    |> dump_messages()
   end
 
-  defp dump_translations(translations) do
-    translations
-    |> Enum.map(&dump_translation(&1))
+  defp dump_messages(messages) do
+    messages
+    |> Enum.map(&dump_message(&1))
     |> Enum.intersperse(?\n)
   end
 
-  defp dump_translation(%Translation.Singular{} = t) do
+  defp dump_message(%Message.Singular{} = t) do
     [
       dump_comments(t.comments),
       dump_extracted_comments(t.extracted_comments),
@@ -35,7 +35,7 @@ defmodule Expo.Po.Composer do
     ]
   end
 
-  defp dump_translation(%Translation.Plural{} = t) do
+  defp dump_message(%Message.Plural{} = t) do
     [
       dump_comments(t.comments),
       dump_comments(t.extracted_comments),

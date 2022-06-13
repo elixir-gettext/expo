@@ -1,13 +1,13 @@
 defmodule Expo.Mo.Parser do
   @moduledoc false
 
+  alias Expo.Message
+  alias Expo.Messages
   alias Expo.Mo
-  alias Expo.Translation
-  alias Expo.Translations
   alias Expo.Util
 
   @spec parse(content :: binary(), opts :: Mo.parse_options()) ::
-          {:ok, Translations.t()}
+          {:ok, Messages.t()}
           | Mo.invalid_file_error()
           | Mo.unsupported_version_error()
   def parse(content, opts)
@@ -16,11 +16,11 @@ defmodule Expo.Mo.Parser do
     with {:ok, {endianness, header}} <- parse_header(binary_part(content, 0, 28)),
          :ok <-
            check_version(header.file_format_revision_major, header.file_format_revision_minor),
-         translations <- parse_translations(endianness, header, content),
-         {headers, top_comments, translations} <- Util.extract_meta_headers(translations) do
+         messages <- parse_messages(endianness, header, content),
+         {headers, top_comments, messages} <- Util.extract_meta_headers(messages) do
       {:ok,
-       %Translations{
-         translations: translations,
+       %Messages{
+         messages: messages,
          headers: headers,
          top_comments: top_comments,
          file: Keyword.get(opts, :file)
@@ -38,7 +38,7 @@ defmodule Expo.Mo.Parser do
            file_format_revision_minor::little-unsigned-integer-size(2)-unit(8),
            number_of_strings::little-unsigned-integer-size(4)-unit(8),
            offset_of_table_with_original_strings::little-unsigned-integer-size(4)-unit(8),
-           offset_of_table_with_translation_strings::little-unsigned-integer-size(4)-unit(8),
+           offset_of_table_with_message_strings::little-unsigned-integer-size(4)-unit(8),
            _size_of_hashing_table::little-unsigned-integer-size(4)-unit(8),
            _offset_of_hashing_table::little-unsigned-integer-size(4)-unit(8)>>
        ),
@@ -50,7 +50,7 @@ defmodule Expo.Mo.Parser do
              file_format_revision_minor: file_format_revision_minor,
              number_of_strings: number_of_strings,
              offset_of_table_with_original_strings: offset_of_table_with_original_strings,
-             offset_of_table_with_translation_strings: offset_of_table_with_translation_strings
+             offset_of_table_with_message_strings: offset_of_table_with_message_strings
            }}}
 
   defp parse_header(
@@ -59,7 +59,7 @@ defmodule Expo.Mo.Parser do
            file_format_revision_minor::big-unsigned-integer-size(2)-unit(8),
            number_of_strings::big-unsigned-integer-size(4)-unit(8),
            offset_of_table_with_original_strings::big-unsigned-integer-size(4)-unit(8),
-           offset_of_table_with_translation_strings::big-unsigned-integer-size(4)-unit(8),
+           offset_of_table_with_message_strings::big-unsigned-integer-size(4)-unit(8),
            _size_of_hashing_table::big-unsigned-integer-size(4)-unit(8),
            _offset_of_hashing_table::big-unsigned-integer-size(4)-unit(8)>>
        ),
@@ -71,7 +71,7 @@ defmodule Expo.Mo.Parser do
              file_format_revision_minor: file_format_revision_minor,
              number_of_strings: number_of_strings,
              offset_of_table_with_original_strings: offset_of_table_with_original_strings,
-             offset_of_table_with_translation_strings: offset_of_table_with_translation_strings
+             offset_of_table_with_message_strings: offset_of_table_with_message_strings
            }}}
 
   defp parse_header(_header_binary), do: {:error, :invalid_file}
@@ -81,13 +81,13 @@ defmodule Expo.Mo.Parser do
   defp check_version(0, _minor), do: :ok
   defp check_version(major, minor), do: {:error, {:unsupported_version, major, minor}}
 
-  defp parse_translations(endianness, header, content) do
+  defp parse_messages(endianness, header, content) do
     [
       header.offset_of_table_with_original_strings,
-      header.offset_of_table_with_translation_strings
+      header.offset_of_table_with_message_strings
     ]
     |> Enum.map(&read_table(endianness, content, &1, header.number_of_strings))
-    |> zip_with(&to_translation/1)
+    |> zip_with(&to_message/1)
   end
 
   defp read_table(endianness, content, start_offset, number_of_elements),
@@ -119,15 +119,15 @@ defmodule Expo.Mo.Parser do
   defp read_table_cell(content, position)
   defp read_table_cell(content, {offset, length}), do: binary_part(content, offset, length)
 
-  defp to_translation([msgid, msgstr]) do
-    {attrs, translation_type} = msg_id_to_translation_attrs(msgid)
+  defp to_message([msgid, msgstr]) do
+    {attrs, message_type} = msg_id_to_message_attrs(msgid)
 
     attrs =
-      case translation_type do
-        Translation.Singular ->
+      case message_type do
+        Message.Singular ->
           Map.merge(attrs, %{msgstr: [msgstr]})
 
-        Translation.Plural ->
+        Message.Plural ->
           msgstr =
             for {msgstr, index} <- Enum.with_index(String.split(msgstr, <<0>>)),
                 into: %{},
@@ -136,10 +136,10 @@ defmodule Expo.Mo.Parser do
           Map.merge(attrs, %{msgstr: msgstr})
       end
 
-    struct!(translation_type, attrs)
+    struct!(message_type, attrs)
   end
 
-  defp msg_id_to_translation_attrs(msgid) do
+  defp msg_id_to_message_attrs(msgid) do
     {attrs, msgid} =
       case String.split(msgid, <<4::utf8>>, parts: 2) do
         [msgid] -> {%{}, msgid}
@@ -148,10 +148,10 @@ defmodule Expo.Mo.Parser do
 
     case String.split(msgid, <<0>>, parts: 2) do
       [msgid] ->
-        {Map.merge(attrs, %{msgid: [msgid]}), Translation.Singular}
+        {Map.merge(attrs, %{msgid: [msgid]}), Message.Singular}
 
       [msgid, msgid_plural] ->
-        {Map.merge(attrs, %{msgid: [msgid], msgid_plural: [msgid_plural]}), Translation.Plural}
+        {Map.merge(attrs, %{msgid: [msgid], msgid_plural: [msgid_plural]}), Message.Plural}
     end
   end
 

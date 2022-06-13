@@ -1,28 +1,28 @@
 defmodule Expo.Mo.Composer do
   @moduledoc false
 
+  alias Expo.Message
+  alias Expo.Messages
   alias Expo.Mo
-  alias Expo.Translation
-  alias Expo.Translations
   alias Expo.Util
 
-  @spec compose(translations :: Translations.t(), opts :: Mo.compose_options()) :: iodata()
-  def compose(translations, opts \\ []) do
-    translations =
+  @spec compose(messages :: Messages.t(), opts :: Mo.compose_options()) :: iodata()
+  def compose(messages, opts \\ []) do
+    messages =
       Util.inject_meta_headers(
-        translations.headers,
-        translations.top_comments,
-        translations.translations
+        messages.headers,
+        messages.top_comments,
+        messages.messages
       )
 
     endianness = Keyword.get(opts, :endianness, :little)
-    translations = Enum.reject(translations, & &1.obsolete)
+    messages = Enum.reject(messages, & &1.obsolete)
 
-    translations =
+    messages =
       if Keyword.get(opts, :use_fuzzy, false) do
-        translations
+        messages
       else
-        Enum.reject(translations, fn %_struct{flags: flags} ->
+        Enum.reject(messages, fn %_struct{flags: flags} ->
           flags
           |> List.flatten()
           |> Enum.member?("fuzzy")
@@ -30,48 +30,47 @@ defmodule Expo.Mo.Composer do
       end
 
     if Keyword.get(opts, :statistics, false) do
-      send(self(), {Mo, :translation_count, length(translations)})
+      send(self(), {Mo, :message_count, length(messages)})
     end
 
-    number_of_translations = length(translations)
+    number_of_messages = length(messages)
     header_length = 28
     offset_of_table_with_original_strings = header_length
 
-    offset_of_table_with_translation_strings =
-      offset_of_table_with_original_strings + number_of_translations * 4 * 2
+    offset_of_table_with_message_strings =
+      offset_of_table_with_original_strings + number_of_messages * 4 * 2
 
     size_of_hashing_table = 0
 
-    offset_of_hashing_table =
-      offset_of_table_with_translation_strings + number_of_translations * 4 * 2
+    offset_of_hashing_table = offset_of_table_with_message_strings + number_of_messages * 4 * 2
 
     offset_of_original_string_data = offset_of_hashing_table + size_of_hashing_table
 
     out =
       header(
         endianness,
-        number_of_translations,
+        number_of_messages,
         offset_of_table_with_original_strings,
-        offset_of_table_with_translation_strings,
+        offset_of_table_with_message_strings,
         size_of_hashing_table,
         offset_of_hashing_table
       )
 
-    {original_string_positions, original_strings, offset_of_translation_string_data} =
+    {original_string_positions, original_strings, offset_of_message_string_data} =
       string_table(
         endianness,
-        translations,
+        messages,
         fn
-          %Translation.Singular{msgctxt: nil, msgid: msgid} ->
+          %Message.Singular{msgctxt: nil, msgid: msgid} ->
             [msgid]
 
-          %Translation.Singular{msgctxt: msgctxt, msgid: msgid} ->
+          %Message.Singular{msgctxt: msgctxt, msgid: msgid} ->
             [msgctxt, 4, msgid]
 
-          %Translation.Plural{msgctxt: nil, msgid: msgid, msgid_plural: msgid_plural} ->
+          %Message.Plural{msgctxt: nil, msgid: msgid, msgid_plural: msgid_plural} ->
             [msgid, 0, msgid_plural]
 
-          %Translation.Plural{msgctxt: msgctxt, msgid: msgid, msgid_plural: msgid_plural} ->
+          %Message.Plural{msgctxt: msgctxt, msgid: msgid, msgid_plural: msgid_plural} ->
             [msgctxt, 4, msgid, 0, msgid_plural]
         end,
         offset_of_original_string_data
@@ -82,12 +81,12 @@ defmodule Expo.Mo.Composer do
     {translated_string_positions, translated_strings, _end_offset} =
       string_table(
         endianness,
-        translations,
+        messages,
         fn
-          %Translation.Singular{msgstr: msgstr} -> [msgstr]
-          %Translation.Plural{msgstr: msgstr} -> msgstr |> Map.values() |> Enum.intersperse(0)
+          %Message.Singular{msgstr: msgstr} -> [msgstr]
+          %Message.Plural{msgstr: msgstr} -> msgstr |> Map.values() |> Enum.intersperse(0)
         end,
-        offset_of_translation_string_data
+        offset_of_message_string_data
       )
 
     [out | [translated_string_positions, original_strings, translated_strings]]
@@ -97,7 +96,7 @@ defmodule Expo.Mo.Composer do
          endianness,
          number_of_strings,
          offset_of_table_with_original_strings,
-         offset_of_table_with_translation_strings,
+         offset_of_table_with_message_strings,
          size_of_hashing_table,
          offset_of_hashing_table
        )
@@ -106,7 +105,7 @@ defmodule Expo.Mo.Composer do
          :little,
          number_of_strings,
          offset_of_table_with_original_strings,
-         offset_of_table_with_translation_strings,
+         offset_of_table_with_message_strings,
          size_of_hashing_table,
          offset_of_hashing_table
        ),
@@ -115,7 +114,7 @@ defmodule Expo.Mo.Composer do
            0::little-unsigned-integer-size(2)-unit(8),
            number_of_strings::little-unsigned-integer-size(4)-unit(8),
            offset_of_table_with_original_strings::little-unsigned-integer-size(4)-unit(8),
-           offset_of_table_with_translation_strings::little-unsigned-integer-size(4)-unit(8),
+           offset_of_table_with_message_strings::little-unsigned-integer-size(4)-unit(8),
            size_of_hashing_table::little-unsigned-integer-size(4)-unit(8),
            offset_of_hashing_table::little-unsigned-integer-size(4)-unit(8)>>
 
@@ -123,7 +122,7 @@ defmodule Expo.Mo.Composer do
          :big,
          number_of_strings,
          offset_of_table_with_original_strings,
-         offset_of_table_with_translation_strings,
+         offset_of_table_with_message_strings,
          size_of_hashing_table,
          offset_of_hashing_table
        ),
@@ -132,13 +131,13 @@ defmodule Expo.Mo.Composer do
            0::big-unsigned-integer-size(2)-unit(8),
            number_of_strings::big-unsigned-integer-size(4)-unit(8),
            offset_of_table_with_original_strings::big-unsigned-integer-size(4)-unit(8),
-           offset_of_table_with_translation_strings::big-unsigned-integer-size(4)-unit(8),
+           offset_of_table_with_message_strings::big-unsigned-integer-size(4)-unit(8),
            size_of_hashing_table::big-unsigned-integer-size(4)-unit(8),
            offset_of_hashing_table::big-unsigned-integer-size(4)-unit(8)>>
 
   defp string_table(
          endianness,
-         translations,
+         messages,
          content_callback,
          acc_offset,
          acc_table \\ [],

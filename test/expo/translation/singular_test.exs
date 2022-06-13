@@ -1,9 +1,9 @@
-defmodule Expo.Translation.SingularTest do
+defmodule Expo.Message.SingularTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
 
-  alias Expo.Translation.Singular
+  alias Expo.Message.Singular
 
   doctest Singular
 

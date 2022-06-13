@@ -3,11 +3,11 @@ defmodule Expo.MoTest do
 
   use ExUnit.Case, async: true
 
+  alias Expo.Message
+  alias Expo.Messages
   alias Expo.Mo
   alias Expo.Mo.InvalidFileError
   alias Expo.Mo.UnsupportedVersionError
-  alias Expo.Translation
-  alias Expo.Translations
 
   doctest Mo
 
@@ -17,20 +17,20 @@ defmodule Expo.MoTest do
           little: <<0xDE120495::size(4)-unit(8)>>
         ] do
       test "#{endianness} encodes" do
-        translations = %Translations{
+        messages = %Messages{
           headers: [
             "Plural-Forms: nplurals=2; plural=(n != 1);\nX-Poedit-SourceCharset: UTF-8\n"
           ],
-          translations: [
-            %Translation.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"]},
-            %Translation.Singular{msgctxt: "ctx", msgid: ["foo"], msgstr: ["bar"]},
-            %Translation.Plural{
+          messages: [
+            %Message.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"]},
+            %Message.Singular{msgctxt: "ctx", msgid: ["foo"], msgstr: ["bar"]},
+            %Message.Plural{
               msgctxt: nil,
               msgid: ["foo"],
               msgid_plural: ["foos"],
               msgstr: %{0 => ["bar"], 1 => ["bars"]}
             },
-            %Translation.Plural{
+            %Message.Plural{
               msgctxt: "ctx",
               msgid: ["foo"],
               msgid_plural: ["foos"],
@@ -41,25 +41,25 @@ defmodule Expo.MoTest do
 
         assert <<unquote(start), _rest::binary>> =
                  mo =
-                 translations
+                 messages
                  |> Mo.compose(endianness: unquote(endianness))
                  |> IO.iodata_to_binary()
 
-        assert {:ok, translations} == Mo.parse_binary(mo)
+        assert {:ok, messages} == Mo.parse_binary(mo)
       end
 
       test "#{endianness} encodes unicode correctly" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/unicode.mo")
 
-        translations = %Translations{
+        messages = %Messages{
           headers: [
             "MIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
           ],
-          translations: [%Translation.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
+          messages: [%Message.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
         }
 
         encoded =
-          translations
+          messages
           |> Mo.compose(endianness: unquote(endianness))
           |> IO.iodata_to_binary()
 
@@ -67,48 +67,48 @@ defmodule Expo.MoTest do
       end
     end
 
-    test "does not encode obsolete translations" do
-      translations = %Translations{
-        translations: [
-          %Translation.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"], obsolete: true}
+    test "does not encode obsolete messages" do
+      messages = %Messages{
+        messages: [
+          %Message.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"], obsolete: true}
         ]
       }
 
-      assert {:ok, %Translations{translations: []}} =
-               translations |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse_binary()
+      assert {:ok, %Messages{messages: []}} =
+               messages |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse_binary()
     end
 
-    test "does not encode fuzzy translations except when requested" do
-      translations = %Translations{
-        translations: [
-          %Translation.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"], flags: [["fuzzy"]]}
+    test "does not encode fuzzy messages except when requested" do
+      messages = %Messages{
+        messages: [
+          %Message.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"], flags: [["fuzzy"]]}
         ]
       }
 
-      assert {:ok, %Translations{translations: []}} =
-               translations |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse_binary()
+      assert {:ok, %Messages{messages: []}} =
+               messages |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse_binary()
 
-      assert {:ok, %Translations{translations: [_fuzzy]}} =
-               translations
+      assert {:ok, %Messages{messages: [_fuzzy]}} =
+               messages
                |> Mo.compose(use_fuzzy: true)
                |> IO.iodata_to_binary()
                |> Mo.parse_binary()
     end
 
     test "does send statistics when requested" do
-      translations = %Translations{
-        translations: [
-          %Translation.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"]}
+      messages = %Messages{
+        messages: [
+          %Message.Singular{msgctxt: nil, msgid: ["foo"], msgstr: ["bar"]}
         ]
       }
 
-      Mo.compose(translations, statistics: false)
+      Mo.compose(messages, statistics: false)
 
-      refute_receive {Mo, :translation_count, 1}
+      refute_receive {Mo, :message_count, 1}
 
-      Mo.compose(translations, statistics: true)
+      Mo.compose(messages, statistics: true)
 
-      assert_receive {Mo, :translation_count, 1}
+      assert_receive {Mo, :message_count, 1}
     end
   end
 
@@ -118,24 +118,24 @@ defmodule Expo.MoTest do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/headers.mo")
         assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
 
-        assert %Translations{
+        assert %Messages{
                  headers: [
                    "Project-Id-Version: \nPO-Revision-Date: \nLast-Translator: \nLanguage-Team: \nLanguage: de\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\nX-Generator: Poedit 3.0.1\n"
                  ],
                  top_comments: [],
-                 translations: []
+                 messages: []
                } = parsed
       end
 
-      test "#{endianness} parses singular translation" do
+      test "#{endianness} parses singular message" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/singular.mo")
         assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
 
-        assert %Translations{
+        assert %Messages{
                  headers: [],
                  top_comments: [],
-                 translations: [
-                   %Translation.Singular{
+                 messages: [
+                   %Message.Singular{
                      comments: [],
                      extracted_comments: [],
                      flags: [],
@@ -150,17 +150,17 @@ defmodule Expo.MoTest do
                } = parsed
       end
 
-      test "#{endianness} parses singular with msgctxt translation" do
+      test "#{endianness} parses singular with msgctxt message" do
         file =
           Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/singular-msgctxt.mo")
 
         assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
 
-        assert %Translations{
+        assert %Messages{
                  headers: [],
                  top_comments: [],
-                 translations: [
-                   %Translation.Singular{
+                 messages: [
+                   %Message.Singular{
                      comments: [],
                      extracted_comments: [],
                      flags: [],
@@ -175,15 +175,15 @@ defmodule Expo.MoTest do
                } = parsed
       end
 
-      test "#{endianness} parses plural translation" do
+      test "#{endianness} parses plural message" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/plural.mo")
         assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
 
-        assert %Translations{
+        assert %Messages{
                  headers: [],
                  top_comments: [],
-                 translations: [
-                   %Translation.Plural{
+                 messages: [
+                   %Message.Plural{
                      comments: [],
                      extracted_comments: [],
                      flags: [],
@@ -199,15 +199,15 @@ defmodule Expo.MoTest do
                } = parsed
       end
 
-      test "#{endianness} parses plural with msgctxt translation" do
+      test "#{endianness} parses plural with msgctxt message" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/plural-msgctxt.mo")
         assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
 
-        assert %Translations{
+        assert %Messages{
                  headers: [],
                  top_comments: [],
-                 translations: [
-                   %Translation.Plural{
+                 messages: [
+                   %Message.Plural{
                      comments: [],
                      extracted_comments: [],
                      flags: [],
@@ -227,10 +227,10 @@ defmodule Expo.MoTest do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/empty.mo")
         assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
 
-        assert %Translations{
+        assert %Messages{
                  headers: [],
                  top_comments: [],
-                 translations: []
+                 messages: []
                } = parsed
       end
 
@@ -238,20 +238,20 @@ defmodule Expo.MoTest do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/hash-table.mo")
         assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
 
-        assert %Translations{
-                 translations: [%Translation.Singular{msgid: ["foo"]}]
+        assert %Messages{
+                 messages: [%Message.Singular{msgid: ["foo"]}]
                } = parsed
       end
 
-      test "#{endianness} parses unicode translations" do
+      test "#{endianness} parses unicode messages" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/unicode.mo")
         assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
 
-        assert %Translations{
+        assert %Messages{
                  headers: [
                    "MIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
                  ],
-                 translations: [%Translation.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
+                 messages: [%Message.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
                } = parsed
       end
     end
@@ -278,12 +278,12 @@ defmodule Expo.MoTest do
       file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
       parsed = Mo.parse_binary!(File.read!(file))
 
-      assert %Translations{
+      assert %Messages{
                headers: [
                  "Project-Id-Version: \nPO-Revision-Date: \nLast-Translator: \nLanguage-Team: \nLanguage: de\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\nX-Generator: Poedit 3.0.1\n"
                ],
                top_comments: [],
-               translations: []
+               messages: []
              } = parsed
     end
 
@@ -319,12 +319,12 @@ defmodule Expo.MoTest do
       file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
       assert {:ok, parsed} = Mo.parse_file(file)
 
-      assert %Translations{
+      assert %Messages{
                headers: [
                  "Project-Id-Version: \nPO-Revision-Date: \nLast-Translator: \nLanguage-Team: \nLanguage: de\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\nX-Generator: Poedit 3.0.1\n"
                ],
                top_comments: [],
-               translations: []
+               messages: []
              } = parsed
     end
 
@@ -350,12 +350,12 @@ defmodule Expo.MoTest do
       file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
       assert parsed = Mo.parse_file!(file)
 
-      assert %Translations{
+      assert %Messages{
                headers: [
                  "Project-Id-Version: \nPO-Revision-Date: \nLast-Translator: \nLanguage-Team: \nLanguage: de\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\nX-Generator: Poedit 3.0.1\n"
                ],
                top_comments: [],
-               translations: []
+               messages: []
              } = parsed
     end
 

@@ -1,31 +1,31 @@
 defmodule Expo.Util do
   @moduledoc false
 
-  alias Expo.Translation
+  alias Expo.Message
 
-  @spec extract_meta_headers(translations :: [Translation.t()]) ::
-          {[String.t()], [[String.t()]], [Translation.t()]}
-  def extract_meta_headers(translations)
+  @spec extract_meta_headers(messages :: [Message.t()]) ::
+          {[String.t()], [[String.t()]], [Message.t()]}
+  def extract_meta_headers(messages)
 
   def extract_meta_headers([
-        %Translation.Singular{msgid: [""], msgstr: msgstr, comments: comments} | translations
+        %Message.Singular{msgid: [""], msgstr: msgstr, comments: comments} | messages
       ]),
-      do: {msgstr, comments, translations}
+      do: {msgstr, comments, messages}
 
-  def extract_meta_headers(translations), do: {[], [], translations}
+  def extract_meta_headers(messages), do: {[], [], messages}
 
   @spec inject_meta_headers(
           headers :: [String.t()],
           comments :: [[String.t()]],
-          translations :: [Translation.t()]
-        ) :: [Translation.t()]
-  def inject_meta_headers(headers, comments, translations)
-  def inject_meta_headers([], [], translations), do: translations
+          messages :: [Message.t()]
+        ) :: [Message.t()]
+  def inject_meta_headers(headers, comments, messages)
+  def inject_meta_headers([], [], messages), do: messages
 
-  def inject_meta_headers(headers, comments, translations) do
+  def inject_meta_headers(headers, comments, messages) do
     [
-      %Translation.Singular{msgid: [""], msgstr: headers, comments: comments}
-      | translations
+      %Message.Singular{msgid: [""], msgstr: headers, comments: comments}
+      | messages
     ]
   end
 

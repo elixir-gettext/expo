@@ -5,34 +5,34 @@ defmodule Expo.PoTest do
 
   import ExUnit.CaptureIO
 
+  alias Expo.Message
+  alias Expo.Messages
   alias Expo.Po
-  alias Expo.Po.DuplicateTranslationsError
+  alias Expo.Po.DuplicateMessagesError
   alias Expo.Po.SyntaxError
-  alias Expo.Translation
-  alias Expo.Translations
 
   doctest Po
 
   describe "compose/2" do
-    test "single translation" do
-      translations = %Translations{
+    test "single message" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{msgid: ["foo"], msgstr: ["bar"]}
+        messages: [
+          %Message.Singular{msgid: ["foo"], msgstr: ["bar"]}
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid "foo"
              msgstr "bar"
              """
     end
 
-    test "single plural translation" do
-      translations = %Translations{
+    test "single plural message" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Plural{
+        messages: [
+          %Message.Plural{
             msgid: ["one foo"],
             msgid_plural: ["%{count} foos"],
             msgstr: %{
@@ -43,7 +43,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid "one foo"
              msgid_plural "%{count} foos"
              msgstr[0] "one bar"
@@ -51,16 +51,16 @@ defmodule Expo.PoTest do
              """
     end
 
-    test "multiple translations" do
-      translations = %Translations{
+    test "multiple messages" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{msgid: ["foo"], msgstr: ["bar"]},
-          %Translation.Singular{msgid: ["baz"], msgstr: ["bong"]}
+        messages: [
+          %Message.Singular{msgid: ["foo"], msgstr: ["bar"]},
+          %Message.Singular{msgid: ["baz"], msgstr: ["bong"]}
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid "foo"
              msgstr "bar"
 
@@ -69,11 +69,11 @@ defmodule Expo.PoTest do
              """
     end
 
-    test "translation with comments" do
-      translations = %Translations{
+    test "message with comments" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{
+        messages: [
+          %Message.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
             comments: [" comment", " another comment"]
@@ -81,7 +81,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              # comment
              # another comment
              msgid "foo"
@@ -89,11 +89,11 @@ defmodule Expo.PoTest do
              """
     end
 
-    test "translation with extracted comments" do
-      translations = %Translations{
+    test "message with extracted comments" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{
+        messages: [
+          %Message.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
             extracted_comments: [" some comment", " another comment"]
@@ -101,7 +101,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              #. some comment
              #. another comment
              msgid "foo"
@@ -110,14 +110,14 @@ defmodule Expo.PoTest do
     end
 
     test "references" do
-      translations = %Translations{
-        translations: [
-          %Translation.Singular{
+      messages = %Messages{
+        messages: [
+          %Message.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
             references: [[{"foo.ex", 1}, {"lib/bar.ex", 2}], ["file_without_line"]]
           },
-          %Translation.Plural{
+          %Message.Plural{
             msgid: ["foo"],
             msgid_plural: ["foos"],
             msgstr: %{0 => [""], 1 => [""]},
@@ -126,7 +126,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              #: foo.ex:1, lib/bar.ex:2
              #: file_without_line
              msgid "foo"
@@ -141,9 +141,9 @@ defmodule Expo.PoTest do
     end
 
     test "references are wrapped" do
-      translations = %Translations{
-        translations: [
-          %Translation.Singular{
+      messages = %Messages{
+        messages: [
+          %Message.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
             references: [
@@ -155,7 +155,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              #: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ex:1
              #: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ex:1
              #: cccccccccccccccccccccccccccccc.ex:1
@@ -165,9 +165,9 @@ defmodule Expo.PoTest do
     end
 
     test "flags" do
-      translations = %Translations{
-        translations: [
-          %Translation.Singular{
+      messages = %Messages{
+        messages: [
+          %Message.Singular{
             flags: [["bar", "baz", "foo"]],
             comments: [" other comment"],
             msgid: ["foo"],
@@ -176,7 +176,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              # other comment
              #, bar, baz, foo
              msgid "foo"
@@ -185,8 +185,8 @@ defmodule Expo.PoTest do
     end
 
     test "headers" do
-      translations = %Translations{
-        translations: [],
+      messages = %Messages{
+        messages: [],
         headers: [
           "",
           "Content-Type: text/plain\n",
@@ -194,7 +194,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid ""
              msgstr ""
              "Content-Type: text/plain\n"
@@ -203,14 +203,14 @@ defmodule Expo.PoTest do
     end
 
     test "multiple strings" do
-      translations = %Translations{
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{
+        messages: [
+          %Message.Singular{
             msgid: ["", "foo\n", "morefoo\n"],
             msgstr: ["bar", "baz\n", "bang"]
           },
-          %Translation.Plural{
+          %Message.Plural{
             msgid: ["a", "b"],
             msgid_plural: ["as", "bs"],
             msgstr: %{
@@ -221,7 +221,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid ""
              "foo\n"
              "morefoo\n"
@@ -240,15 +240,15 @@ defmodule Expo.PoTest do
              """
     end
 
-    test "headers and multiple (plural) translations with comments" do
-      translations = %Translations{
-        translations: [
-          %Translation.Singular{
+    test "headers and multiple (plural) messages with comments" do
+      messages = %Messages{
+        messages: [
+          %Message.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
             comments: [" comment", " another comment"]
           },
-          %Translation.Plural{
+          %Message.Plural{
             msgid: ["a foo, %{name}"],
             msgid_plural: ["%{count} foos, %{name}"],
             msgstr: %{0 => ["a bar, %{name}"], 1 => ["%{count} bars, %{name}"]},
@@ -262,7 +262,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid ""
              msgstr ""
              "Project-Id-Version: 1\n"
@@ -283,15 +283,15 @@ defmodule Expo.PoTest do
     end
 
     test "escaped characters in msgid/msgstr" do
-      translations = %Translations{
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{msgid: [~s("quotes")], msgstr: [~s(foo "bar" baz)]},
-          %Translation.Singular{msgid: [~s(new\nlines\r)], msgstr: [~s(and\ttabs)]}
+        messages: [
+          %Message.Singular{msgid: [~s("quotes")], msgstr: [~s(foo "bar" baz)]},
+          %Message.Singular{msgid: [~s(new\nlines\r)], msgstr: [~s(and\ttabs)]}
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid "\"quotes\""
              msgstr "foo \"bar\" baz"
 
@@ -301,24 +301,24 @@ defmodule Expo.PoTest do
     end
 
     test "double quotes in headers are escaped" do
-      translations = %Translations{headers: [~s(Foo: "bar"\n)], translations: []}
+      messages = %Messages{headers: [~s(Foo: "bar"\n)], messages: []}
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid ""
              msgstr "Foo: \"bar\"\n"
              """
     end
 
-    test "multiple translations with msgctxt" do
-      translations = %Translations{
+    test "multiple messages with msgctxt" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{msgid: ["foo"], msgstr: ["bar"]},
-          %Translation.Singular{msgid: ["foo"], msgstr: ["bong"], msgctxt: ["baz"]}
+        messages: [
+          %Message.Singular{msgid: ["foo"], msgstr: ["bar"]},
+          %Message.Singular{msgid: ["foo"], msgstr: ["bong"], msgctxt: ["baz"]}
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgid "foo"
              msgstr "bar"
 
@@ -328,11 +328,11 @@ defmodule Expo.PoTest do
              """
     end
 
-    test "single plural translation with msgctxt" do
-      translations = %Translations{
+    test "single plural message with msgctxt" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Plural{
+        messages: [
+          %Message.Plural{
             msgid: ["one foo"],
             msgid_plural: ["%{count} foos"],
             msgstr: %{
@@ -344,7 +344,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              msgctxt "baz"
              msgid "one foo"
              msgid_plural "%{count} foos"
@@ -353,11 +353,11 @@ defmodule Expo.PoTest do
              """
     end
 
-    test "single translation with previous msgid" do
-      translations = %Translations{
+    test "single message with previous msgid" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{
+        messages: [
+          %Message.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
             previous_msgids: ["test"]
@@ -365,18 +365,18 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              #| msgid "test"
              msgid "foo"
              msgstr "bar"
              """
     end
 
-    test "single obsolete translation" do
-      translations = %Translations{
+    test "single obsolete message" do
+      messages = %Messages{
         headers: [],
-        translations: [
-          %Translation.Singular{
+        messages: [
+          %Message.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
             obsolete: true
@@ -384,7 +384,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(translations)) == ~S"""
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
              #~ msgid "foo"
              #~ msgstr "bar"
              """
@@ -394,8 +394,8 @@ defmodule Expo.PoTest do
   describe "parse_string/1" do
     test "with single strings" do
       assert {:ok,
-              %Translations{
-                translations: [%Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]}]
+              %Messages{
+                messages: [%Message.Singular{msgid: ["hello"], msgstr: ["ciao"]}]
               }} =
                Po.parse_string("""
                msgid "hello"
@@ -405,9 +405,9 @@ defmodule Expo.PoTest do
 
     test "with previous msgid" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Singular{
+              %Messages{
+                messages: [
+                  %Message.Singular{
                     msgid: ["hello"],
                     msgstr: ["ciao"],
                     previous_msgids: [["holla"]]
@@ -421,11 +421,11 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "with obsolete translation" do
+    test "with obsolete message" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Singular{
+              %Messages{
+                messages: [
+                  %Message.Singular{
                     msgid: ["hello"],
                     msgstr: ["ciao"],
                     comments: [" comment"]
@@ -441,9 +441,9 @@ defmodule Expo.PoTest do
 
     test "with multiple concatenated strings" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Singular{msgid: ["hello", " world"], msgstr: ["ciao", " mondo"]}
+              %Messages{
+                messages: [
+                  %Message.Singular{msgid: ["hello", " world"], msgstr: ["ciao", " mondo"]}
                 ]
               }} =
                Po.parse_string("""
@@ -452,12 +452,12 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "with multiple translations" do
+    test "with multiple messages" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]},
-                  %Translation.Singular{msgid: ["word"], msgstr: ["parola"]}
+              %Messages{
+                messages: [
+                  %Message.Singular{msgid: ["hello"], msgstr: ["ciao"]},
+                  %Message.Singular{msgid: ["word"], msgstr: ["parola"]}
                 ]
               }} =
                Po.parse_string("""
@@ -470,8 +470,8 @@ defmodule Expo.PoTest do
 
     test "with unicode characters in the strings" do
       assert {:ok,
-              %Translations{
-                translations: [%Translation.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
+              %Messages{
+                messages: [%Message.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
               }} =
                Po.parse_string("""
                msgid "føø"
@@ -481,9 +481,9 @@ defmodule Expo.PoTest do
 
     test "with a pluralized string" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Plural{
+              %Messages{
+                messages: [
+                  %Message.Plural{
                     msgid: ["foo"],
                     msgstr: %{0 => ["bar"], 1 => ["bars"], 2 => ["barres"]}
                   }
@@ -498,21 +498,21 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "comments are associated with translations" do
+    test "comments are associated with messages" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Singular{
+              %Messages{
+                messages: [
+                  %Message.Singular{
                     msgid: ["foo"],
                     msgstr: ["bar"],
-                    comments: [" This is a translation", " Ah, another comment!"],
+                    comments: [" This is a message", " Ah, another comment!"],
                     extracted_comments: [" An extracted comment"],
                     references: [[{"lib/foo.ex", 32}]]
                   }
                 ]
               }} =
                Po.parse_string("""
-               # This is a translation
+               # This is a message
                #: lib/foo.ex:32
                # Ah, another comment!
                #. An extracted comment
@@ -521,12 +521,12 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "comments always belong to the next translation" do
+    test "comments always belong to the next message" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Singular{msgid: ["a"], msgstr: ["b"]},
-                  %Translation.Singular{msgid: ["c"], msgstr: ["d"], comments: [" Comment"]}
+              %Messages{
+                messages: [
+                  %Message.Singular{msgid: ["a"], msgstr: ["b"]},
+                  %Message.Singular{msgid: ["c"], msgstr: ["d"], comments: [" Comment"]}
                 ]
               }} =
                Po.parse_string("""
@@ -541,24 +541,24 @@ defmodule Expo.PoTest do
     test "syntax error when there is no 'msgid'" do
       assert {:error,
               {:parse_error,
-               "expected msgid followed by strings while processing plural translation inside singular translation or plural translation",
+               "expected msgid followed by strings while processing plural message inside singular message or plural message",
                _context, 1}} = Po.parse_string("msgstr \"foo\"")
 
       assert {:error,
               {:parse_error,
-               "expected msgid followed by strings while processing plural translation inside singular translation or plural translation",
+               "expected msgid followed by strings while processing plural message inside singular message or plural message",
                _context, 1}} = Po.parse_string("msgstr \"foo\"")
 
       assert {:error,
               {:parse_error,
-               "expected msgid followed by strings while processing plural translation inside singular translation or plural translation",
+               "expected msgid followed by strings while processing plural message inside singular message or plural message",
                _context, 1}} = Po.parse_string("\"foo\"")
     end
 
     test "if there's a msgid_plural, then plural forms must follow" do
       assert {:error,
               {:parse_error,
-               "expected plural form (like [0]) while processing plural translation inside singular translation or plural translation",
+               "expected plural form (like [0]) while processing plural message inside singular message or plural message",
                _context,
                3}} =
                Po.parse_string("""
@@ -571,14 +571,14 @@ defmodule Expo.PoTest do
     test "'msgid_plural' must come after 'msgid'" do
       assert {:error,
               {:parse_error,
-               "expected whitespace while processing msgid followed by strings inside plural translation inside singular translation or plural translation",
+               "expected whitespace while processing msgid followed by strings inside plural message inside singular message or plural message",
                _context, 1}} = Po.parse_string("msgid_plural ")
     end
 
     test "comments can't be placed between 'msgid' and 'msgstr'" do
       assert {:error,
               {:parse_error,
-               "expected msgid_plural followed by strings while processing plural translation inside singular translation or plural translation",
+               "expected msgid_plural followed by strings while processing plural message inside singular message or plural message",
                _context,
                2}} =
                Po.parse_string("""
@@ -589,7 +589,7 @@ defmodule Expo.PoTest do
 
       assert {:error,
               {:parse_error,
-               "expected plural translation while processing singular translation or plural translation",
+               "expected plural message while processing singular message or plural message",
                _context,
                3}} =
                Po.parse_string("""
@@ -602,15 +602,15 @@ defmodule Expo.PoTest do
 
     # TODO: Should work
     # test "files with just comments are ok (the comments are discarded)" do
-    #   assert {:ok, _translations} =
+    #   assert {:ok, _messages} =
     #            Po.parse_string("""
     #            # A comment
     #            # Another comment
     #            """)
     # end
 
-    test "reference are extracted into the :reference field of a translation" do
-      assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+    test "reference are extracted into the :reference field of a message" do
+      assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
                Po.parse_string("""
                #: foo.ex:1
                #: f:2
@@ -623,7 +623,7 @@ defmodule Expo.PoTest do
                msgstr "bar"
                """)
 
-      assert translation.references == [
+      assert message.references == [
                [{"foo.ex", 1}],
                [{"f", 2}],
                [{"filename with spaces.ex", 12}],
@@ -632,14 +632,14 @@ defmodule Expo.PoTest do
              ]
 
       # All the reference comments are removed.
-      assert translation.comments == [
+      assert message.comments == [
                " Not a reference comment",
                " : Not a reference comment either"
              ]
     end
 
-    test "extracted comments are extracted into the :extracted_comments field of a translation" do
-      assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+    test "extracted comments are extracted into the :extracted_comments field of a message" do
+      assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
                Po.parse_string("""
                #. Extracted comment
                # Not an extracted comment
@@ -648,19 +648,19 @@ defmodule Expo.PoTest do
                msgstr "bar"
                """)
 
-      assert translation.extracted_comments == [
+      assert message.extracted_comments == [
                " Extracted comment",
                "Another extracted comment"
              ]
 
       # All the reference comments are removed.
-      assert translation.comments == [
+      assert message.comments == [
                " Not an extracted comment"
              ]
     end
 
-    test "flags are extracted in to the :flags field of a translation" do
-      assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+    test "flags are extracted in to the :flags field of a message" do
+      assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
                Po.parse_string("""
                #, flag,a-flag b-flag, c-flag
                # comment
@@ -669,16 +669,16 @@ defmodule Expo.PoTest do
                msgstr "bar"
                """)
 
-      assert Enum.sort(translation.flags) == [
+      assert Enum.sort(message.flags) == [
                ["flag", "a-flag b-flag", "c-flag"],
                ["flag", "d-flag ", "e-flag"]
              ]
 
-      assert translation.comments == [" comment"]
+      assert message.comments == [" comment"]
     end
 
     test "headers are parsed when present" do
-      assert {:ok, %Translations{translations: [], headers: headers}} =
+      assert {:ok, %Messages{messages: [], headers: headers}} =
                Po.parse_string(~S"""
                msgid ""
                msgstr "Language: en_US\n"
@@ -688,9 +688,9 @@ defmodule Expo.PoTest do
       assert ["Language: en_US\n", "Last-Translator: Jane Doe <jane@doe.com>\n"] = headers
     end
 
-    test "duplicated translations cause a parse error" do
+    test "duplicated messages cause a parse error" do
       assert {:error,
-              {:duplicate_translations,
+              {:duplicate_messages,
                [
                  {"found duplicate on line 4 for msgid: 'foo'", 4, 1},
                  {"found duplicate on line 7 for msgid: 'foo'", 7, 1}
@@ -708,7 +708,7 @@ defmodule Expo.PoTest do
 
       # Works if the msgid is split differently as well
       assert {:error,
-              {:duplicate_translations, [{"found duplicate on line 4 for msgid: 'foo'", 4, 1}]}} =
+              {:duplicate_messages, [{"found duplicate on line 4 for msgid: 'foo'", 4, 1}]}} =
                Po.parse_string("""
                msgid "foo" ""
                msgstr "bar"
@@ -718,9 +718,9 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "duplicated plural translations cause a parse error" do
+    test "duplicated plural messages cause a parse error" do
       assert {:error,
-              {:duplicate_translations,
+              {:duplicate_messages,
                [{"found duplicate on line 5 for msgid: 'foo' and msgid_plural: 'foos'", 5, 1}]}} =
                Po.parse_string("""
                msgid "foo"
@@ -734,12 +734,12 @@ defmodule Expo.PoTest do
     end
 
     # TODO: Fix
-    # test "an empty list of tokens is parsed as an empty list of translations" do
-    #   assert {:ok, %Translations{translations: [], headers: []}} =      Po.parse_string("")
+    # test "an empty list of tokens is parsed as an empty list of messages" do
+    #   assert {:ok, %Messages{messages: [], headers: []}} =      Po.parse_string("")
     # end
 
     test "multiple references on the same line are parsed correctly" do
-      assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+      assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
                Po.parse_string("""
                #: foo.ex:1 bar.ex:2 with spaces.ex:3
                #: baz.ex:3 with:colon.ex:12
@@ -747,14 +747,14 @@ defmodule Expo.PoTest do
                msgstr "bar"
                """)
 
-      assert translation.references == [
+      assert message.references == [
                [{"foo.ex", 1}, {"bar.ex", 2}, {"with spaces.ex", 3}],
                [{"baz.ex", 3}, {"with:colon.ex", 12}]
              ]
     end
 
     test "top-of-the-file comments are extracted correctly" do
-      assert {:ok, %Translations{translations: [], top_comments: top_comments}} =
+      assert {:ok, %Messages{messages: [], top_comments: top_comments}} =
                Po.parse_string("""
                # Top of the file
                ## Top of the file with two hashes
@@ -765,21 +765,21 @@ defmodule Expo.PoTest do
       assert [" Top of the file", "# Top of the file with two hashes"] = top_comments
     end
 
-    test "msgctxt is parsed correctly for translations" do
-      assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+    test "msgctxt is parsed correctly for messages" do
+      assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
                Po.parse_string("""
                msgctxt "my_" "context"
                msgid "my_msgid"
                msgstr "my_msgstr"
                """)
 
-      assert translation.msgctxt == ["my_", "context"]
-      assert translation.msgid == ["my_msgid"]
-      assert translation.msgstr == ["my_msgstr"]
+      assert message.msgctxt == ["my_", "context"]
+      assert message.msgid == ["my_msgid"]
+      assert message.msgstr == ["my_msgstr"]
     end
 
-    test "msgctxt is parsed correctly for plural translations" do
-      assert {:ok, %Translations{translations: [%Translation.Plural{} = translation]}} =
+    test "msgctxt is parsed correctly for plural messages" do
+      assert {:ok, %Messages{messages: [%Message.Plural{} = message]}} =
                Po.parse_string("""
                msgctxt "my_" "context"
                msgid "my_msgid"
@@ -787,27 +787,27 @@ defmodule Expo.PoTest do
                msgstr[0] "my_msgstr"
                """)
 
-      assert translation.msgctxt == ["my_", "context"]
-      assert translation.msgid == ["my_msgid"]
-      assert translation.msgid_plural == ["my_msgid_plural"]
-      assert translation.msgstr[0] == ["my_msgstr"]
+      assert message.msgctxt == ["my_", "context"]
+      assert message.msgid == ["my_msgid"]
+      assert message.msgid_plural == ["my_msgid_plural"]
+      assert message.msgstr[0] == ["my_msgstr"]
     end
 
-    test "msgctxt is nil when no msgctxt is present in a translation" do
-      assert {:ok, %Translations{translations: [%Translation.Singular{} = translation]}} =
+    test "msgctxt is nil when no msgctxt is present in a message" do
+      assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
                Po.parse_string("""
                msgid "my_msgid"
                msgstr "my_msgstr"
                """)
 
-      assert translation.msgctxt == nil
+      assert message.msgctxt == nil
     end
 
     test "msgctxt causes a syntax error when misplaced" do
       # Badly placed msgctxt still causes a syntax error
       assert {:error,
               {:parse_error,
-               "expected msgid_plural followed by strings while processing plural translation inside singular translation or plural translation",
+               "expected msgid_plural followed by strings while processing plural message inside singular message or plural message",
                _context,
                2}} =
                Po.parse_string("""
@@ -817,12 +817,12 @@ defmodule Expo.PoTest do
                """)
     end
 
-    test "msgctxt should not cause duplication translations" do
+    test "msgctxt should not cause duplication messages" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Singular{} = translation1,
-                  %Translation.Singular{} = translation2
+              %Messages{
+                messages: [
+                  %Message.Singular{} = message1,
+                  %Message.Singular{} = message2
                 ]
               }} =
                Po.parse_string("""
@@ -833,21 +833,21 @@ defmodule Expo.PoTest do
                msgstr "my_msgstr"
                """)
 
-      assert translation1.msgctxt == ["my_", "context"]
-      assert translation1.msgid == ["my_msgid"]
-      assert translation1.msgstr == ["my_msgstr"]
+      assert message1.msgctxt == ["my_", "context"]
+      assert message1.msgid == ["my_msgid"]
+      assert message1.msgstr == ["my_msgstr"]
 
-      assert translation2.msgctxt == nil
-      assert translation2.msgid == ["my_msgid"]
-      assert translation2.msgstr == ["my_msgstr"]
+      assert message2.msgctxt == nil
+      assert message2.msgid == ["my_msgid"]
+      assert message2.msgstr == ["my_msgstr"]
     end
 
-    test "msgctxt should not cause duplication for plural translations" do
+    test "msgctxt should not cause duplication for plural messages" do
       assert {:ok,
-              %Translations{
-                translations: [
-                  %Translation.Plural{} = translation1,
-                  %Translation.Plural{} = translation2
+              %Messages{
+                messages: [
+                  %Message.Plural{} = message1,
+                  %Message.Plural{} = message2
                 ]
               }} =
                Po.parse_string("""
@@ -860,21 +860,21 @@ defmodule Expo.PoTest do
                msgstr[0] "my_msgstr"
                """)
 
-      assert translation1.msgctxt == ["my_", "context"]
-      assert translation1.msgid == ["my_msgid"]
-      assert translation1.msgid_plural == ["my_msgid_plural"]
-      assert translation1.msgstr[0] == ["my_msgstr"]
+      assert message1.msgctxt == ["my_", "context"]
+      assert message1.msgid == ["my_msgid"]
+      assert message1.msgid_plural == ["my_msgid_plural"]
+      assert message1.msgstr[0] == ["my_msgstr"]
 
-      assert translation2.msgctxt == nil
-      assert translation2.msgid == ["my_msgid"]
-      assert translation2.msgid_plural == ["my_msgid_plural"]
-      assert translation2.msgstr[0] == ["my_msgstr"]
+      assert message2.msgctxt == nil
+      assert message2.msgid == ["my_msgid"]
+      assert message2.msgid_plural == ["my_msgid_plural"]
+      assert message2.msgstr[0] == ["my_msgstr"]
     end
 
     test "populates the :file field with the path of the parsed file if option is provided" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
-      assert {:ok, %Translations{file: ^fixture_path}} =
+      assert {:ok, %Messages{file: ^fixture_path}} =
                Po.parse_string(File.read!(fixture_path), file: fixture_path)
     end
   end
@@ -883,7 +883,7 @@ defmodule Expo.PoTest do
     test "populates the :file field with the path of the parsed file if option is provided" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
-      assert %Translations{file: ^fixture_path} =
+      assert %Messages{file: ^fixture_path} =
                Po.parse_string!(File.read!(fixture_path), file: fixture_path)
     end
 
@@ -893,8 +893,8 @@ defmodule Expo.PoTest do
       msgstr "bar"
       """
 
-      assert %Translations{
-               translations: [%Translation.Singular{msgid: ["foo"], msgstr: ["bar"]}],
+      assert %Messages{
+               messages: [%Message.Singular{msgid: ["foo"], msgstr: ["bar"]}],
                headers: []
              } = Po.parse_string!(str)
     end
@@ -903,7 +903,7 @@ defmodule Expo.PoTest do
       str = "msg"
 
       assert_raise SyntaxError,
-                   "1: expected msgid followed by strings while processing plural translation inside singular translation or plural translation",
+                   "1: expected msgid followed by strings while processing plural message inside singular message or plural message",
                    fn ->
                      Po.parse_string!(str)
                    end
@@ -915,24 +915,24 @@ defmodule Expo.PoTest do
       """
 
       assert_raise SyntaxError,
-                   "2: expected whitespace while processing msgid followed by strings inside plural translation inside singular translation or plural translation",
+                   "2: expected whitespace while processing msgid followed by strings inside plural message inside singular message or plural message",
                    fn ->
                      Po.parse_string!(str)
                    end
 
       assert_raise SyntaxError,
-                   "file:2: expected whitespace while processing msgid followed by strings inside plural translation inside singular translation or plural translation",
+                   "file:2: expected whitespace while processing msgid followed by strings inside plural message inside singular message or plural message",
                    fn ->
                      Po.parse_string!(str, file: "file")
                    end
     end
 
-    test "file with duplicate translations" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/duplicate_translations.po")
+    test "file with duplicate messages" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/duplicate_messages.po")
 
       msg = "file:4: found duplicate on line 4 for msgid: 'test'"
 
-      assert_raise DuplicateTranslationsError, msg, fn ->
+      assert_raise DuplicateMessagesError, msg, fn ->
         Po.parse_string!(File.read!(fixture_path), file: "file")
       end
     end
@@ -950,8 +950,8 @@ defmodule Expo.PoTest do
     """
 
     assert {:ok,
-            %Translations{
-              translations: [%Translation.Singular{msgid: ["foo"], msgstr: ["bar"]}],
+            %Messages{
+              messages: [%Message.Singular{msgid: ["foo"], msgstr: ["bar"]}],
               headers: [
                 "",
                 "Project-Id-Version: xxx\n",
@@ -964,18 +964,18 @@ defmodule Expo.PoTest do
   describe "parse_file/1" do
     test "populates the :file field with the path of the parsed file" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
-      assert {:ok, %Translations{file: ^fixture_path}} = Po.parse_file(fixture_path)
+      assert {:ok, %Messages{file: ^fixture_path}} = Po.parse_file(fixture_path)
     end
 
     test "valid file contents" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
       assert {:ok,
-              %Translations{
+              %Messages{
                 headers: [],
-                translations: [
-                  %Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]},
-                  %Translation.Singular{
+                messages: [
+                  %Message.Singular{msgid: ["hello"], msgstr: ["ciao"]},
+                  %Message.Singular{
                     msgid: ["how are you,", " friend?"],
                     msgstr: ["come stai,", " amico?"]
                   }
@@ -994,7 +994,7 @@ defmodule Expo.PoTest do
       assert Po.parse_file(fixture_path) ==
                {:error,
                 {:parse_error,
-                 "expected msgid followed by strings while processing plural translation inside singular translation or plural translation",
+                 "expected msgid followed by strings while processing plural message inside singular message or plural message",
                  "msg\n", 3}}
     end
 
@@ -1008,7 +1008,7 @@ defmodule Expo.PoTest do
       output =
         capture_io(:stderr, fn ->
           assert {:ok, po} = Po.parse_file(fixture_path)
-          assert [%Translation.Singular{msgid: ["foo"], msgstr: ["bar"]}] = po.translations
+          assert [%Message.Singular{msgid: ["foo"], msgstr: ["bar"]}] = po.messages
         end)
 
       assert output =~ "#{fixture_path}: warning: the file being parsed starts with a BOM"
@@ -1019,17 +1019,17 @@ defmodule Expo.PoTest do
   describe "parse_file!/1" do
     test "populates the :file field with the path of the parsed file" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
-      assert %Translations{file: ^fixture_path} = Po.parse_file!(fixture_path)
+      assert %Messages{file: ^fixture_path} = Po.parse_file!(fixture_path)
     end
 
     test "valid file contents" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
-      assert %Translations{
+      assert %Messages{
                headers: [],
-               translations: [
-                 %Translation.Singular{msgid: ["hello"], msgstr: ["ciao"]},
-                 %Translation.Singular{
+               messages: [
+                 %Message.Singular{msgid: ["hello"], msgstr: ["ciao"]},
+                 %Message.Singular{
                    msgid: ["how are you,", " friend?"],
                    msgstr: ["come stai,", " amico?"]
                  }
@@ -1049,7 +1049,7 @@ defmodule Expo.PoTest do
       fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_token_error.po")
 
       msg =
-        "_build/test/lib/expo/priv/test/po/invalid_token_error.po:3: expected msgid followed by strings while processing plural translation inside singular translation or plural translation"
+        "_build/test/lib/expo/priv/test/po/invalid_token_error.po:3: expected msgid followed by strings while processing plural message inside singular message or plural message"
 
       assert_raise SyntaxError, msg, fn ->
         Po.parse_file!(fixture_path)
@@ -1067,13 +1067,13 @@ defmodule Expo.PoTest do
       end
     end
 
-    test "file with duplicate translations" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/duplicate_translations.po")
+    test "file with duplicate messages" do
+      fixture_path = Application.app_dir(:expo, "priv/test/po/duplicate_messages.po")
 
       msg =
-        "_build/test/lib/expo/priv/test/po/duplicate_translations.po:4: found duplicate on line 4 for msgid: 'test'"
+        "_build/test/lib/expo/priv/test/po/duplicate_messages.po:4: found duplicate on line 4 for msgid: 'test'"
 
-      assert_raise DuplicateTranslationsError, msg, fn ->
+      assert_raise DuplicateMessagesError, msg, fn ->
         Po.parse_file!(fixture_path)
       end
     end

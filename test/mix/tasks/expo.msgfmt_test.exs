@@ -3,8 +3,8 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
 
   import ExUnit.CaptureIO
 
+  alias Expo.Messages
   alias Expo.Mo
-  alias Expo.Translations
   alias Mix.Tasks.Expo.Msgfmt
 
   setup do
@@ -54,7 +54,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
 
     Msgfmt.run([po_path, "--output-file=#{temp_file}", "--use-fuzzy"])
 
-    assert {:ok, %Translations{translations: [_one, _two]}} = Mo.parse_file(temp_file)
+    assert {:ok, %Messages{messages: [_one, _two]}} = Mo.parse_file(temp_file)
   end
 
   test "errors with missing file" do

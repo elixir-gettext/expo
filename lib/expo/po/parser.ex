@@ -4,9 +4,9 @@ defmodule Expo.Po.Parser do
 
   import NimbleParsec
 
+  alias Expo.Message
+  alias Expo.Messages
   alias Expo.Po
-  alias Expo.Translation
-  alias Expo.Translations
   alias Expo.Util
 
   @bom <<0xEF, 0xBB, 0xBF>>
@@ -135,7 +135,7 @@ defmodule Expo.Po.Parser do
     |> tag(:reference)
     |> label("reference")
 
-  translation_meta =
+  message_meta =
     choice([
       comment,
       extracted_comment,
@@ -161,67 +161,67 @@ defmodule Expo.Po.Parser do
     |> reduce(:make_plural_form)
     |> unwrap_and_tag(:msgstr)
 
-  translation_base =
-    repeat(translation_meta)
+  message_base =
+    repeat(message_meta)
     |> concat(optional(obsolete_prefix))
     |> optional(msgctxt)
     |> concat(optional(obsolete_prefix))
     |> post_traverse(:attach_line_number)
     |> concat(msgid)
 
-  singular_translation =
-    translation_base
+  singular_message =
+    message_base
     |> concat(optional(obsolete_prefix))
     |> concat(msgstr)
-    |> tag(Translation.Singular)
-    |> reduce(:make_translation)
-    |> label("singular translation")
+    |> tag(Message.Singular)
+    |> reduce(:make_message)
+    |> label("singular message")
 
-  plural_translation =
-    translation_base
+  plural_message =
+    message_base
     |> concat(optional(obsolete_prefix))
     |> concat(msgid_plural)
     |> times(msgstr_with_plural_form, min: 1)
-    |> tag(Translation.Plural)
-    |> reduce(:make_translation)
-    |> label("plural translation")
+    |> tag(Message.Plural)
+    |> reduce(:make_message)
+    |> label("plural message")
 
-  translation = choice([singular_translation, plural_translation])
+  message = choice([singular_message, plural_message])
 
   po_entry =
     optional_whitespace
-    |> concat(translation)
+    |> concat(message)
     |> concat(optional_whitespace)
     |> post_traverse(:register_duplicates)
 
   defparsecp :po_file,
              times(po_entry, min: 1)
-             |> post_traverse(:make_translations)
-             |> unwrap_and_tag(:translations)
+             |> post_traverse(:make_messages)
+             |> unwrap_and_tag(:messages)
              |> eos()
 
   @spec parse(content :: String.t(), opts :: Po.parse_options()) ::
-          {:ok, Translations.t()}
+          {:ok, Messages.t()}
           | {:error,
              {:parse_error, message :: String.t(), offending_content :: String.t(),
               line :: pos_integer()}
-             | {:duplicate_translations,
+             | {:duplicate_messages,
                 [{message :: String.t(), new_line :: pos_integer(), old_line :: pos_integer()}]}}
   def parse(content, opts) do
     content = prune_bom(content, Keyword.get(opts, :file, "nofile"))
 
     case po_file(content, context: %{detected_duplicates: [], file: Keyword.get(opts, :file)}) do
-      {:ok, [{:translations, translations}], "", %{detected_duplicates: []}, _line, _offset} ->
-        {:ok, translations}
+      {:ok, [{:messages, messages}], "", %{detected_duplicates: []}, _line, _offset} ->
+        {:ok, messages}
 
       {:ok, _result, "", %{detected_duplicates: [_head | _rest] = detected_duplicates}, _line,
        _offset} ->
         {:error,
-         {:duplicate_translations,
+         {:duplicate_messages,
           detected_duplicates
           |> Enum.map(fn
-            {translation, new_line, old_line} ->
-              {build_duplicated_error_message(translation, new_line), new_line, old_line}
+            {message, new_line, old_line} ->
+              {build_duplicated_error_message(message, new_line), new_line, old_line}
           end)
           |> Enum.reverse()}}
 
@@ -239,12 +239,11 @@ defmodule Expo.Po.Parser do
     end
   end
 
-  defp make_translations(rest, translations, context, _line, _offset) do
-    {headers, top_comments, translations} =
-      translations |> Enum.reverse() |> Util.extract_meta_headers()
+  defp make_messages(rest, messages, context, _line, _offset) do
+    {headers, top_comments, messages} = messages |> Enum.reverse() |> Util.extract_meta_headers()
 
-    tokens = %Translations{
-      translations: translations,
+    tokens = %Messages{
+      messages: messages,
       headers: headers,
       top_comments: top_comments,
       file: context[:file]
@@ -253,44 +252,43 @@ defmodule Expo.Po.Parser do
     {rest, [tokens], context}
   end
 
-  defp make_translation(tokens) do
-    {[{type, type_attrs}], attrs} =
-      Keyword.split(tokens, [Translation.Singular, Translation.Plural])
+  defp make_message(tokens) do
+    {[{type, type_attrs}], attrs} = Keyword.split(tokens, [Message.Singular, Message.Plural])
 
     attrs =
       [attrs, type_attrs]
       |> Enum.concat()
       |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-      |> Enum.map(&make_translation_attribute(type, elem(&1, 0), elem(&1, 1)))
+      |> Enum.map(&make_message_attribute(type, elem(&1, 0), elem(&1, 1)))
 
     struct!(type, attrs)
   end
 
-  defp make_translation_attribute(type, key, value)
+  defp make_message_attribute(type, key, value)
 
-  defp make_translation_attribute(_type, :msgid, [value]), do: {:msgid, value}
-  defp make_translation_attribute(_type, :msgctxt, [value]), do: {:msgctxt, value}
+  defp make_message_attribute(_type, :msgid, [value]), do: {:msgid, value}
+  defp make_message_attribute(_type, :msgctxt, [value]), do: {:msgctxt, value}
 
-  defp make_translation_attribute(Translation.Plural, :msgid_plural, [value]),
+  defp make_message_attribute(Message.Plural, :msgid_plural, [value]),
     do: {:msgid_plural, value}
 
-  defp make_translation_attribute(Translation.Singular, :msgstr, [value]), do: {:msgstr, value}
+  defp make_message_attribute(Message.Singular, :msgstr, [value]), do: {:msgstr, value}
 
-  defp make_translation_attribute(Translation.Plural, :msgstr, value),
+  defp make_message_attribute(Message.Plural, :msgstr, value),
     do: {:msgstr, Map.new(value, fn {key, values} -> {key, values} end)}
 
-  defp make_translation_attribute(_type, :comment, value), do: {:comments, value}
+  defp make_message_attribute(_type, :comment, value), do: {:comments, value}
 
-  defp make_translation_attribute(_type, :extracted_comment, value),
+  defp make_message_attribute(_type, :extracted_comment, value),
     do: {:extracted_comments, value}
 
-  defp make_translation_attribute(_type, :flag, value), do: {:flags, value}
+  defp make_message_attribute(_type, :flag, value), do: {:flags, value}
 
-  defp make_translation_attribute(_type, :previous_msgid, value),
+  defp make_message_attribute(_type, :previous_msgid, value),
     do: {:previous_msgids, Keyword.values(value)}
 
-  defp make_translation_attribute(_type, :reference, value), do: {:references, value}
-  defp make_translation_attribute(_type, :obsolete, _value), do: {:obsolete, true}
+  defp make_message_attribute(_type, :reference, value), do: {:references, value}
+  defp make_message_attribute(_type, :obsolete, _value), do: {:obsolete, true}
 
   defp remove_empty_flags(tokens), do: Enum.reject(tokens, &match?("", &1))
 
@@ -299,12 +297,12 @@ defmodule Expo.Po.Parser do
 
   defp register_duplicates(
          rest,
-         [%{} = translation] = args,
+         [%{} = message] = args,
          %{entry_line_number: new_line} = context,
          _line,
          _offset
        ) do
-    key = Translation.key(translation)
+    key = Message.key(message)
 
     context =
       case context[:duplicate_key_line_mapping][key] do
@@ -312,7 +310,7 @@ defmodule Expo.Po.Parser do
           context
 
         old_line ->
-          Map.update!(context, :detected_duplicates, &[{translation, new_line, old_line} | &1])
+          Map.update!(context, :detected_duplicates, &[{message, new_line, old_line} | &1])
       end
 
     context =
@@ -326,15 +324,15 @@ defmodule Expo.Po.Parser do
     {rest, args, context}
   end
 
-  defp build_duplicated_error_message(%Translation.Singular{} = translation, new_line) do
-    id = IO.iodata_to_binary(translation.msgid)
+  defp build_duplicated_error_message(%Message.Singular{} = message, new_line) do
+    id = IO.iodata_to_binary(message.msgid)
 
     "found duplicate on line #{new_line} for msgid: '#{id}'"
   end
 
-  defp build_duplicated_error_message(%Translation.Plural{} = translation, new_line) do
-    id = IO.iodata_to_binary(translation.msgid)
-    idp = IO.iodata_to_binary(translation.msgid_plural)
+  defp build_duplicated_error_message(%Message.Plural{} = message, new_line) do
+    id = IO.iodata_to_binary(message.msgid)
+    idp = IO.iodata_to_binary(message.msgid_plural)
     "found duplicate on line #{new_line} for msgid: '#{id}' and msgid_plural: '#{idp}'"
   end
 

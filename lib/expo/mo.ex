@@ -3,10 +3,10 @@ defmodule Expo.Mo do
   `.mo` file handler
   """
 
+  alias Expo.Messages
   alias Expo.Mo.InvalidFileError
   alias Expo.Mo.Parser
   alias Expo.Mo.UnsupportedVersionError
-  alias Expo.Translations
 
   @type compose_options :: [
           {:endianness, :little | :big},
@@ -22,14 +22,14 @@ defmodule Expo.Mo do
   @type file_error :: {:error, File.posix()}
 
   @doc """
-  Composes a `.mo` file from translations
+  Composes a `.mo` file from messages
 
   ### Examples
 
-      iex> %Expo.Translations{
+      iex> %Expo.Messages{
       ...>   headers: ["Last-Translator: Jane Doe"],
-      ...>   translations: [
-      ...>     %Expo.Translation.Singular{msgid: ["foo"], msgstr: ["bar"], comments: "A comment"}
+      ...>   messages: [
+      ...>     %Expo.Message.Singular{msgid: ["foo"], msgstr: ["bar"], comments: "A comment"}
       ...>   ]
       ...> }
       ...> |> Expo.Mo.compose()
@@ -41,7 +41,7 @@ defmodule Expo.Mo do
         32, 68, 111, 101, 0, 98, 97, 114, 0>>
 
   """
-  @spec compose(translations :: Translations.t(), opts :: compose_options()) :: iodata()
+  @spec compose(messages :: Messages.t(), opts :: compose_options()) :: iodata()
   defdelegate compose(content, opts \\ []), to: Expo.Mo.Composer
 
   @doc """
@@ -57,20 +57,20 @@ defmodule Expo.Mo do
       ...>   28::little-unsigned-integer-size(4)-unit(8),
       ...>   28::little-unsigned-integer-size(4)-unit(8),
       ...>   0::little-unsigned-integer-size(4)-unit(8)>>)
-      {:ok, %Expo.Translations{headers: [], translations: []}}
+      {:ok, %Expo.Messages{headers: [], messages: []}}
 
   """
   @spec parse_binary(content :: binary(), opts :: parse_options()) ::
-          {:ok, Translations.t()}
+          {:ok, Messages.t()}
           | invalid_file_error()
           | unsupported_version_error()
   def parse_binary(content, opts \\ []), do: Parser.parse(content, opts)
 
   @doc """
-  Parses a string into a `Expo.Translations` struct, raising an exception if there are
+  Parses a string into a `Expo.Messages` struct, raising an exception if there are
   any errors.
 
-  Works exactly like `parse_binary/1`, but returns a `Expo.Translations` struct
+  Works exactly like `parse_binary/1`, but returns a `Expo.Messages` struct
   if there are no errors or raises a `Expo.Mo.InvalidFileError` error if there
   are.
 
@@ -87,14 +87,14 @@ defmodule Expo.Mo do
       ...>   28::little-unsigned-integer-size(4)-unit(8),
       ...>   28::little-unsigned-integer-size(4)-unit(8),
       ...>   0::little-unsigned-integer-size(4)-unit(8)>>)
-      %Expo.Translations{headers: [], translations: []}
+      %Expo.Messages{headers: [], messages: []}
 
       iex> Expo.Mo.parse_binary!("invalid")
       ** (Expo.Mo.InvalidFileError) invalid file
 
   """
   @spec parse_binary!(content :: binary(), options :: parse_options()) ::
-          Translations.t() | no_return
+          Messages.t() | no_return
   def parse_binary!(str, opts \\ []) do
     case parse_binary(str, opts) do
       {:ok, parsed} ->
@@ -123,7 +123,7 @@ defmodule Expo.Mo do
   end
 
   @doc """
-  Parses the contents of a file into a `Expo.Translations` struct.
+  Parses the contents of a file into a `Expo.Messages` struct.
 
   This function works similarly to `parse_binary/1` except that it takes a file
   and parses the contents of that file. It can return:
@@ -136,16 +136,16 @@ defmodule Expo.Mo do
 
   ## Examples
 
-      {:ok, po} = Expo.Mo.parse_file "translations.po"
+      {:ok, po} = Expo.Mo.parse_file "messages.po"
       po.file
-      #=> "translations.po"
+      #=> "messages.po"
 
       Expo.Mo.parse_file "nonexistent"
       #=> {:error, :enoent}
 
   """
   @spec parse_file(path :: Path.t(), opts :: parse_options()) ::
-          {:ok, Translations.t()}
+          {:ok, Messages.t()}
           | invalid_file_error()
           | unsupported_version_error()
           | file_error()
@@ -157,7 +157,7 @@ defmodule Expo.Mo do
   end
 
   @doc """
-  Parses the contents of a file into a `Expo.Translations` struct, raising if there
+  Parses the contents of a file into a `Expo.Messages` struct, raising if there
   are any errors.
 
   Works like `parse_file/1`, except that it raises a `Expo.Mo.SyntaxError`
@@ -170,7 +170,7 @@ defmodule Expo.Mo do
       #=> ** (File.Error) could not parse "nonexistent.po": no such file or directory
 
   """
-  @spec parse_file!(Path.t(), opts :: parse_options()) :: Translations.t() | no_return
+  @spec parse_file!(Path.t(), opts :: parse_options()) :: Messages.t() | no_return
   def parse_file!(path, opts \\ []) do
     case parse_file(path, opts) do
       {:ok, parsed} ->

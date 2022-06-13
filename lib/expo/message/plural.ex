@@ -1,16 +1,16 @@
-defmodule Expo.Translation.Plural do
+defmodule Expo.Message.Plural do
   @moduledoc """
-  Struct for plural translations
+  Struct for plural messages
   """
 
-  alias Expo.Translation
+  alias Expo.Message
   alias Expo.Util
 
   @type t :: %__MODULE__{
-          msgid: Translation.msgid(),
-          msgid_plural: [Translation.msgid()],
-          msgstr: %{required(non_neg_integer()) => Translation.msgstr()},
-          msgctxt: Translation.msgctxt() | nil,
+          msgid: Message.msgid(),
+          msgid_plural: [Message.msgid()],
+          msgstr: %{required(non_neg_integer()) => Message.msgstr()},
+          msgctxt: Message.msgctxt() | nil,
           comments: [String.t()],
           extracted_comments: [String.t()],
           flags: [[String.t()]],
@@ -37,7 +37,7 @@ defmodule Expo.Translation.Plural do
 
   @doc false
   @spec key(t()) :: {String.t(), {String.t(), String.t()}}
-  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid, msgid_plural: msgid_plural} = _translation),
+  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid, msgid_plural: msgid_plural} = _message),
     do:
       {IO.iodata_to_binary(msgctxt || []),
        {IO.iodata_to_binary(msgid), IO.iodata_to_binary(msgid_plural)}}
@@ -51,7 +51,7 @@ defmodule Expo.Translation.Plural do
 
   ### Examples
 
-      iex> Expo.Translation.Plural.rebalance(%Expo.Translation.Plural{
+      iex> Expo.Message.Plural.rebalance(%Expo.Message.Plural{
       ...>   msgid: ["", "hello", "\\n", "", "world", ""],
       ...>   msgid_plural: ["", "hello", "\\n", "", "world", ""],
       ...>   msgstr: %{0 => ["", "hello", "\\n", "", "world", ""]},
@@ -67,7 +67,7 @@ defmodule Expo.Translation.Plural do
       }
 
   """
-  @spec rebalance(translation :: t()) :: t()
+  @spec rebalance(message :: t()) :: t()
   def rebalance(
         %__MODULE__{
           msgid: msgid,
@@ -75,7 +75,7 @@ defmodule Expo.Translation.Plural do
           msgstr: msgstr,
           flags: flags,
           references: references
-        } = translation
+        } = message
       ) do
     flags =
       case List.flatten(flags) do
@@ -84,7 +84,7 @@ defmodule Expo.Translation.Plural do
       end
 
     %__MODULE__{
-      translation
+      message
       | msgid: Util.rebalance_strings(msgid),
         msgid_plural: Util.rebalance_strings(msgid_plural),
         msgstr:

@@ -1,8 +1,8 @@
 defmodule Mix.Tasks.Expo.Msgfmt do
-  @shortdoc "Generate binary message catalog from textual translation description."
+  @shortdoc "Generate binary message catalog from textual message description."
 
   @moduledoc """
-  Generate binary message catalog from textual translation description.
+  Generate binary message catalog from textual message description.
 
       mix expo.msgfmt [PO_FILE] [OPTIONS]
 
@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Expo.Msgfmt do
   * `--endianness=BYTEORDER` - write out 32-bit numbers in the given byte
     order (big or little, default depends on platform)
   * `--output-file=FILE` - write output to specified file
-  * `--statistics` - print statistics about translations
+  * `--statistics` - print statistics about messages
 
   """
 
@@ -55,9 +55,9 @@ defmodule Mix.Tasks.Expo.Msgfmt do
           file
       end
 
-    translations = Po.parse_file!(source_file)
+    messages = Po.parse_file!(source_file)
 
-    output = Mo.compose(translations, mo_compose_opts)
+    output = Mo.compose(messages, mo_compose_opts)
 
     case output_file do
       nil -> IO.binwrite(:standard_io, IO.iodata_to_binary(output))
@@ -66,7 +66,7 @@ defmodule Mix.Tasks.Expo.Msgfmt do
 
     if Keyword.fetch!(mo_compose_opts, :statistics) do
       receive do
-        {Mo, :translation_count, count} ->
+        {Mo, :message_count, count} ->
           # Not using Mix.shell().info/1 since that will print into stdout and not stderr
           IO.puts(:standard_error, "#{count} translated messages.")
       end

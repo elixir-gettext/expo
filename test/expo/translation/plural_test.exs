@@ -1,9 +1,9 @@
-defmodule Expo.Translation.PluralTest do
+defmodule Expo.Message.PluralTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
 
-  alias Expo.Translation.Plural
+  alias Expo.Message.Plural
 
   doctest Plural
 
