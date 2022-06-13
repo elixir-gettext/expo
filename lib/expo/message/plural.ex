@@ -20,11 +20,11 @@ defmodule Expo.Message.Plural do
           obsolete: boolean()
         }
 
-  @enforce_keys [:msgid, :msgid_plural, :msgstr]
+  @enforce_keys [:msgid, :msgid_plural]
   defstruct [
     :msgid,
     :msgid_plural,
-    :msgstr,
+    msgstr: %{},
     msgctxt: nil,
     comments: [],
     extracted_comments: [],

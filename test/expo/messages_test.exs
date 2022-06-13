@@ -28,10 +28,7 @@ defmodule Expo.MessagesTest do
                Messages.rebalance(%Messages{
                  headers: [],
                  messages: [
-                   %Message.Singular{
-                     msgid: ["", "hello", "\n", "", "world", ""],
-                     msgstr: []
-                   }
+                   %Message.Singular{msgid: ["", "hello", "\n", "", "world", ""]}
                  ]
                })
     end
@@ -98,10 +95,10 @@ defmodule Expo.MessagesTest do
       }
 
       assert %Message.Singular{msgstr: ["foo"]} =
-               Messages.find(messages, %Message.Singular{msgid: ["foo"], msgstr: []})
+               Messages.find(messages, %Message.Singular{msgid: ["foo"]})
 
       assert nil ==
-               Messages.find(messages, %Message.Singular{msgid: ["baz"], msgstr: []})
+               Messages.find(messages, %Message.Singular{msgid: ["baz"]})
     end
 
     test "works with list" do
@@ -111,10 +108,10 @@ defmodule Expo.MessagesTest do
       ]
 
       assert %Message.Singular{msgstr: ["foo"]} =
-               Messages.find(messages, %Message.Singular{msgid: ["foo"], msgstr: []})
+               Messages.find(messages, %Message.Singular{msgid: ["foo"]})
 
       assert nil ==
-               Messages.find(messages, %Message.Singular{msgid: ["baz"], msgstr: []})
+               Messages.find(messages, %Message.Singular{msgid: ["baz"]})
     end
   end
 end

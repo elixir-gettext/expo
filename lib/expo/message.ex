@@ -31,13 +31,13 @@ defmodule Expo.Message do
 
   ## Examples
 
-      iex> t1 = %Expo.Message.Singular{msgid: ["foo"], msgstr: []}
-      iex> t2 = %Expo.Message.Singular{msgid: ["", "foo"], msgstr: []}
+      iex> t1 = %Expo.Message.Singular{msgid: ["foo"]}
+      iex> t2 = %Expo.Message.Singular{msgid: ["", "foo"]}
       iex> Expo.Message.key(t1) == Expo.Message.key(t2)
       true
 
-      iex> t1 = %Expo.Message.Singular{msgid: ["foo"], msgstr: []}
-      iex> t2 = %Expo.Message.Singular{msgid: ["bar"], msgstr: []}
+      iex> t1 = %Expo.Message.Singular{msgid: ["foo"]}
+      iex> t2 = %Expo.Message.Singular{msgid: ["bar"]}
       iex> Expo.Message.key(t1) == Expo.Message.key(t2)
       false
 
@@ -57,13 +57,13 @@ defmodule Expo.Message do
 
   ## Examples
 
-      iex> t1 = %Expo.Message.Singular{msgid: ["foo"], msgstr: []}
-      iex> t2 = %Expo.Message.Singular{msgid: ["", "foo"], msgstr: []}
+      iex> t1 = %Expo.Message.Singular{msgid: ["foo"]}
+      iex> t2 = %Expo.Message.Singular{msgid: ["", "foo"]}
       iex> Expo.Message.same?(t1, t2)
       true
 
-      iex> t1 = %Expo.Message.Singular{msgid: ["foo"], msgstr: []}
-      iex> t2 = %Expo.Message.Singular{msgid: ["bar"], msgstr: []}
+      iex> t1 = %Expo.Message.Singular{msgid: ["foo"]}
+      iex> t2 = %Expo.Message.Singular{msgid: ["bar"]}
       iex> Expo.Message.same?(t1, t2)
       false
 
@@ -76,10 +76,10 @@ defmodule Expo.Message do
 
   ### Examples
 
-      iex> Expo.Message.has_flag?(%Expo.Message.Singular{msgid: [], msgstr: [], flags: [["foo"]]}, "foo")
+      iex> Expo.Message.has_flag?(%Expo.Message.Singular{msgid: [], flags: [["foo"]]}, "foo")
       true
 
-      iex> Expo.Message.has_flag?(%Expo.Message.Singular{msgid: [], msgstr: [], flags: [["foo"]]}, "bar")
+      iex> Expo.Message.has_flag?(%Expo.Message.Singular{msgid: [], flags: [["foo"]]}, "bar")
       false
 
   """
@@ -95,9 +95,9 @@ defmodule Expo.Message do
 
   ### Examples
 
-      iex> message = %Expo.Message.Singular{msgid: [], msgstr: [], flags: []}
+      iex> message = %Expo.Message.Singular{msgid: [], flags: []}
       iex> Expo.Message.append_flag(message, "foo")
-      %Expo.Message.Singular{msgid: [], msgstr: [], flags: [["foo"]]}
+      %Expo.Message.Singular{msgid: [], flags: [["foo"]]}
   """
   @spec append_flag(message :: t(), flag :: String.t()) :: t()
   def append_flag(message, flag)

@@ -18,10 +18,10 @@ defmodule Expo.Message.Singular do
           obsolete: boolean()
         }
 
-  @enforce_keys [:msgid, :msgstr]
+  @enforce_keys [:msgid]
   defstruct [
     :msgid,
-    :msgstr,
+    msgstr: [],
     msgctxt: nil,
     comments: [],
     extracted_comments: [],

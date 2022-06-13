@@ -11,8 +11,7 @@ defmodule Expo.Message.SingularTest do
     test "rebalances string" do
       assert %Singular{msgid: ["hello\n", "world"]} =
                Singular.rebalance(%Singular{
-                 msgid: ["", "hello", "\n", "", "world", ""],
-                 msgstr: []
+                 msgid: ["", "hello", "\n", "", "world", ""]
                })
 
       assert %Singular{msgstr: ["hello\n", "world"]} =
@@ -26,7 +25,6 @@ defmodule Expo.Message.SingularTest do
       assert %Singular{flags: [["one", "two", "three"]]} =
                Singular.rebalance(%Singular{
                  msgid: [],
-                 msgstr: [],
                  flags: [["one", "two"], ["three"]]
                })
     end
@@ -35,7 +33,6 @@ defmodule Expo.Message.SingularTest do
       assert %Singular{references: [[{"one", 1}], [{"two", 2}], ["three"]]} =
                Singular.rebalance(%Singular{
                  msgid: [],
-                 msgstr: [],
                  references: [[{"one", 1}, {"two", 2}], ["three"]]
                })
     end

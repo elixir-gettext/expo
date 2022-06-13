@@ -9,40 +9,37 @@ defmodule Expo.MessageTest do
 
   describe "key/1" do
     test "singular" do
-      assert {"", "foo"} = Message.key(%Message.Singular{msgid: ["foo"], msgstr: []})
+      assert {"", "foo"} = Message.key(%Message.Singular{msgid: ["foo"]})
 
-      assert {"ctxt", "foo"} =
-               Message.key(%Message.Singular{msgctxt: "ctxt", msgid: ["foo"], msgstr: []})
+      assert {"ctxt", "foo"} = Message.key(%Message.Singular{msgctxt: "ctxt", msgid: ["foo"]})
     end
 
     test "plural" do
       assert {"", {"foo", "foos"}} =
                Message.key(%Message.Plural{
                  msgid: ["foo"],
-                 msgid_plural: ["foos"],
-                 msgstr: %{}
+                 msgid_plural: ["foos"]
                })
 
       assert {"ctxt", {"foo", "foos"}} =
                Message.key(%Message.Plural{
                  msgctxt: "ctxt",
                  msgid: ["foo"],
-                 msgid_plural: ["foos"],
-                 msgstr: %{}
+                 msgid_plural: ["foos"]
                })
     end
   end
 
   describe "same?/2" do
     test "same" do
-      t1 = %Message.Singular{msgid: ["foo"], msgstr: []}
-      t2 = %Message.Singular{msgid: ["", "foo"], msgstr: []}
+      t1 = %Message.Singular{msgid: ["foo"]}
+      t2 = %Message.Singular{msgid: ["", "foo"]}
       assert Message.same?(t1, t2)
     end
 
     test "different" do
-      t1 = %Message.Singular{msgid: ["foo"], msgstr: []}
-      t2 = %Message.Singular{msgid: ["bar"], msgstr: []}
+      t1 = %Message.Singular{msgid: ["foo"]}
+      t2 = %Message.Singular{msgid: ["bar"]}
       refute Message.same?(t1, t2)
     end
   end
@@ -51,14 +48,12 @@ defmodule Expo.MessageTest do
     test "works" do
       singular = %Message.Singular{
         msgid: [],
-        msgstr: [],
         flags: [["one", "oneplushalf"], [], ["two"]]
       }
 
       plural = %Message.Plural{
         msgid: [],
         msgid_plural: [],
-        msgstr: %{},
         flags: [["one", "oneplushalf"], [], ["two"]]
       }
 
@@ -74,7 +69,7 @@ defmodule Expo.MessageTest do
 
   describe "append_flag/2" do
     test "works" do
-      singular_empty = %Message.Singular{msgid: [], msgstr: []}
+      singular_empty = %Message.Singular{msgid: []}
 
       singular_multiline = %Message.Singular{
         singular_empty
@@ -86,11 +81,7 @@ defmodule Expo.MessageTest do
         | flags: [["one", "oneplushalf", "two"]]
       }
 
-      plural = %Message.Plural{
-        msgid: [],
-        msgid_plural: [],
-        msgstr: %{}
-      }
+      plural = %Message.Plural{msgid: [], msgid_plural: []}
 
       assert %Message.Singular{flags: [["one", "oneplushalf"], [], ["two"]]} =
                Message.append_flag(singular_multiline, "one")

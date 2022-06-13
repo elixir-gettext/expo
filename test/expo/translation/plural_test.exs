@@ -12,15 +12,13 @@ defmodule Expo.Message.PluralTest do
       assert %Plural{msgid: ["hello\n", "world"]} =
                Plural.rebalance(%Plural{
                  msgid: ["", "hello", "\n", "", "world", ""],
-                 msgid_plural: [],
-                 msgstr: %{}
+                 msgid_plural: []
                })
 
       assert %Plural{msgid_plural: ["hello\n", "world"]} =
                Plural.rebalance(%Plural{
                  msgid: [],
-                 msgid_plural: ["", "hello", "\n", "", "world", ""],
-                 msgstr: %{}
+                 msgid_plural: ["", "hello", "\n", "", "world", ""]
                })
 
       assert %Plural{msgstr: %{0 => ["hello\n", "world"]}} =
@@ -36,7 +34,6 @@ defmodule Expo.Message.PluralTest do
                Plural.rebalance(%Plural{
                  msgid: [],
                  msgid_plural: [],
-                 msgstr: %{},
                  flags: [["one", "two"], ["three"]]
                })
     end
@@ -46,7 +43,6 @@ defmodule Expo.Message.PluralTest do
                Plural.rebalance(%Plural{
                  msgid: [],
                  msgid_plural: [],
-                 msgstr: %{},
                  references: [[{"one", 1}, {"two", 2}], ["three"]]
                })
     end
