@@ -143,7 +143,7 @@ defmodule Expo.MoTest do
                      msgid: ["foo"],
                      msgstr: ["bar"],
                      obsolete: false,
-                     previous_msgids: [],
+                     previous_messages: [],
                      references: []
                    }
                  ]
@@ -168,7 +168,7 @@ defmodule Expo.MoTest do
                      msgid: ["foo"],
                      msgstr: ["bar"],
                      obsolete: false,
-                     previous_msgids: [],
+                     previous_messages: [],
                      references: []
                    }
                  ]
@@ -191,7 +191,7 @@ defmodule Expo.MoTest do
                      msgid: ["foo"],
                      msgstr: %{0 => ["bar"], 1 => ["bars"]},
                      obsolete: false,
-                     previous_msgids: [],
+                     previous_messages: [],
                      references: [],
                      msgid_plural: ["foos"]
                    }
@@ -215,7 +215,7 @@ defmodule Expo.MoTest do
                      msgid: ["foo"],
                      msgstr: %{0 => ["bar"], 1 => ["bars"]},
                      obsolete: false,
-                     previous_msgids: [],
+                     previous_messages: [],
                      references: [],
                      msgid_plural: ["foos"]
                    }

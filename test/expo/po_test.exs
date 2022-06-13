@@ -360,7 +360,7 @@ defmodule Expo.PoTest do
           %Message.Singular{
             msgid: ["foo"],
             msgstr: ["bar"],
-            previous_msgids: ["test"]
+            previous_messages: [%Message.Singular{msgid: ["test"]}]
           }
         ]
       }
@@ -389,6 +389,41 @@ defmodule Expo.PoTest do
              #~ msgstr "bar"
              """
     end
+
+    test "with previous msgid" do
+      messages = %Messages{
+        messages: [
+          %Message.Singular{
+            msgid: ["hello"],
+            msgstr: ["ciao"],
+            previous_messages: [%Message.Singular{msgid: ["holla"]}]
+          },
+          %Message.Plural{
+            msgid: ["hello amigo"],
+            msgid_plural: ["hello amigos"],
+            msgstr: %{0 => ["ciao"]},
+            previous_messages: [
+              %Message.Plural{
+                msgid: ["holla amigo"],
+                msgid_plural: ["holla amigos"]
+              }
+            ]
+          }
+        ]
+      }
+
+      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+             #| msgid "holla"
+             msgid "hello"
+             msgstr "ciao"
+
+             #| msgid "holla amigo"
+             #| msgid_plural "holla amigos"
+             msgid "hello amigo"
+             msgid_plural "hello amigos"
+             msgstr[0] "ciao"
+             """
+    end
   end
 
   describe "parse_string/1" do
@@ -410,13 +445,28 @@ defmodule Expo.PoTest do
                   %Message.Singular{
                     msgid: ["hello"],
                     msgstr: ["ciao"],
-                    previous_msgids: [["holla"]]
+                    previous_messages: [%Message.Singular{msgid: ["holla"]}]
+                  },
+                  %Message.Singular{
+                    msgid: ["hello dude"],
+                    msgstr: ["ciao"],
+                    previous_messages: [
+                      %Message.Plural{
+                        msgid: ["holla amigo"],
+                        msgid_plural: ["holla amigos"]
+                      }
+                    ]
                   }
                 ]
               }} =
                Po.parse_string("""
                #| msgid "holla"
                msgid "hello"
+               msgstr "ciao"
+
+               #| msgid "holla amigo"
+               #| msgid_plural "holla amigos"
+               msgid "hello dude"
                msgstr "ciao"
                """)
     end
@@ -540,26 +590,21 @@ defmodule Expo.PoTest do
 
     test "syntax error when there is no 'msgid'" do
       assert {:error,
-              {:parse_error,
-               "expected msgid followed by strings while processing plural message inside singular message or plural message",
+              {:parse_error, "expected msgid followed by strings while processing message",
                _context, 1}} = Po.parse_string("msgstr \"foo\"")
 
       assert {:error,
-              {:parse_error,
-               "expected msgid followed by strings while processing plural message inside singular message or plural message",
+              {:parse_error, "expected msgid followed by strings while processing message",
                _context, 1}} = Po.parse_string("msgstr \"foo\"")
 
       assert {:error,
-              {:parse_error,
-               "expected msgid followed by strings while processing plural message inside singular message or plural message",
+              {:parse_error, "expected msgid followed by strings while processing message",
                _context, 1}} = Po.parse_string("\"foo\"")
     end
 
     test "if there's a msgid_plural, then plural forms must follow" do
       assert {:error,
-              {:parse_error,
-               "expected plural form (like [0]) while processing plural message inside singular message or plural message",
-               _context,
+              {:parse_error, "expected plural form (like [0]) while processing message", _context,
                3}} =
                Po.parse_string("""
                msgid "foo"
@@ -571,14 +616,13 @@ defmodule Expo.PoTest do
     test "'msgid_plural' must come after 'msgid'" do
       assert {:error,
               {:parse_error,
-               "expected whitespace while processing msgid followed by strings inside plural message inside singular message or plural message",
+               "expected whitespace while processing msgid followed by strings inside message",
                _context, 1}} = Po.parse_string("msgid_plural ")
     end
 
     test "comments can't be placed between 'msgid' and 'msgstr'" do
       assert {:error,
-              {:parse_error,
-               "expected msgid_plural followed by strings while processing plural message inside singular message or plural message",
+              {:parse_error, "expected msgid_plural followed by strings while processing message",
                _context,
                2}} =
                Po.parse_string("""
@@ -587,11 +631,7 @@ defmodule Expo.PoTest do
                msgstr "bar"
                """)
 
-      assert {:error,
-              {:parse_error,
-               "expected plural message while processing singular message or plural message",
-               _context,
-               3}} =
+      assert {:error, {:parse_error, "expected message", _context, 3}} =
                Po.parse_string("""
                msgid "foo"
                msgid_plural "foo"
@@ -806,8 +846,7 @@ defmodule Expo.PoTest do
     test "msgctxt causes a syntax error when misplaced" do
       # Badly placed msgctxt still causes a syntax error
       assert {:error,
-              {:parse_error,
-               "expected msgid_plural followed by strings while processing plural message inside singular message or plural message",
+              {:parse_error, "expected msgid_plural followed by strings while processing message",
                _context,
                2}} =
                Po.parse_string("""
@@ -903,7 +942,7 @@ defmodule Expo.PoTest do
       str = "msg"
 
       assert_raise SyntaxError,
-                   "1: expected msgid followed by strings while processing plural message inside singular message or plural message",
+                   "1: expected msgid followed by strings while processing message",
                    fn ->
                      Po.parse_string!(str)
                    end
@@ -915,13 +954,13 @@ defmodule Expo.PoTest do
       """
 
       assert_raise SyntaxError,
-                   "2: expected whitespace while processing msgid followed by strings inside plural message inside singular message or plural message",
+                   "2: expected whitespace while processing msgid followed by strings inside message",
                    fn ->
                      Po.parse_string!(str)
                    end
 
       assert_raise SyntaxError,
-                   "file:2: expected whitespace while processing msgid followed by strings inside plural message inside singular message or plural message",
+                   "file:2: expected whitespace while processing msgid followed by strings inside message",
                    fn ->
                      Po.parse_string!(str, file: "file")
                    end
@@ -993,8 +1032,7 @@ defmodule Expo.PoTest do
 
       assert Po.parse_file(fixture_path) ==
                {:error,
-                {:parse_error,
-                 "expected msgid followed by strings while processing plural message inside singular message or plural message",
+                {:parse_error, "expected msgid followed by strings while processing message",
                  "msg\n", 3}}
     end
 
@@ -1049,7 +1087,7 @@ defmodule Expo.PoTest do
       fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_token_error.po")
 
       msg =
-        "_build/test/lib/expo/priv/test/po/invalid_token_error.po:3: expected msgid followed by strings while processing plural message inside singular message or plural message"
+        "_build/test/lib/expo/priv/test/po/invalid_token_error.po:3: expected msgid followed by strings while processing message"
 
       assert_raise SyntaxError, msg, fn ->
         Po.parse_file!(fixture_path)

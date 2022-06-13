@@ -75,7 +75,7 @@ defmodule Expo.Po do
       []
 
       iex> Expo.Po.parse_string "foo"
-      {:error, {:parse_error, "expected msgid followed by strings while processing plural message inside singular message or plural message", "foo", 1}}
+      {:error, {:parse_error, "expected msgid followed by strings while processing message", "foo", 1}}
 
   """
   @spec parse_string(content :: binary(), opts :: parse_options()) ::
@@ -109,7 +109,7 @@ defmodule Expo.Po do
       []
 
       iex> Expo.Po.parse_string!("msgid")
-      ** (Expo.Po.SyntaxError) 1: expected whitespace while processing msgid followed by strings inside plural message inside singular message or plural message
+      ** (Expo.Po.SyntaxError) 1: expected whitespace while processing msgid followed by strings inside message
 
       iex> Expo.Po.parse_string!(\"""
       ...> msgid "test"
