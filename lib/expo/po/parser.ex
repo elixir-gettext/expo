@@ -19,6 +19,12 @@ defmodule Expo.Po.Parser do
     |> label("whitespace")
     |> ignore()
 
+  optional_whitespace_no_nl =
+    ascii_char([?\s, ?\r, ?\t])
+    |> times(min: 0)
+    |> label("whitespace")
+    |> ignore()
+
   whitespace_no_nl =
     ascii_char([?\s, ?\r, ?\t])
     |> times(min: 1)
@@ -43,20 +49,54 @@ defmodule Expo.Po.Parser do
     |> concat(double_quote)
     |> reduce(:to_string)
 
+  string_line =
+    optional_whitespace_no_nl
+    |> concat(string)
+    |> concat(optional_whitespace_no_nl)
+    |> repeat()
+
   strings =
-    string
-    |> concat(optional_whitespace)
-    |> times(min: 1)
+    string_line
+    |> repeat(concat(newline, string_line))
     |> label("at least one string")
 
-  [msgctxt, msgid, msgid_plural, msgstr] =
-    for keyword <- [:msgctxt, :msgid, :msgid_plural, :msgstr] do
-      string(Atom.to_string(keyword))
+  [
+    msgctxt,
+    obsolete_msgctxt,
+    msgid,
+    obsolete_msgid,
+    previous_msgid,
+    obsolete_previous_msgid,
+    msgid_plural,
+    obsolete_msgid_plural,
+    previous_msgid_plural,
+    obsolete_previous_msgid_plural,
+    msgstr,
+    obsolete_msgstr
+  ] =
+    for {tag, {label, keyword, prepend, strings}} <- [
+          msgctxt: {"msgctxt", "msgctxt", empty(), strings},
+          msgctxt: {"obsolete msgctxt", "msgctxt", string("#~"), strings},
+          msgid: {"msgid", "msgid", empty(), strings},
+          msgid: {"obsolete msgid", "msgid", string("#~"), strings},
+          msgid: {"previous msgid", "msgid", string("#|"), strings},
+          msgid: {"obsolete & previous msgid", "msgid", string("#~|"), strings},
+          msgid_plural: {"msgid_plural", "msgid_plural", empty(), strings},
+          msgid_plural: {"obsolete msgid_plural", "msgid_plural", string("#~"), strings},
+          msgid_plural: {"previous msgid_plural", "msgid_plural", string("#|"), strings},
+          msgid_plural:
+            {"obsolete & previous msgid_plural", "msgid_plural", string("#~|"), strings},
+          msgstr: {"msgstr", "msgstr", empty(), strings},
+          msgstr: {"obsolete msgstr", "msgstr", string("#~"), strings}
+        ] do
+      prepend
+      |> concat(optional(whitespace_no_nl))
+      |> concat(string(keyword))
       |> concat(whitespace_no_nl)
       |> ignore()
       |> concat(strings)
-      |> tag(keyword)
-      |> label("#{keyword} followed by strings")
+      |> tag(tag)
+      |> label("#{label} followed by strings")
     end
 
   comment_content =
@@ -64,29 +104,17 @@ defmodule Expo.Po.Parser do
     |> concat(newline)
     |> reduce(:to_string)
 
-  comment =
-    string("#")
-    |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
-    |> ignore()
-    |> concat(comment_content)
-    |> unwrap_and_tag(:comment)
-    |> label("comment")
-
-  extracted_comment =
-    string("#.")
-    |> lookahead_not(utf8_char([?., ?:, ?,, ?|, ?~]))
-    |> ignore()
-    |> concat(comment_content)
-    |> unwrap_and_tag(:extracted_comment)
-    |> label("extracted_comment")
-
-  previous_msgid =
-    string("#|")
-    |> concat(whitespace_no_nl)
-    |> ignore()
-    |> concat(msgid)
-    |> unwrap_and_tag(:previous_msgid)
-    |> label("previous_msgid")
+  [comment, extracted_comment] =
+    for {tag, start} <- [
+          comment: lookahead_not(string("#"), utf8_char([?., ?:, ?,, ?|, ?~])),
+          extracted_comment: string("#.")
+        ] do
+      start
+      |> ignore()
+      |> concat(comment_content)
+      |> unwrap_and_tag(tag)
+      |> label(Atom.to_string(tag))
+    end
 
   flag_content =
     optional(whitespace_no_nl)
@@ -141,7 +169,13 @@ defmodule Expo.Po.Parser do
       extracted_comment,
       reference,
       flag,
-      previous_msgid
+      tag(tag(concat(previous_msgid, previous_msgid_plural), Message.Plural), :previous_messages),
+      tag(tag(previous_msgid, Message.Singular), :previous_messages),
+      tag(
+        tag(concat(obsolete_previous_msgid, obsolete_previous_msgid_plural), Message.Plural),
+        :previous_messages
+      ),
+      tag(tag(obsolete_previous_msgid, Message.Singular), :previous_messages)
     ])
 
   plural_form =
@@ -150,43 +184,60 @@ defmodule Expo.Po.Parser do
     |> ignore(string("]"))
     |> label("plural form (like [0])")
 
-  obsolete_prefix = string("#~") |> concat(whitespace_no_nl) |> ignore() |> tag(:obsolete)
-
-  msgstr_with_plural_form =
-    ignore(optional(obsolete_prefix))
-    |> concat(ignore(string("msgstr")))
-    |> concat(plural_form)
-    |> concat(whitespace_no_nl)
-    |> concat(strings)
-    |> reduce(:make_plural_form)
-    |> unwrap_and_tag(:msgstr)
+  [msgstr_with_plural_form, obsolete_msgstr_with_plural_form] =
+    for prefix <- [empty(), string("#~")] do
+      prefix
+      |> concat(optional(whitespace_no_nl))
+      |> concat(ignore(string("msgstr")))
+      |> concat(plural_form)
+      |> concat(whitespace_no_nl)
+      |> concat(strings)
+      |> reduce(:make_plural_form)
+      |> unwrap_and_tag(:msgstr)
+    end
 
   message_base =
     repeat(message_meta)
-    |> concat(optional(obsolete_prefix))
     |> optional(msgctxt)
-    |> concat(optional(obsolete_prefix))
     |> post_traverse(:attach_line_number)
     |> concat(msgid)
 
+  obsolete_message_base =
+    repeat(message_meta)
+    |> optional(obsolete_msgctxt)
+    |> post_traverse(:attach_line_number)
+    |> concat(obsolete_msgid)
+
   singular_message =
     message_base
-    |> concat(optional(obsolete_prefix))
     |> concat(msgstr)
     |> tag(Message.Singular)
     |> reduce(:make_message)
-    |> label("singular message")
+
+  obsolete_singular_message =
+    obsolete_message_base
+    |> concat(obsolete_msgstr)
+    |> tag(Message.Singular)
+    |> reduce(:make_message)
 
   plural_message =
     message_base
-    |> concat(optional(obsolete_prefix))
     |> concat(msgid_plural)
     |> times(msgstr_with_plural_form, min: 1)
     |> tag(Message.Plural)
     |> reduce(:make_message)
-    |> label("plural message")
 
-  message = choice([singular_message, plural_message])
+  obsolete_plural_message =
+    obsolete_message_base
+    |> concat(obsolete_msgid_plural)
+    |> times(obsolete_msgstr_with_plural_form, min: 1)
+    |> tag(Message.Plural)
+    |> reduce(:make_message)
+
+  message =
+    [obsolete_singular_message, obsolete_plural_message, singular_message, plural_message]
+    |> choice()
+    |> label("message")
 
   po_entry =
     optional_whitespace
@@ -284,11 +335,10 @@ defmodule Expo.Po.Parser do
 
   defp make_message_attribute(_type, :flag, value), do: {:flags, value}
 
-  defp make_message_attribute(_type, :previous_msgid, value),
-    do: {:previous_msgids, Keyword.values(value)}
-
   defp make_message_attribute(_type, :reference, value), do: {:references, value}
-  defp make_message_attribute(_type, :obsolete, _value), do: {:obsolete, true}
+
+  defp make_message_attribute(_type, :previous_messages, value),
+    do: {:previous_messages, Enum.map(value, &make_message/1)}
 
   defp remove_empty_flags(tokens), do: Enum.reject(tokens, &match?("", &1))
 

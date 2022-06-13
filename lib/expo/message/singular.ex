@@ -13,7 +13,7 @@ defmodule Expo.Message.Singular do
           comments: [String.t()],
           extracted_comments: [String.t()],
           flags: [[String.t()]],
-          previous_msgids: [[String.t()]],
+          previous_messages: [Message.t()],
           references: [[file :: String.t() | {file :: String.t(), line :: pos_integer()}]],
           obsolete: boolean()
         }
@@ -26,7 +26,7 @@ defmodule Expo.Message.Singular do
     comments: [],
     extracted_comments: [],
     flags: [],
-    previous_msgids: [],
+    previous_messages: [],
     references: [],
     obsolete: false
   ]

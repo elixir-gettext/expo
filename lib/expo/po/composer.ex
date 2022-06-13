@@ -28,7 +28,7 @@ defmodule Expo.Po.Composer do
       dump_extracted_comments(t.extracted_comments),
       dump_references(t.references),
       dump_flags(t.flags),
-      dump_previous_msgids(t.previous_msgids),
+      dump_previous_messages(t.previous_messages),
       dump_msgctxt(t.msgctxt, t.obsolete),
       dump_kw_and_strings("msgid", t.msgid, t.obsolete),
       dump_kw_and_strings("msgstr", t.msgstr, t.obsolete)
@@ -41,8 +41,7 @@ defmodule Expo.Po.Composer do
       dump_comments(t.extracted_comments),
       dump_references(t.references),
       dump_flags(t.flags),
-      dump_previous_msgids(t.previous_msgids),
-      dump_previous_msgids(t.previous_msgid_plurals, "msgid_plural"),
+      dump_previous_messages(t.previous_messages),
       dump_msgctxt(t.msgctxt, t.obsolete),
       dump_kw_and_strings("msgid", t.msgid, t.obsolete),
       dump_kw_and_strings("msgid_plural", t.msgid_plural, t.obsolete),
@@ -95,8 +94,27 @@ defmodule Expo.Po.Composer do
 
   defp dump_msgctxt(string, obsolete), do: dump_kw_and_strings("msgctxt", string, obsolete)
 
-  defp dump_previous_msgids(previous_msgids, keyword \\ "msgid") do
-    Enum.map(previous_msgids, &["#| ", dump_kw_and_strings(keyword, [IO.iodata_to_binary(&1)])])
+  defp dump_previous_messages(messages) do
+    Enum.map(messages, fn
+      %Message.Singular{msgid: msgid, obsolete: obsolete} ->
+        dump_previous_msgids(msgid, obsolete)
+
+      %Message.Plural{msgid: msgid, msgid_plural: msgid_plural, obsolete: obsolete} ->
+        [
+          dump_previous_msgids(msgid, obsolete),
+          dump_previous_msgids(msgid_plural, obsolete, "msgid_plural")
+        ]
+    end)
+  end
+
+  defp dump_previous_msgids(previous_msgids, obsolete, keyword \\ "msgid") do
+    Enum.map(
+      previous_msgids,
+      &[
+        if(obsolete, do: "#~| ", else: "#| "),
+        dump_kw_and_strings(keyword, [IO.iodata_to_binary(&1)])
+      ]
+    )
   end
 
   defp escape(str) do
