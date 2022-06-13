@@ -32,7 +32,7 @@ defmodule Expo.Po.Parser do
   defp tokenize(content) do
     case Tokenizer.tokenize(content) do
       {:error, line, message} -> {:error, {:parse_error, message, line}}
-      {:ok, tokens} -> {:ok, tokens}
+      {:ok, tokens} -> {:ok, Tokenizer.Precollapse.precollapse_strings(tokens)}
     end
   end
 
@@ -43,36 +43,23 @@ defmodule Expo.Po.Parser do
     end
   end
 
-  defp parse_yecc_result(po_entries) do
-    {root_comments, messages} = Enum.split_with(po_entries, &match?({:comments, _comments}, &1))
+  defp parse_yecc_result(po_entries)
+  defp parse_yecc_result(:empty), do: {:ok, [], [], []}
+  defp parse_yecc_result({:only_comments, comments}), do: {:ok, comments, [], []}
 
-    root_comments = Enum.flat_map(root_comments, &elem(&1, 1))
+  defp parse_yecc_result({:messages, messages}) do
+    extracted_messages = Enum.map(messages, &elem(&1, 1))
 
-    messages_with_source_line =
-      Enum.map(messages, fn {_type, %{po_source_line: po_source_line}} = tokens ->
-        {po_source_line, to_struct(tokens)}
-      end)
+    unpacked_messages = Enum.map(extracted_messages, &unpack_comments/1)
 
-    messages = Enum.map(messages_with_source_line, &elem(&1, 1))
-
-    with :ok <- check_for_duplicates(messages_with_source_line) do
-      {headers, top_comments, messages} = Util.extract_meta_headers(messages)
-      {:ok, root_comments ++ top_comments, headers, messages}
+    with :ok <- check_for_duplicates(messages) do
+      {headers, top_comments, messages} = Util.extract_meta_headers(unpacked_messages)
+      {:ok, top_comments, headers, messages}
     end
   end
 
-  defp to_struct({:message, message}) do
-    Message.Singular
-    |> struct(message)
-    |> extract_comments()
-    |> extract_references()
-    |> extract_extracted_comments()
-    |> extract_flags()
-  end
-
-  defp to_struct({:plural_message, message}) do
-    Message.Plural
-    |> struct(message)
+  defp unpack_comments(message) do
+    message
     |> extract_comments()
     |> extract_references()
     |> extract_extracted_comments()
@@ -204,6 +191,9 @@ defmodule Expo.Po.Parser do
 
   defp parse_error_reason('syntax error before: ' = prefix, "<<" <> rest),
     do: [prefix, binary_part(rest, 0, byte_size(rest) - 2)]
+
+  defp parse_error_reason('syntax error before: ' = prefix, "[<<" <> rest),
+    do: [prefix, binary_part(rest, 0, byte_size(rest) - 3)]
 
   defp parse_error_reason(error, token), do: [error, token]
 

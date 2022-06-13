@@ -10,7 +10,8 @@ defmodule Expo.Po.TokenizerTest do
              {:ok,
               [
                 {:msgid, 1},
-                {:msgstr, 1}
+                {:msgstr, 1},
+                {:"$end", 1}
               ]}
 
     str = "    msgid  msgid_plural    msgstr  "
@@ -20,7 +21,8 @@ defmodule Expo.Po.TokenizerTest do
               [
                 {:msgid, 1},
                 {:msgid_plural, 1},
-                {:msgstr, 1}
+                {:msgstr, 1},
+                {:"$end", 1}
               ]}
 
     str = "msgctxt msgid "
@@ -29,7 +31,8 @@ defmodule Expo.Po.TokenizerTest do
              {:ok,
               [
                 {:msgctxt, 1},
-                {:msgid, 1}
+                {:msgid, 1},
+                {:"$end", 1}
               ]}
   end
 
@@ -57,12 +60,12 @@ defmodule Expo.Po.TokenizerTest do
 
   test "single simple string" do
     str = ~s("foo bar")
-    assert tokenize(str) == {:ok, [{:str, 1, "foo bar"}]}
+    assert tokenize(str) == {:ok, [{:str, 1, "foo bar"}, {:"$end", 1}]}
   end
 
   test "escape characters in strings" do
     str = ~S("foo,\nbar\tbaz\\")
-    assert tokenize(str) == {:ok, [{:str, 1, "foo,\nbar\tbaz\\"}]}
+    assert tokenize(str) == {:ok, [{:str, 1, "foo,\nbar\tbaz\\"}, {:"$end", 1}]}
 
     str = ~S("fo\ø")
     assert tokenize(str) == {:error, 1, "unsupported escape code"}
@@ -83,7 +86,8 @@ defmodule Expo.Po.TokenizerTest do
               [
                 {:str, 1, "foo"},
                 {:str, 2, "bar with \"quotes\""},
-                {:str, 3, "bong"}
+                {:str, 3, "bong"},
+                {:"$end", 4}
               ]}
   end
 
@@ -113,7 +117,8 @@ defmodule Expo.Po.TokenizerTest do
                 {:msgid, 1},
                 {:str, 1, "foo"},
                 {:msgstr, 2},
-                {:str, 2, "bar"}
+                {:str, 2, "bar"},
+                {:"$end", 3}
               ]}
   end
 
@@ -123,7 +128,8 @@ defmodule Expo.Po.TokenizerTest do
     assert tokenize(str) ==
              {:ok,
               [
-                {:comment, 1, "# Single-line comment"}
+                {:comment, 1, "# Single-line comment"},
+                {:"$end", 1}
               ]}
 
     str = "\t\t  # A comment after whitespace"
@@ -131,7 +137,8 @@ defmodule Expo.Po.TokenizerTest do
     assert tokenize(str) ==
              {:ok,
               [
-                {:comment, 1, "# A comment after whitespace"}
+                {:comment, 1, "# A comment after whitespace"},
+                {:"$end", 1}
               ]}
 
     str = "#: Single-line reference comment"
@@ -139,7 +146,8 @@ defmodule Expo.Po.TokenizerTest do
     assert tokenize(str) ==
              {:ok,
               [
-                {:comment, 1, "#: Single-line reference comment"}
+                {:comment, 1, "#: Single-line reference comment"},
+                {:"$end", 1}
               ]}
 
     str = "#, Flags comment"
@@ -147,7 +155,8 @@ defmodule Expo.Po.TokenizerTest do
     assert tokenize(str) ==
              {:ok,
               [
-                {:comment, 1, "#, Flags comment"}
+                {:comment, 1, "#, Flags comment"},
+                {:"$end", 1}
               ]}
   end
 
@@ -163,7 +172,8 @@ defmodule Expo.Po.TokenizerTest do
               [
                 {:comment, 1, "# Multiline comment"},
                 {:comment, 2, "# with weird chåracters"},
-                {:comment, 3, "#: lib/and-refs.ex:32"}
+                {:comment, 3, "#: lib/and-refs.ex:32"},
+                {:"$end", 4}
               ]}
   end
 
@@ -182,7 +192,8 @@ defmodule Expo.Po.TokenizerTest do
                 {:comment, 1, "# Multiline comment with"},
                 {:msgid, 2},
                 {:str, 2, "a string"},
-                {:comment, 3, "# in it."}
+                {:comment, 3, "# in it."},
+                {:"$end", 4}
               ]}
   end
 
@@ -193,7 +204,8 @@ defmodule Expo.Po.TokenizerTest do
              {:ok,
               [
                 {:msgstr, 1},
-                {:plural_form, 1, 0}
+                {:plural_form, 1, 0},
+                {:"$end", 1}
               ]}
 
     str = ~s(msgstr[42] )
@@ -202,7 +214,8 @@ defmodule Expo.Po.TokenizerTest do
              {:ok,
               [
                 {:msgstr, 1},
-                {:plural_form, 1, 42}
+                {:plural_form, 1, 42},
+                {:"$end", 1}
               ]}
   end
 
@@ -223,8 +236,52 @@ defmodule Expo.Po.TokenizerTest do
   end
 
   test "empty/whitespace-only strings are tokenized as empty lists of tokens" do
-    assert tokenize("") == {:ok, []}
-    assert tokenize("   ") == {:ok, []}
-    assert tokenize("\r\n\t") == {:ok, []}
+    assert tokenize("") == {:ok, [{:"$end", 1}]}
+    assert tokenize("   ") == {:ok, [{:"$end", 1}]}
+    assert tokenize("\r\n\t") == {:ok, [{:"$end", 2}]}
+  end
+
+  test "obsolete are tokenized with obsolete flag" do
+    assert tokenize(~S(#~ msgid "foo")) ==
+             {:ok, [{:obsolete, 1}, {:msgid, 1}, {:str, 1, "foo"}, {:"$end", 1}]}
+
+    assert tokenize(~S(#~ msgid_plural "foo")) ==
+             {:ok, [{:obsolete, 1}, {:msgid_plural, 1}, {:str, 1, "foo"}, {:"$end", 1}]}
+
+    assert tokenize(~S"""
+           #~ msgid_plural "foo\n"
+           #~ "bar"
+           """) ==
+             {:ok,
+              [
+                {:obsolete, 1},
+                {:msgid_plural, 1},
+                {:str, 1, "foo\n"},
+                {:obsolete, 2},
+                {:str, 2, "bar"},
+                {:"$end", 3}
+              ]}
+  end
+
+  test "previous are tokenized with previous flag" do
+    assert tokenize(~S(#| msgid "foo")) ==
+             {:ok, [{:previous, 1}, {:msgid, 1}, {:str, 1, "foo"}, {:"$end", 1}]}
+
+    assert tokenize(~S(#| msgid_plural "foo")) ==
+             {:ok, [{:previous, 1}, {:msgid_plural, 1}, {:str, 1, "foo"}, {:"$end", 1}]}
+
+    assert tokenize(~S"""
+           #| msgid_plural "foo\n"
+           #| "bar"
+           """) ==
+             {:ok,
+              [
+                {:previous, 1},
+                {:msgid_plural, 1},
+                {:str, 1, "foo\n"},
+                {:previous, 2},
+                {:str, 2, "bar"},
+                {:"$end", 3}
+              ]}
   end
 end
