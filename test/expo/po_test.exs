@@ -377,7 +377,7 @@ defmodule Expo.PoTest do
         headers: [],
         messages: [
           %Message.Singular{
-            msgid: ["foo"],
+            msgid: ["fo", "o"],
             msgstr: ["bar"],
             obsolete: true
           }
@@ -385,7 +385,8 @@ defmodule Expo.PoTest do
       }
 
       assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
-             #~ msgid "foo"
+             #~ msgid "fo"
+             #~ "o"
              #~ msgstr "bar"
              """
     end
@@ -430,66 +431,97 @@ defmodule Expo.PoTest do
     test "with single strings" do
       assert {:ok,
               %Messages{
-                messages: [%Message.Singular{msgid: ["hello"], msgstr: ["ciao"]}]
+                messages: [%Message.Singular{msgid: ["hel", "l", "o"], msgstr: ["ciao"]}]
               }} =
                Po.parse_string("""
-               msgid "hello"
+               msgid "hel" "l"
+               "o"
                msgstr "ciao"
                """)
     end
 
-    # TODO: Re-enable later
-    # test "with previous msgid" do
-    #   assert {:ok,
-    #           %Messages{
-    #             messages: [
-    #               %Message.Singular{
-    #                 msgid: ["hello"],
-    #                 msgstr: ["ciao"],
-    #                 previous_messages: [%Message.Singular{msgid: ["holla"]}]
-    #               },
-    #               %Message.Singular{
-    #                 msgid: ["hello dude"],
-    #                 msgstr: ["ciao"],
-    #                 previous_messages: [
-    #                   %Message.Plural{
-    #                     msgid: ["holla amigo"],
-    #                     msgid_plural: ["holla amigos"]
-    #                   }
-    #                 ]
-    #               }
-    #             ]
-    #           }} =
-    #            Po.parse_string("""
-    #            #| msgid "holla"
-    #            msgid "hello"
-    #            msgstr "ciao"
+    test "with singular previous msgid" do
+      assert {:ok,
+              %Messages{
+                messages: [
+                  %Message.Singular{
+                    msgid: ["", "foo\n", "bar\n", "baz\n"],
+                    msgstr: ["bar"],
+                    previous_messages: [%Message.Singular{msgid: ["", "fo\n", "bar\n", "baz\n"]}]
+                  },
+                  %Message.Singular{
+                    msgid: ["hello dude"],
+                    msgstr: ["ciao"],
+                    previous_messages: [
+                      %Message.Plural{
+                        msgid: ["holla amigo"],
+                        msgid_plural: ["holla amigos"]
+                      }
+                    ]
+                  }
+                ]
+              }} =
+               Po.parse_string(~S"""
+               #: reference:7
+               #, fuzzy
+               #| msgid ""
+               #| "fo\n"
+               #| "bar\n"
+               #| "baz\n"
+               msgid ""
+               "foo\n"
+               "bar\n"
+               "baz\n"
+               msgstr "bar"
 
-    #            #| msgid "holla amigo"
-    #            #| msgid_plural "holla amigos"
-    #            msgid "hello dude"
-    #            msgstr "ciao"
-    #            """)
-    # end
+               #| msgid "holla amigo"
+               #| msgid_plural "holla amigos"
+               msgid "hello dude"
+               msgstr "ciao"
+               """)
+    end
 
-    # TODO: Re-enable later
-    # test "with obsolete message" do
-    #   assert {:ok,
-    #           %Messages{
-    #             messages: [
-    #               %Message.Singular{
-    #                 msgid: ["hello"],
-    #                 msgstr: ["ciao"],
-    #                 comments: [" comment"]
-    #               }
-    #             ]
-    #           }} =
-    #            Po.parse_string("""
-    #            # comment
-    #            #~ msgid "hello"
-    #            #~ msgstr "ciao"
-    #            """)
-    # end
+    test "with plural previous msgid" do
+      assert {:ok,
+              %Messages{
+                messages: [
+                  %Message.Plural{
+                    msgid: ["new"],
+                    msgid_plural: ["news"],
+                    msgstr: %{0 => ["translated"]},
+                    previous_messages: [%Message.Plural{msgid: ["old"], msgid_plural: ["olds"]}]
+                  }
+                ]
+              }} =
+               Po.parse_string(~S"""
+               #: reference:8
+               #| msgid "old"
+               #| msgid_plural "olds"
+               msgid "new"
+               msgid_plural "news"
+               msgstr[0] "translated"
+               """)
+    end
+
+    test "with obsolete message" do
+      assert {:ok,
+              %Messages{
+                messages: [
+                  %Message.Singular{
+                    msgid: ["hel", "l", "o"],
+                    msgstr: ["ciao"],
+                    comments: [" comment"],
+                    obsolete: true
+                  }
+                ]
+              }} =
+               Po.parse_string("""
+               # comment
+               #~ msgid "hel" "l"
+               #~ "o"
+               #~ msgstr "ciao"
+               """)
+    end
 
     test "with multiple concatenated strings" do
       assert {:ok,

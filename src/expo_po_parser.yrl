@@ -1,37 +1,141 @@
-Nonterminals grammar messages message pluralizations pluralization
-             strings comments maybe_msgctxt.
-Terminals str msgid msgid_plural msgctxt msgstr plural_form comment.
+Nonterminals
+  grammar
+  obsolete_plural_message
+  obsolete_singular_message
+  only_comments
+  pluralization
+  pluralizations
+  plural_message
+  singular_message
+  message
+  messages
+  message_meta.
+Terminals
+  comment
+  msgctxt
+  msgid
+  msgid_plural
+  msgstr
+  obsolete
+  plural_form
+  previous
+  str_lines.
 Rootsymbol grammar.
+Endsymbol '$end'.
 
 grammar ->
-  messages : '$1'.
+  only_comments : {only_comments, '$1'}.
+grammar ->
+  messages : {messages, '$1'}.
+grammar ->
+  '$empty' : empty.
 
-% A series of messages. It can be just comments (which are discarded and can
-% be empty anyways) or comments followed by a message followed by other
-% messages; in the latter case, comments are attached to the message
-% that follows them.
+only_comments ->
+  comment only_comments : [extract_simple_token('$1') | '$2'].
+only_comments ->
+  comment : [extract_simple_token('$1')].
+
 messages ->
-  comments : [{comments, '$1'}].
+  message messages : ['$1' | '$2'].
 messages ->
-  comments message messages : [add_comments_to_message('$2', '$1')|'$3'].
+  message : ['$1'].
 
 message ->
-  maybe_msgctxt msgid strings msgstr strings : {message, #{
-    comments       => [],
-    msgctxt        => '$1',
-    msgid          => '$3',
-    msgstr         => '$5',
-    po_source_line => extract_line('$2')
-  }}.
+  obsolete_singular_message : '$1'.
 message ->
-  maybe_msgctxt msgid strings msgid_plural strings pluralizations : {plural_message, #{
-    comments       => [],
-    msgctxt        => '$1',
-    msgid          => '$3',
-    msgid_plural   => '$5',
-    msgstr         => plural_forms_map_from_list('$6'),
-    po_source_line => extract_line('$2')
-  }}.
+  singular_message : '$1'.
+message ->
+  obsolete_plural_message : '$1'.
+message ->
+  plural_message : '$1'.
+
+singular_message ->
+  message_meta msgid str_lines msgstr str_lines : {
+    extract_line('$2'),
+    to_singular_message([
+      {msgid, extract_simple_token('$3')},
+      {msgstr, extract_simple_token('$5')}
+      | group_meta('$1')
+    ])
+  }.
+singular_message ->
+  message_meta msgctxt str_lines msgid str_lines msgstr str_lines : {
+    extract_line('$4'),
+    to_singular_message([
+      {msgctxt, extract_simple_token('$3')},
+      {msgid, extract_simple_token('$5')},
+      {msgstr, extract_simple_token('$7')}
+      | group_meta('$1')
+    ])
+  }.
+
+obsolete_singular_message ->
+  message_meta obsolete msgid str_lines obsolete msgstr str_lines : {
+    extract_line('$3'),
+    to_singular_message([
+      {obsolete, true},
+      {msgid, extract_simple_token('$4')},
+      {msgstr, extract_simple_token('$7')}
+      | group_meta('$1')
+    ])
+  }.
+obsolete_singular_message ->
+  message_meta obsolete msgctxt str_lines obsolete msgid str_lines obsolete msgstr str_lines : {
+    extract_line('$6'),
+    to_singular_message([
+      {obsolete, true},
+      {msgctxt, extract_simple_token('$4')},
+      {msgid, extract_simple_token('$7')},
+      {msgstr, extract_simple_token('$10')}
+      | group_meta('$1')
+    ])
+  }.
+
+plural_message ->
+  message_meta msgid str_lines msgid_plural str_lines pluralizations : {
+    extract_line('$2'),
+    to_plural_message([
+      {msgid, extract_simple_token('$3')},
+      {msgid_plural, extract_simple_token('$5')},
+      {msgstr, maps:from_list('$6')}
+      | group_meta('$1')
+    ])
+  }.
+plural_message ->
+  message_meta msgctxt str_lines msgid str_lines msgid_plural str_lines pluralizations : {
+    extract_line('$4'),
+    to_plural_message([
+      {msgctxt, extract_simple_token('$3')},
+      {msgid, extract_simple_token('$5')},
+      {msgid_plural, extract_simple_token('$7')},
+      {msgstr, maps:from_list('$8')}
+      | group_meta('$1')
+    ])
+  }.
+
+obsolete_plural_message ->
+  message_meta obsolete msgid str_lines obsolete msgid_plural str_lines pluralizations : {
+    extract_line('$3'),
+    to_plural_message([
+      {obsolete, true},
+      {msgid, extract_simple_token('$4')},
+      {msgid_plural, extract_simple_token('$7')},
+      {msgstr, maps:from_list('$8')}
+      | group_meta('$1')
+    ])
+  }.
+obsolete_plural_message ->
+  message_meta obsolete msgctxt str_lines obsolete msgid str_lines obsolete msgid_plural str_lines pluralizations : {
+    extract_line('$6'),
+    to_plural_message([
+      {obsolete, true},
+      {msgctxt, extract_simple_token('$4')},
+      {msgid, extract_simple_token('$7')},
+      {msgid_plural, extract_simple_token('$10')},
+      {msgstr, maps:from_list('$11')}
+      | group_meta('$1')
+    ])
+  }.
 
 pluralizations ->
   pluralization : ['$1'].
@@ -39,22 +143,25 @@ pluralizations ->
   pluralization pluralizations : ['$1'|'$2'].
 
 pluralization ->
-  msgstr plural_form strings : {'$2', '$3'}.
+  msgstr plural_form str_lines : {extract_simple_token('$2'), extract_simple_token('$3')}.
 
-strings ->
-  str : [extract_simple_token('$1')].
-strings ->
-  str strings : [extract_simple_token('$1')|'$2'].
-
-comments ->
-  '$empty' : [].
-comments ->
-  comment comments : [extract_simple_token('$1')|'$2'].
-
-maybe_msgctxt ->
-  '$empty' : nil.
-maybe_msgctxt ->
-  msgctxt strings : '$2'.
+message_meta ->
+  '$empty': [].
+message_meta ->
+  comment message_meta : [
+    {comments, extract_simple_token('$1')}
+    | '$2'
+  ].
+message_meta ->
+  previous msgid str_lines previous msgid_plural str_lines message_meta : [
+    {previous_messages, to_plural_message([{msgid, extract_simple_token('$3')}, {msgid_plural, extract_simple_token('$6')}])}
+    | '$7'
+  ].
+message_meta ->
+  previous msgid str_lines message_meta : [
+    {previous_messages, to_singular_message([{msgid, extract_simple_token('$3')}])}
+    | '$4'
+  ].
 
 Erlang code.
 
@@ -64,12 +171,20 @@ extract_simple_token({_Token, _Line, Value}) ->
 extract_line({_Token, Line}) ->
   Line.
 
-plural_forms_map_from_list(Pluralizations) ->
-  Tuples = lists:map(fun extract_plural_form/1, Pluralizations),
-  maps:from_list(Tuples).
+to_singular_message(Fields) ->
+  'Elixir.Kernel':struct('Elixir.Expo.Message.Singular', Fields).
 
-extract_plural_form({{plural_form, _Line, PluralForm}, String}) ->
-  {PluralForm, String}.
+to_plural_message(Fields) ->
+  'Elixir.Kernel':struct('Elixir.Expo.Message.Plural', Fields).
 
-add_comments_to_message({MessageType, Message}, Comments) ->
-  {MessageType, maps:put(comments, Comments, Message)}.
+group_meta(MetaFields) ->
+  maps:to_list(
+    % Use maps:groups_from_list when supporting OTP >= 25 exclusively
+    lists:foldr(
+      fun({Key, Value}, Acc) ->
+        maps:update_with(Key, fun(Cur) -> [Value | Cur] end, [Value], Acc)
+      end,
+      #{},
+      MetaFields
+    )
+  ).

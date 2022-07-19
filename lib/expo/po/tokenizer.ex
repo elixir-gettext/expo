@@ -14,6 +14,9 @@ defmodule Expo.Po.Tokenizer do
           | {:msgstr, line}
           | {:msgctxt, line}
           | {:comment, line, binary}
+          | {:obsolete, line}
+          | {:previous, line}
+          | {:eof, line}
 
   # In this list of keywords *the order matters* because a function clause is
   # generated for each keyword, and keywords have to be followed by whitespace.
@@ -48,81 +51,91 @@ defmodule Expo.Po.Tokenizer do
   """
   @spec tokenize(binary) :: {:ok, [token]} | {:error, pos_integer, binary}
   def tokenize(str) do
-    tokenize_line(str, 1, [])
+    tokenize_line(str)
   end
 
   # Converts the first line in `str` into a list of tokens and then moves on to
   # the next line.
-  @spec tokenize_line(binary, pos_integer, [token]) ::
+  @spec tokenize_line(binary, pos_integer, line_prefix :: String.t(), [token]) ::
           {:ok, [token]} | {:error, pos_integer, binary}
-  defp tokenize_line(str, line, acc)
+  defp tokenize_line(str, line \\ 1, line_prefix \\ "", acc \\ [])
 
   # End of file.
-  defp tokenize_line(<<>>, _line, acc) do
-    {:ok, Enum.reverse(acc)}
+  defp tokenize_line(<<>>, line, _line_prefix, acc) do
+    {:ok, Enum.reverse([{:"$end", line} | acc])}
   end
 
   # Go to the next line.
-  defp tokenize_line(<<?\n, rest::binary>>, line, acc) do
-    tokenize_line(rest, line + 1, acc)
+  defp tokenize_line(<<?\n, rest::binary>>, line, _line_prefix, acc) do
+    tokenize_line(rest, line + 1, "", acc)
+  end
+
+  # Obsolete
+  defp tokenize_line(<<?#, ?~, rest::binary>>, line, "", acc) do
+    tokenize_line(rest, line, "#~", [{:obsolete, line} | acc])
+  end
+
+  # Previous
+  defp tokenize_line(<<?#, ?|, rest::binary>>, line, "", acc) do
+    tokenize_line(rest, line, "#|", [{:previous, line} | acc])
   end
 
   # Skip whitespace.
-  defp tokenize_line(<<char, rest::binary>>, line, acc)
+  defp tokenize_line(<<char, rest::binary>>, line, line_prefix, acc)
        when char in @whitespace_no_nl do
-    tokenize_line(rest, line, acc)
-  end
-
-  # Comments.
-  defp tokenize_line(<<?#, _rest::binary>> = rest, line, acc) do
-    {contents, rest} = to_eol_or_eof(rest, "")
-    acc = [{:comment, line, contents} | acc]
-    tokenize_line(rest, line, acc)
+    tokenize_line(rest, line, line_prefix, acc)
   end
 
   # Keywords.
   for kw <- @keywords do
-    defp tokenize_line(unquote(kw) <> <<char, rest::binary>>, line, acc)
+    defp tokenize_line(unquote(kw) <> <<char, rest::binary>>, line, line_prefix, acc)
          when char in @whitespace do
       acc = [{unquote(String.to_existing_atom(kw)), line} | acc]
-      tokenize_line(rest, line, acc)
+      tokenize_line(rest, line, line_prefix, acc)
     end
 
-    defp tokenize_line(unquote(kw) <> _rest, line, _acc) do
+    defp tokenize_line(unquote(kw) <> _rest, line, _line_prefix, _acc) do
       {:error, line, "no space after '#{unquote(kw)}'"}
     end
   end
 
+  # Comments.
+  defp tokenize_line(<<?#, _rest::binary>> = rest, line, "", acc) do
+    {contents, rest} = to_eol_or_eof(rest, "")
+    acc = [{:comment, line, contents} | acc]
+    tokenize_line(rest, line, "", acc)
+  end
+
   # `msgstr`.
-  defp tokenize_line("msgstr[" <> <<rest::binary>>, line, acc) do
+  defp tokenize_line("msgstr[" <> <<rest::binary>>, line, line_prefix, acc) do
     case tokenize_plural_form(rest, "") do
       {:ok, plural_form, rest} ->
         # The order of the :plural_form and :msgstr tokens is inverted since
         # the `acc` array of tokens will be reversed at the end.
         acc = [{:plural_form, line, plural_form}, {:msgstr, line} | acc]
-        tokenize_line(rest, line, acc)
+        tokenize_line(rest, line, line_prefix, acc)
 
       {:error, reason} ->
         {:error, line, reason}
     end
   end
 
-  defp tokenize_line("msgstr" <> <<char, rest::binary>>, line, acc)
+  defp tokenize_line("msgstr" <> <<char, rest::binary>>, line, line_prefix, acc)
        when char in @whitespace do
     acc = [{:msgstr, line} | acc]
-    tokenize_line(rest, line, acc)
+    tokenize_line(rest, line, line_prefix, acc)
   end
 
-  defp tokenize_line("msgstr" <> _rest, line, _acc) do
+  defp tokenize_line("msgstr" <> _rest, line, _line_prefix, _acc) do
     {:error, line, "no space after 'msgstr'"}
   end
 
   # String.
-  defp tokenize_line(<<?", rest::binary>>, line, acc) do
+  defp tokenize_line(<<?", rest::binary>>, line, line_prefix, acc) do
     case tokenize_string(rest, "") do
       {:ok, string, rest} ->
         token = {:str, line, string}
-        tokenize_line(rest, line, [token | acc])
+        tokenize_line(rest, line, line_prefix, [token | acc])
 
       {:error, reason} ->
         {:error, line, reason}
@@ -134,7 +147,7 @@ defmodule Expo.Po.Tokenizer do
   # a letter (we don't take care of unicode ot fancy stuff, just ASCII letters),
   # we assume there's an unknown keyword. We parse it with a regex
   # (`next_word/1`) so that the error message is informative.
-  defp tokenize_line(<<letter, _rest::binary>> = binary, line, _acc)
+  defp tokenize_line(<<letter, _rest::binary>> = binary, line, _line_prefix, _acc)
        when letter in ?a..?z or letter in ?A..?Z do
     {:error, line, "unknown keyword '#{next_word(binary)}'"}
   end
@@ -143,7 +156,7 @@ defmodule Expo.Po.Tokenizer do
   # Last resort: this is just a plain unexpected token. We take the first
   # Unicode char of the given binary and build an informative error message
   # (with the codepoint of the char).
-  defp tokenize_line(binary, line, _acc) when is_binary(binary) do
+  defp tokenize_line(binary, line, _line_prefix, _acc) when is_binary(binary) do
     # To get the first Unicode char, we convert to char list first.
     [char | _] = String.to_charlist(binary)
     msg = :io_lib.format('unexpected token: "~ts" (codepoint U+~4.16.0B)', [[char], char])

@@ -32,7 +32,8 @@ defmodule Expo.MixProject do
         "coveralls.post": :test,
         "coveralls.xml": :test
       ],
-      package: package()
+      package: package(),
+      yecc_options: if(Mix.env() in [:dev, :test], do: [verbose: true])
     ]
   end
 
