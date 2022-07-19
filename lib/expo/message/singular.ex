@@ -6,6 +6,10 @@ defmodule Expo.Message.Singular do
   alias Expo.Message
   alias Expo.Util
 
+  @type block :: :msgid | :msgstr | :msgctxt
+
+  @opaque meta :: %{optional(:source_line) => %{block() => non_neg_integer()}}
+
   @type t :: %__MODULE__{
           msgid: Message.msgid(),
           msgstr: Message.msgstr(),
@@ -15,10 +19,12 @@ defmodule Expo.Message.Singular do
           flags: [[String.t()]],
           previous_messages: [Message.t()],
           references: [[file :: String.t() | {file :: String.t(), line :: pos_integer()}]],
-          obsolete: boolean()
+          obsolete: boolean(),
+          __meta__: meta()
         }
 
   @enforce_keys [:msgid]
+  @derive {Inspect, except: [:__meta__]}
   defstruct [
     :msgid,
     msgstr: [],
@@ -28,7 +34,8 @@ defmodule Expo.Message.Singular do
     flags: [],
     previous_messages: [],
     references: [],
-    obsolete: false
+    obsolete: false,
+    __meta__: %{}
   ]
 
   @spec key(t()) :: {String.t(), String.t()}
@@ -81,4 +88,23 @@ defmodule Expo.Message.Singular do
         references: references |> List.flatten() |> Enum.map(&List.wrap/1)
     }
   end
+
+  @doc """
+  Get Source Line Number of statement
+
+  ## Examples
+
+      iex> %Expo.Messages{messages: [message]} = Expo.Po.parse_string!(\"""
+      ...> msgid "foo"
+      ...> msgstr "bar"
+      ...> \""")
+      iex> Expo.Message.Singular.source_line_number(message, :msgid)
+      1
+
+  """
+  @spec source_line_number(message :: t(), block :: block(), default :: default) ::
+          non_neg_integer() | default
+        when default: term()
+  def source_line_number(%__MODULE__{__meta__: meta} = _message, block, default \\ nil),
+    do: meta[:source_line][block] || default
 end

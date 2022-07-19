@@ -119,4 +119,33 @@ defmodule Expo.Message do
       end
     end
   end
+
+  @doc """
+  Get Source Line Number of statement
+
+  ## Examples
+
+      iex> %Expo.Messages{messages: [message]} = Expo.Po.parse_string!(\"""
+      ...> msgid "foo"
+      ...> msgstr "bar"
+      ...> \""")
+      iex> Expo.Message.source_line_number(message, :msgid)
+      1
+
+  """
+  @spec source_line_number(message :: Singular.t(), block :: Singular.block(), default :: default) ::
+          non_neg_integer() | default
+        when default: term
+
+  @spec source_line_number(message :: Plural.t(), block :: Plural.block(), default :: default) ::
+          non_neg_integer() | default
+        when default: term
+
+  def source_line_number(message, block, default \\ nil)
+
+  def source_line_number(%Singular{} = message, block, default),
+    do: Singular.source_line_number(message, block, default)
+
+  def source_line_number(%Plural{} = message, block, default),
+    do: Plural.source_line_number(message, block, default)
 end

@@ -48,9 +48,7 @@ defmodule Expo.Po.Parser do
   defp parse_yecc_result({:only_comments, comments}), do: {:ok, comments, [], []}
 
   defp parse_yecc_result({:messages, messages}) do
-    extracted_messages = Enum.map(messages, &elem(&1, 1))
-
-    unpacked_messages = Enum.map(extracted_messages, &unpack_comments/1)
+    unpacked_messages = Enum.map(messages, &unpack_comments/1)
 
     with :ok <- check_for_duplicates(messages) do
       {headers, top_comments, messages} = Util.extract_meta_headers(unpacked_messages)
@@ -125,12 +123,9 @@ defmodule Expo.Po.Parser do
 
   defp check_for_duplicates(messages, existing \\ %{}, duplicates \\ [])
 
-  defp check_for_duplicates(
-         [{source_line, message} | messages],
-         existing,
-         duplicates
-       ) do
+  defp check_for_duplicates([message | messages], existing, duplicates) do
     key = Message.key(message)
+    source_line = Message.source_line_number(message, :msgid)
 
     duplicates =
       case Map.fetch(existing, key) do
