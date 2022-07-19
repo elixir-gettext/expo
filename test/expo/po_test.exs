@@ -431,13 +431,17 @@ defmodule Expo.PoTest do
     test "with single strings" do
       assert {:ok,
               %Messages{
-                messages: [%Message.Singular{msgid: ["hel", "l", "o"], msgstr: ["ciao"]}]
+                messages: [
+                  %Message.Singular{msgid: ["hel", "l", "o"], msgstr: ["ciao"]} = message
+                ]
               }} =
                Po.parse_string("""
                msgid "hel" "l"
                "o"
                msgstr "ciao"
                """)
+
+      assert 3 == Message.source_line_number(message, :msgstr)
     end
 
     test "with singular previous msgid" do
@@ -570,7 +574,7 @@ defmodule Expo.PoTest do
                   %Message.Plural{
                     msgid: ["foo"],
                     msgstr: %{0 => ["bar"], 1 => ["bars"], 2 => ["barres"]}
-                  }
+                  } = message
                 ]
               }} =
                Po.parse_string("""
@@ -580,6 +584,8 @@ defmodule Expo.PoTest do
                msgstr[1] "bars"
                msgstr[2] "barres"
                """)
+
+      assert 5 == Message.source_line_number(message, {:msgstr, 2})
     end
 
     test "comments are associated with messages" do
