@@ -1,5 +1,6 @@
 Nonterminals
   grammar
+  obsolete_pluralizations
   obsolete_plural_message
   obsolete_singular_message
   only_comments
@@ -138,7 +139,7 @@ plural_message ->
   ).
 
 obsolete_plural_message ->
-  message_meta obsolete msgid str_lines obsolete msgid_plural str_lines pluralizations :
+  message_meta obsolete msgid str_lines obsolete msgid_plural str_lines obsolete_pluralizations :
   {Pluralizations, PluralLineInformation} = split_msgstr('$8'),
   to_plural_message(
     [
@@ -155,7 +156,7 @@ obsolete_plural_message ->
     ]
   ).
 obsolete_plural_message ->
-  message_meta obsolete msgctxt str_lines obsolete msgid str_lines obsolete msgid_plural str_lines pluralizations :
+  message_meta obsolete msgctxt str_lines obsolete msgid str_lines obsolete msgid_plural str_lines obsolete_pluralizations :
   {Pluralizations, PluralLineInformation} = split_msgstr('$11'),
   to_plural_message(
     [
@@ -178,6 +179,11 @@ pluralizations ->
   pluralization : ['$1'].
 pluralizations ->
   pluralization pluralizations : ['$1'|'$2'].
+
+obsolete_pluralizations ->
+  obsolete pluralization : ['$2'].
+obsolete_pluralizations ->
+  obsolete pluralization obsolete_pluralizations : ['$2'|'$3'].
 
 pluralization ->
   msgstr plural_form str_lines : {extract_simple_token('$2'), extract_simple_token('$3'), extract_line('$2')}.
