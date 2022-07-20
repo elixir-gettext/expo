@@ -178,7 +178,7 @@ defmodule Expo.Po.Tokenizer do
          {:str_lines, line, strings},
          {keyword, _keyword_line} = keyword_token | acc
        ])
-       when keyword in @obsolete_keywords  do
+       when keyword in @obsolete_keywords do
     [{:str_lines, line, [string | strings]}, keyword_token | acc]
   end
 
