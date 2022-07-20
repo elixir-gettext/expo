@@ -7,7 +7,7 @@ defmodule Expo.Po.Tokenizer do
   @type line :: pos_integer
 
   @type token ::
-          {:str, line, binary}
+          {:str_lines, line, [binary]}
           | {:plural_form, line, non_neg_integer}
           | {:msgid, line}
           | {:msgid_plural, line}
@@ -23,7 +23,7 @@ defmodule Expo.Po.Tokenizer do
   # `msgid_plural` would cause an error if it didn't come before `msgid`.
   # Also note that the `msgstr` keyword is missing here since it can be also
   # followed by a plural form (for example, `[1]`).
-  @keywords ~w(
+  @string_keywords ~w(
     msgid_plural
     msgid
     msgctxt
@@ -62,7 +62,13 @@ defmodule Expo.Po.Tokenizer do
 
   # End of file.
   defp tokenize_line(<<>>, line, _line_prefix, acc) do
-    {:ok, Enum.reverse([{:"$end", line} | acc])}
+    tokens =
+      Enum.reduce(acc, [{:"$end", line}], fn
+        {:str_lines, line, strings}, acc -> [{:str_lines, line, Enum.reverse(strings)} | acc]
+        token, acc -> [token | acc]
+      end)
+
+    {:ok, tokens}
   end
 
   # Go to the next line.
@@ -87,7 +93,7 @@ defmodule Expo.Po.Tokenizer do
   end
 
   # Keywords.
-  for kw <- @keywords do
+  for kw <- @string_keywords do
     defp tokenize_line(unquote(kw) <> <<char, rest::binary>>, line, line_prefix, acc)
          when char in @whitespace do
       acc = [{unquote(String.to_existing_atom(kw)), line} | acc]
@@ -134,8 +140,7 @@ defmodule Expo.Po.Tokenizer do
   defp tokenize_line(<<?", rest::binary>>, line, line_prefix, acc) do
     case tokenize_string(rest, "") do
       {:ok, string, rest} ->
-        token = {:str, line, string}
-        tokenize_line(rest, line, line_prefix, [token | acc])
+        tokenize_line(rest, line, line_prefix, add_str_lines(line, string, acc))
 
       {:error, reason} ->
         {:error, line, reason}
@@ -161,6 +166,34 @@ defmodule Expo.Po.Tokenizer do
     [char | _] = String.to_charlist(binary)
     msg = :io_lib.format('unexpected token: "~ts" (codepoint U+~4.16.0B)', [[char], char])
     {:error, line, :unicode.characters_to_binary(msg)}
+  end
+
+  @obsolete_keywords ~w(msgid msgid_plural msgctxt msgstr)a
+
+  defp add_str_lines(line, string, [{:str_lines, line, strings} | acc]) do
+    [{:str_lines, line, [string | strings]} | acc]
+  end
+
+  defp add_str_lines(_line, string, [
+         {:str_lines, line, strings},
+         {keyword, _keyword_line} = keyword_token | acc
+       ])
+       when keyword in @obsolete_keywords do
+    [{:str_lines, line, [string | strings]}, keyword_token | acc]
+  end
+
+  defp add_str_lines(_line, string, [
+         {modifier, _new_modifier_line},
+         {:str_lines, line, strings},
+         {keyword, _keyword_line} = keyword_token,
+         {modifier, _old_modifier_line} = modifier_token | acc
+       ])
+       when modifier in [:obsolete, :previous] and keyword in @obsolete_keywords do
+    [{:str_lines, line, [string | strings]}, keyword_token, modifier_token | acc]
+  end
+
+  defp add_str_lines(line, string, acc) do
+    [{:str_lines, line, [string]} | acc]
   end
 
   # Parses the double-quotes-delimited string `str` into a single string. Note

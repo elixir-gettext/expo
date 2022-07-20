@@ -60,12 +60,12 @@ defmodule Expo.Po.TokenizerTest do
 
   test "single simple string" do
     str = ~s("foo bar")
-    assert tokenize(str) == {:ok, [{:str, 1, "foo bar"}, {:"$end", 1}]}
+    assert tokenize(str) == {:ok, [{:str_lines, 1, ["foo bar"]}, {:"$end", 1}]}
   end
 
   test "escape characters in strings" do
     str = ~S("foo,\nbar\tbaz\\")
-    assert tokenize(str) == {:ok, [{:str, 1, "foo,\nbar\tbaz\\"}, {:"$end", 1}]}
+    assert tokenize(str) == {:ok, [{:str_lines, 1, ["foo,\nbar\tbaz\\"]}, {:"$end", 1}]}
 
     str = ~S("fo\ø")
     assert tokenize(str) == {:error, 1, "unsupported escape code"}
@@ -84,9 +84,9 @@ defmodule Expo.Po.TokenizerTest do
     assert tokenize(str) ==
              {:ok,
               [
-                {:str, 1, "foo"},
-                {:str, 2, "bar with \"quotes\""},
-                {:str, 3, "bong"},
+                {:str_lines, 1, ["foo"]},
+                {:str_lines, 2, ["bar with \"quotes\""]},
+                {:str_lines, 3, ["bong"]},
                 {:"$end", 4}
               ]}
   end
@@ -115,9 +115,9 @@ defmodule Expo.Po.TokenizerTest do
              {:ok,
               [
                 {:msgid, 1},
-                {:str, 1, "foo"},
+                {:str_lines, 1, ["foo"]},
                 {:msgstr, 2},
-                {:str, 2, "bar"},
+                {:str_lines, 2, ["bar"]},
                 {:"$end", 3}
               ]}
   end
@@ -191,7 +191,7 @@ defmodule Expo.Po.TokenizerTest do
               [
                 {:comment, 1, "# Multiline comment with"},
                 {:msgid, 2},
-                {:str, 2, "a string"},
+                {:str_lines, 2, ["a string"]},
                 {:comment, 3, "# in it."},
                 {:"$end", 4}
               ]}
@@ -243,10 +243,10 @@ defmodule Expo.Po.TokenizerTest do
 
   test "obsolete are tokenized with obsolete flag" do
     assert tokenize(~S(#~ msgid "foo")) ==
-             {:ok, [{:obsolete, 1}, {:msgid, 1}, {:str, 1, "foo"}, {:"$end", 1}]}
+             {:ok, [{:obsolete, 1}, {:msgid, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
     assert tokenize(~S(#~ msgid_plural "foo")) ==
-             {:ok, [{:obsolete, 1}, {:msgid_plural, 1}, {:str, 1, "foo"}, {:"$end", 1}]}
+             {:ok, [{:obsolete, 1}, {:msgid_plural, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
     assert tokenize(~S"""
            #~ msgid_plural "foo\n"
@@ -256,19 +256,17 @@ defmodule Expo.Po.TokenizerTest do
               [
                 {:obsolete, 1},
                 {:msgid_plural, 1},
-                {:str, 1, "foo\n"},
-                {:obsolete, 2},
-                {:str, 2, "bar"},
+                {:str_lines, 1, ["foo\n", "bar"]},
                 {:"$end", 3}
               ]}
   end
 
   test "previous are tokenized with previous flag" do
     assert tokenize(~S(#| msgid "foo")) ==
-             {:ok, [{:previous, 1}, {:msgid, 1}, {:str, 1, "foo"}, {:"$end", 1}]}
+             {:ok, [{:previous, 1}, {:msgid, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
     assert tokenize(~S(#| msgid_plural "foo")) ==
-             {:ok, [{:previous, 1}, {:msgid_plural, 1}, {:str, 1, "foo"}, {:"$end", 1}]}
+             {:ok, [{:previous, 1}, {:msgid_plural, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
     assert tokenize(~S"""
            #| msgid_plural "foo\n"
@@ -278,9 +276,7 @@ defmodule Expo.Po.TokenizerTest do
               [
                 {:previous, 1},
                 {:msgid_plural, 1},
-                {:str, 1, "foo\n"},
-                {:previous, 2},
-                {:str, 2, "bar"},
+                {:str_lines, 1, ["foo\n", "bar"]},
                 {:"$end", 3}
               ]}
   end
