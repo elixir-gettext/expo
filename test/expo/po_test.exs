@@ -516,6 +516,13 @@ defmodule Expo.PoTest do
                     msgstr: ["ciao"],
                     comments: [" comment"],
                     obsolete: true
+                  },
+                  %Message.Plural{
+                    msgid: ["hell", "o"],
+                    msgid_plural: ["hell", "os"],
+                    msgstr: %{0 => ["holl", "a"]},
+                    comments: [" comment"],
+                    obsolete: true
                   }
                 ]
               }} =
@@ -524,6 +531,14 @@ defmodule Expo.PoTest do
                #~ msgid "hel" "l"
                #~ "o"
                #~ msgstr "ciao"
+
+               # comment
+               #~ msgid "hell"
+               #~ "o"
+               #~ msgid_plural "hell"
+               #~ "os"
+               #~ msgstr[0] "holl"
+               #~ "a"
                """)
     end
 

@@ -182,6 +182,7 @@ defmodule Expo.Po.Tokenizer do
     [{:str_lines, line, [string | strings]}, keyword_token | acc]
   end
 
+  # strings after msgid msgid_plural msgctxt msgstr (singular)
   defp add_str_lines(_line, string, [
          {modifier, _new_modifier_line},
          {:str_lines, line, strings},
@@ -190,6 +191,23 @@ defmodule Expo.Po.Tokenizer do
        ])
        when modifier in [:obsolete, :previous] and keyword in @obsolete_keywords do
     [{:str_lines, line, [string | strings]}, keyword_token, modifier_token | acc]
+  end
+
+  # strings after msgstr (plural)
+  defp add_str_lines(_line, string, [
+         {modifier, _new_modifier_line},
+         {:str_lines, line, strings},
+         {:plural_form, _plural_form_line, _plural_form} = plural_form_token,
+         {:msgstr, _keyword_line} = keyword_token,
+         {modifier, _old_modifier_line} = modifier_token | acc
+       ])
+       when modifier in [:obsolete, :previous] do
+    [
+      {:str_lines, line, [string | strings]},
+      plural_form_token,
+      keyword_token,
+      modifier_token | acc
+    ]
   end
 
   defp add_str_lines(line, string, acc) do
