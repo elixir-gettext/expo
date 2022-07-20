@@ -32,7 +32,7 @@ defmodule Expo.Po.Parser do
   defp tokenize(content) do
     case Tokenizer.tokenize(content) do
       {:error, line, message} -> {:error, {:parse_error, message, line}}
-      {:ok, tokens} -> {:ok, Tokenizer.Precollapse.precollapse_strings(tokens)}
+      {:ok, tokens} -> {:ok, tokens}
     end
   end
 
