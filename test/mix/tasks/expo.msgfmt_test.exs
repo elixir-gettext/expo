@@ -16,7 +16,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
   end
 
   test "exports mo to console" do
-    po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+    po_path = "test/fixtures/po/valid.po"
 
     # Latin1 Encoding is needed so that the binary is untouched
     # and does not acutally mean latin1.
@@ -29,7 +29,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
   end
 
   test "exports mo to file", %{temp_file: temp_file} do
-    po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+    po_path = "test/fixtures/po/valid.po"
 
     Msgfmt.run([po_path, "--output-file=#{temp_file}"])
 
@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
   end
 
   test "shows statistics", %{temp_file: temp_file} do
-    po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+    po_path = "test/fixtures/po/valid.po"
 
     stderr =
       capture_io(:standard_error, fn ->
@@ -48,7 +48,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
   end
 
   test "exports fuzzy when asked", %{temp_file: temp_file} do
-    po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+    po_path = "test/fixtures/po/valid.po"
 
     Msgfmt.run([po_path, "--output-file=#{temp_file}", "--use-fuzzy"])
 
@@ -70,7 +70,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
   end
 
   test "checks valid endianness", %{temp_file: temp_file} do
-    po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+    po_path = "test/fixtures/po/valid.po"
 
     Msgfmt.run([po_path, "--output-file=#{temp_file}", "--endianness=little"])
     assert {:ok, _parsed} = MO.parse_file(temp_file)
