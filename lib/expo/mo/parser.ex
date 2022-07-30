@@ -96,7 +96,7 @@ defmodule Expo.MO.Parser do
       |> Enum.map(&read_table_cell(content, &1))
 
   defp read_table_headers(
-         :big,
+         :big = _endianness,
          <<cell_length::big-unsigned-integer-size(4)-unit(8),
            cell_offset::big-unsigned-integer-size(4)-unit(8), rest::binary>>,
          acc
@@ -104,7 +104,7 @@ defmodule Expo.MO.Parser do
        do: read_table_headers(:big, rest, [{cell_offset, cell_length} | acc])
 
   defp read_table_headers(
-         :little,
+         :little = _endianness,
          <<cell_length::little-unsigned-integer-size(4)-unit(8),
            cell_offset::little-unsigned-integer-size(4)-unit(8), rest::binary>>,
          acc
