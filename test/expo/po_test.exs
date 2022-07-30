@@ -949,7 +949,7 @@ defmodule Expo.POTest do
     end
 
     test "populates the :file field with the path of the parsed file if option is provided" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+      fixture_path = "test/fixtures/po/valid.po"
 
       assert {:ok, %Messages{file: ^fixture_path}} =
                PO.parse_string(File.read!(fixture_path), file: fixture_path)
@@ -969,7 +969,7 @@ defmodule Expo.POTest do
 
   describe "parse_string!/1" do
     test "populates the :file field with the path of the parsed file if option is provided" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+      fixture_path = "test/fixtures/po/valid.po"
 
       assert %Messages{file: ^fixture_path} =
                PO.parse_string!(File.read!(fixture_path), file: fixture_path)
@@ -1010,7 +1010,7 @@ defmodule Expo.POTest do
     end
 
     test "file with duplicate messages" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/duplicate_messages.po")
+      fixture_path = "test/fixtures/po/duplicate_messages.po"
 
       msg = "file:4: found duplicate on line 4 for msgid: 'test'"
 
@@ -1045,12 +1045,12 @@ defmodule Expo.POTest do
 
   describe "parse_file/1" do
     test "populates the :file field with the path of the parsed file" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+      fixture_path = "test/fixtures/po/valid.po"
       assert {:ok, %Messages{file: ^fixture_path}} = PO.parse_file(fixture_path)
     end
 
     test "valid file contents" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+      fixture_path = "test/fixtures/po/valid.po"
 
       assert {:ok,
               %Messages{
@@ -1066,12 +1066,12 @@ defmodule Expo.POTest do
     end
 
     test "invalid file contents" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_syntax_error.po")
+      fixture_path = "test/fixtures/po/invalid_syntax_error.po"
 
       assert PO.parse_file(fixture_path) ==
                {:error, {:parse_error, "syntax error before: msgstr", 4}}
 
-      fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_token_error.po")
+      fixture_path = "test/fixtures/po/invalid_token_error.po"
 
       assert PO.parse_file(fixture_path) == {:error, {:parse_error, "unknown keyword 'msg'", 3}}
     end
@@ -1081,7 +1081,7 @@ defmodule Expo.POTest do
     end
 
     test "file starting with a BOM byte sequence" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/bom.po")
+      fixture_path = "test/fixtures/po/bom.po"
 
       output =
         capture_io(:stderr, fn ->
@@ -1096,12 +1096,12 @@ defmodule Expo.POTest do
 
   describe "parse_file!/1" do
     test "populates the :file field with the path of the parsed file" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+      fixture_path = "test/fixtures/po/valid.po"
       assert %Messages{file: ^fixture_path} = PO.parse_file!(fixture_path)
     end
 
     test "valid file contents" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
+      fixture_path = "test/fixtures/po/valid.po"
 
       assert %Messages{
                headers: [],
@@ -1116,19 +1116,15 @@ defmodule Expo.POTest do
     end
 
     test "invalid file contents" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_syntax_error.po")
+      fixture_path = "test/fixtures/po/invalid_syntax_error.po"
 
-      msg =
-        "_build/test/lib/expo/priv/test/po/invalid_syntax_error.po:4: syntax error before: msgstr"
-
-      assert_raise SyntaxError, msg, fn ->
+      assert_raise SyntaxError, "#{fixture_path}:4: syntax error before: msgstr", fn ->
         PO.parse_file!(fixture_path)
       end
 
-      fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_token_error.po")
-      msg = "_build/test/lib/expo/priv/test/po/invalid_token_error.po:3: unknown keyword 'msg'"
+      fixture_path = "test/fixtures/po/invalid_token_error.po"
 
-      assert_raise SyntaxError, msg, fn ->
+      assert_raise SyntaxError, "#{fixture_path}:3: unknown keyword 'msg'", fn ->
         PO.parse_file!(fixture_path)
       end
     end
@@ -1145,17 +1141,15 @@ defmodule Expo.POTest do
     end
 
     test "empty files don't cause parsing errors" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/empty.po")
+      fixture_path = "test/fixtures/po/empty.po"
       assert %Messages{messages: [], headers: []} = PO.parse_file!(fixture_path)
     end
 
     test "file with duplicate messages" do
-      fixture_path = Application.app_dir(:expo, "priv/test/po/duplicate_messages.po")
+      fixture_path = "test/fixtures/po/duplicate_messages.po"
+      message = "#{fixture_path}:4: found duplicate on line 4 for msgid: 'test'"
 
-      msg =
-        "_build/test/lib/expo/priv/test/po/duplicate_messages.po:4: found duplicate on line 4 for msgid: 'test'"
-
-      assert_raise DuplicateMessagesError, msg, fn ->
+      assert_raise DuplicateMessagesError, message, fn ->
         PO.parse_file!(fixture_path)
       end
     end

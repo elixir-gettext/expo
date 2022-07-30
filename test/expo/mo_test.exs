@@ -47,7 +47,7 @@ defmodule Expo.MOTest do
       end
 
       test "#{endianness} encodes unicode correctly" do
-        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/unicode.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/unicode.mo"
 
         messages = %Messages{
           headers: [
@@ -113,7 +113,7 @@ defmodule Expo.MOTest do
   describe "parse_binary/1" do
     for endianness <- [:big, :little] do
       test "#{endianness} parses headers" do
-        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/headers.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/headers.mo"
         assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
@@ -126,7 +126,7 @@ defmodule Expo.MOTest do
       end
 
       test "#{endianness} parses singular message" do
-        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/singular.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/singular.mo"
         assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
@@ -149,8 +149,7 @@ defmodule Expo.MOTest do
       end
 
       test "#{endianness} parses singular with msgctxt message" do
-        file =
-          Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/singular-msgctxt.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/singular-msgctxt.mo"
 
         assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
@@ -174,7 +173,7 @@ defmodule Expo.MOTest do
       end
 
       test "#{endianness} parses plural message" do
-        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/plural.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/plural.mo"
         assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
@@ -198,7 +197,7 @@ defmodule Expo.MOTest do
       end
 
       test "#{endianness} parses plural with msgctxt message" do
-        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/plural-msgctxt.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/plural-msgctxt.mo"
         assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
@@ -222,7 +221,7 @@ defmodule Expo.MOTest do
       end
 
       test "#{endianness} parses empty mo" do
-        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/empty.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/empty.mo"
         assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
@@ -233,7 +232,7 @@ defmodule Expo.MOTest do
       end
 
       test "#{endianness} parses mo with hash table" do
-        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/hash-table.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/hash-table.mo"
         assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
@@ -242,7 +241,7 @@ defmodule Expo.MOTest do
       end
 
       test "#{endianness} parses unicode messages" do
-        file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/unicode.mo")
+        file = "test/fixtures/mo/#{unquote(endianness)}/unicode.mo"
         assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
@@ -273,7 +272,7 @@ defmodule Expo.MOTest do
 
   describe "parse_binary!/1" do
     test "works" do
-      file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
+      file = "test/fixtures/mo/little/headers.mo"
       parsed = MO.parse_binary!(File.read!(file))
 
       assert %Messages{
@@ -296,7 +295,7 @@ defmodule Expo.MOTest do
     end
 
     test "raises for unsupported version" do
-      file = Application.app_dir(:expo, "priv/test/mo/unsupported_version.mo")
+      file = "test/fixtures/mo/unsupported_version.mo"
 
       assert_raise UnsupportedVersionError,
                    "invalid version, only ~> 0.0 is supported, 1.0 given",
@@ -314,7 +313,7 @@ defmodule Expo.MOTest do
 
   describe "parse_file/1" do
     test "works" do
-      file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
+      file = "test/fixtures/mo/little/headers.mo"
       assert {:ok, parsed} = MO.parse_file(file)
 
       assert %Messages{
@@ -327,13 +326,13 @@ defmodule Expo.MOTest do
     end
 
     test "raises for invalid file" do
-      file = Application.app_dir(:expo, "priv/test/po/bom.po")
+      file = "test/fixtures/po/bom.po"
 
       assert {:error, :invalid_file} = MO.parse_file(file)
     end
 
     test "raises for unsupported version" do
-      file = Application.app_dir(:expo, "priv/test/mo/unsupported_version.mo")
+      file = "test/fixtures/mo/unsupported_version.mo"
 
       assert {:error, {:unsupported_version, 1, 0}} = MO.parse_file(file)
     end
@@ -345,7 +344,7 @@ defmodule Expo.MOTest do
 
   describe "parse_file!/1" do
     test "works" do
-      file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
+      file = "test/fixtures/mo/little/headers.mo"
       assert parsed = MO.parse_file!(file)
 
       assert %Messages{
@@ -358,23 +357,22 @@ defmodule Expo.MOTest do
     end
 
     test "raises for invalid file" do
-      file = Application.app_dir(:expo, "priv/test/po/bom.po")
+      file = "test/fixtures/po/bom.po"
 
-      assert_raise InvalidFileError,
-                   "_build/test/lib/expo/priv/test/po/bom.po: invalid file",
-                   fn ->
-                     MO.parse_file!(file)
-                   end
+      assert_raise InvalidFileError, "test/fixtures/po/bom.po: invalid file", fn ->
+        MO.parse_file!(file)
+      end
     end
 
     test "raises for unsupported version" do
-      file = Application.app_dir(:expo, "priv/test/mo/unsupported_version.mo")
+      file = "test/fixtures/mo/unsupported_version.mo"
 
-      assert_raise UnsupportedVersionError,
-                   "_build/test/lib/expo/priv/test/mo/unsupported_version.mo: invalid version, only ~> 0.0 is supported, 1.0 given",
-                   fn ->
-                     MO.parse_file!(file)
-                   end
+      message =
+        "test/fixtures/mo/unsupported_version.mo: invalid version, only ~> 0.0 is supported, 1.0 given"
+
+      assert_raise UnsupportedVersionError, message, fn ->
+        MO.parse_file!(file)
+      end
     end
 
     test "missing file" do
