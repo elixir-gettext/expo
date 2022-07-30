@@ -5,7 +5,7 @@ defmodule Expo.PO.Composer do
   alias Expo.Messages
   alias Expo.Util
 
-  @spec compose(messages :: Messages.t()) :: iodata()
+  @spec compose(Messages.t()) :: iodata()
   def compose(%Messages{
         headers: headers,
         top_comments: top_comments,

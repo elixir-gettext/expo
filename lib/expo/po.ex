@@ -1,12 +1,10 @@
 defmodule Expo.PO do
   @moduledoc """
-  `.po` / `.pot` file handler
+  File handling for PO (`.po`) and POT (`.pot`) files.
   """
 
   alias Expo.Messages
-  alias Expo.PO.DuplicateMessagesError
-  alias Expo.PO.Parser
-  alias Expo.PO.SyntaxError
+  alias Expo.PO.{DuplicateMessagesError, Parser, SyntaxError}
 
   @type parse_options :: [{:file, Path.t()}]
 
@@ -28,12 +26,13 @@ defmodule Expo.PO do
 
   After running the following code:
 
-      iodata = Expo.PO.compose %Expo.Messages{
-        headers: ["Last-Translator: Jane Doe"],
-        messages: [
-          %Expo.Message.Singular{msgid: ["foo"], msgstr: ["bar"], comments: "A comment"}
-        ]
-      }
+      iodata =
+        Expo.PO.compose(%Expo.Messages{
+          headers: ["Last-Translator: Jane Doe"],
+          messages: [
+            %Expo.Message.Singular{msgid: ["foo"], msgstr: ["bar"], comments: "A comment"}
+          ]
+        })
 
       File.write!("/tmp/test.po", iodata)
 
@@ -48,60 +47,58 @@ defmodule Expo.PO do
       msgstr "bar"
 
   """
-  @spec compose(messages :: Messages.t()) :: iodata()
-  defdelegate compose(content), to: Expo.PO.Composer
+  @spec compose(Messages.t()) :: iodata()
+  defdelegate compose(messages), to: Expo.PO.Composer
 
   @doc """
-  Parses a string into a `Expo.Messages` struct.
+  Parses the ginve `string` into a `Expo.Messages` struct.
 
-  This function parses a given `str` into a `Expo.Messages` struct.
-  It returns `{:ok, po}` if there are no errors,
+  It returns `{:ok, messages}` if there are no errors,
   otherwise `{:error, line, reason}`.
 
   ## Examples
 
-      iex> {:ok, po} = Expo.PO.parse_string \"""
+      iex> {:ok, po} = Expo.PO.parse_string(\"""
       ...> msgid "foo"
       ...> msgstr "bar"
-      ...> \"""
-      iex> [t] = po.messages
-      iex> t.msgid
+      ...> \""")
+      iex> [message] = po.messages
+      iex> message.msgid
       ["foo"]
-      iex> t.msgstr
+      iex> message.msgstr
       ["bar"]
       iex> po.headers
       []
 
-      iex> Expo.PO.parse_string "foo"
+      iex> Expo.PO.parse_string("foo")
       {:error, {:parse_error, "unknown keyword 'foo'", 1}}
 
   """
-  @spec parse_string(content :: binary(), opts :: parse_options()) ::
+  @spec parse_string(String.t(), parse_options()) ::
           {:ok, Messages.t()}
           | parse_error()
           | duplicate_messages_error()
-  def parse_string(content, opts \\ []) do
-    Parser.parse(content, opts)
+  def parse_string(string, options \\ []) do
+    Parser.parse(string, options)
   end
 
   @doc """
-  Parses a string into a `Expo.Messages` struct, raising an exception if there are
+  Parses `string` into a `Expo.Messages` struct, raising an exception if there are
   any errors.
 
   Works exactly like `parse_string/1`, but returns a `Expo.Messages` struct
-  if there are no errors or raises a `Expo.PO.SyntaxError` error if there
-  are.
+  if there are no errors or raises an exception if there are.
 
   ## Examples
 
-      iex> po = Expo.PO.parse_string! \"""
+      iex> po = Expo.PO.parse_string!(\"""
       ...> msgid "foo"
       ...> msgstr "bar"
-      ...> \"""
-      iex> [t] = po.messages
-      iex> t.msgid
+      ...> \""")
+      iex> [message] = po.messages
+      iex> message.msgid
       ["foo"]
-      iex> t.msgstr
+      iex> message.msgstr
       ["bar"]
       iex> po.headers
       []
@@ -119,10 +116,9 @@ defmodule Expo.PO do
       ** (Expo.PO.DuplicateMessagesError) 4: found duplicate on line 4 for msgid: 'test'
 
   """
-  @spec parse_string!(content :: String.t(), opts :: parse_options()) ::
-          Messages.t() | no_return
-  def parse_string!(str, opts \\ []) do
-    case parse_string(str, opts) do
+  @spec parse_string!(String.t(), parse_options()) :: Messages.t()
+  def parse_string!(string, opts \\ []) do
+    case parse_string(string, opts) do
       {:ok, parsed} ->
         parsed
 
@@ -156,30 +152,32 @@ defmodule Expo.PO do
   This function works similarly to `parse_string/1` except that it takes a file
   and parses the contents of that file. It can return:
 
-    * `{:ok, po}`
+    * `{:ok, po}` if the parsing is successful
+
     * `{:error, line, reason}` if there is an error with the contents of the
       `.po` file (for example, a syntax error)
+
     * `{:error, reason}` if there is an error with reading the file (this error
       is one of the errors that can be returned by `File.read/1`)
 
   ## Examples
 
-      {:ok, po} = Expo.PO.parse_file "messages.po"
+      {:ok, po} = Expo.PO.parse_file("messages.po")
       po.file
       #=> "messages.po"
 
-      Expo.PO.parse_file "nonexistent"
+      Expo.PO.parse_file("nonexistent")
       #=> {:error, :enoent}
 
   """
-  @spec parse_file(path :: Path.t(), opts :: parse_options()) ::
+  @spec parse_file(Path.t(), parse_options()) ::
           {:ok, Messages.t()}
           | parse_error()
           | duplicate_messages_error()
           | file_error()
-  def parse_file(path, opts \\ []) do
+  def parse_file(path, options \\ []) when is_list(options) do
     with {:ok, contents} <- File.read(path) do
-      Parser.parse(contents, Keyword.put_new(opts, :file, path))
+      parse_string(contents, Keyword.put_new(options, :file, path))
     end
   end
 
@@ -187,17 +185,16 @@ defmodule Expo.PO do
   Parses the contents of a file into a `Expo.Messages` struct, raising if there
   are any errors.
 
-  Works like `parse_file/1`, except that it raises a `Expo.PO.SyntaxError`
-  exception if there's a syntax error in the file or a `File.Error` error if
-  there's an error with reading the file.
+  Works like `parse_file/1`, except that it raises an exception
+  if there are issues with the contents of the file or with reading the file.
 
   ## Examples
 
-      Expo.PO.parse_file! "nonexistent.po"
+      Expo.PO.parse_file!("nonexistent.po")
       #=> ** (File.Error) could not parse "nonexistent.po": no such file or directory
 
   """
-  @spec parse_file!(Path.t(), opts :: parse_options()) :: Messages.t() | no_return
+  @spec parse_file!(Path.t(), parse_options()) :: Messages.t()
   def parse_file!(path, opts \\ []) do
     case parse_file(path, opts) do
       {:ok, parsed} ->
