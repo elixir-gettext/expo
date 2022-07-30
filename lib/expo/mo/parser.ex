@@ -12,8 +12,8 @@ defmodule Expo.MO.Parser do
     with {:ok, {endianness, header}} <- parse_header(binary_part(content, 0, 28)),
          :ok <-
            check_version(header.file_format_revision_major, header.file_format_revision_minor),
-         messages <- parse_messages(endianness, header, content),
-         {headers, top_comments, messages} <- Util.extract_meta_headers(messages) do
+         messages = parse_messages(endianness, header, content),
+         {headers, top_comments, messages} = Util.extract_meta_headers(messages) do
       {:ok,
        %Messages{
          messages: messages,

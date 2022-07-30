@@ -5,6 +5,12 @@ defmodule Expo.MO.UnsupportedVersionError do
   All the fields in this struct are public.
   """
 
+  @type t :: %__MODULE__{
+          major: non_neg_integer,
+          minor: non_neg_integer,
+          file: Path.t()
+        }
+
   defexception [:major, :minor, :file]
 
   @impl Exception

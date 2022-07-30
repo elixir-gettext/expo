@@ -4,21 +4,16 @@ defmodule Expo.PO.SyntaxError do
   correct.
   """
 
-  defexception [:message]
+  @type t :: %__MODULE__{
+          file: Path.t(),
+          line: pos_integer,
+          reason: String.t()
+        }
+
+  defexception [:file, :line, :reason]
 
   @impl Exception
-  def exception(opts) do
-    line = Keyword.fetch!(opts, :line)
-    reason = Keyword.fetch!(opts, :reason)
-
-    msg =
-      if file = opts[:file] do
-        file = Path.relative_to_cwd(file)
-        "#{file}:#{line}: #{reason}"
-      else
-        "#{line}: #{reason}"
-      end
-
-    %__MODULE__{message: msg}
+  def message(%__MODULE__{file: file, line: line, reason: reason}) do
+    if file, do: "#{Path.relative_to_cwd(file)}:#{line}: #{reason}", else: "#{line}: #{reason}"
   end
 end

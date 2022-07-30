@@ -642,18 +642,18 @@ defmodule Expo.POTest do
     end
 
     test "syntax error when there is no 'msgid'" do
-      assert {:error, {:parse_error, "syntax error before: msgstr", 1}} =
+      assert {:error, %SyntaxError{reason: "syntax error before: msgstr", line: 1}} =
                PO.parse_string("msgstr \"foo\"")
 
-      assert {:error, {:parse_error, "syntax error before: msgstr", 1}} =
+      assert {:error, %SyntaxError{reason: "syntax error before: msgstr", line: 1}} =
                PO.parse_string("msgstr \"foo\"")
 
-      assert {:error, {:parse_error, "syntax error before: \"foo\"", 1}} =
+      assert {:error, %SyntaxError{reason: "syntax error before: \"foo\"", line: 1}} =
                PO.parse_string("\"foo\"")
     end
 
     test "if there's a msgid_plural, then plural forms must follow" do
-      assert {:error, {:parse_error, "syntax error before: \"bar\"", 3}} =
+      assert {:error, %SyntaxError{reason: "syntax error before: \"bar\"", line: 3}} =
                PO.parse_string("""
                msgid "foo"
                msgid_plural "foos"
@@ -662,19 +662,19 @@ defmodule Expo.POTest do
     end
 
     test "'msgid_plural' must come after 'msgid'" do
-      assert {:error, {:parse_error, "syntax error before: msgid_plural", 1}} =
+      assert {:error, %SyntaxError{reason: "syntax error before: msgid_plural", line: 1}} =
                PO.parse_string("msgid_plural ")
     end
 
     test "comments can't be placed between 'msgid' and 'msgstr'" do
-      assert {:error, {:parse_error, "syntax error before: \"# Comment\"", 2}} =
+      assert {:error, %SyntaxError{reason: "syntax error before: \"# Comment\"", line: 2}} =
                PO.parse_string("""
                msgid "foo"
                # Comment
                msgstr "bar"
                """)
 
-      assert {:error, {:parse_error, "syntax error before: \"# Comment\"", 3}} =
+      assert {:error, %SyntaxError{reason: "syntax error before: \"# Comment\"", line: 3}} =
                PO.parse_string("""
                msgid "foo"
                msgid_plural "foo"
@@ -772,11 +772,12 @@ defmodule Expo.POTest do
 
     test "duplicated messages cause an error" do
       assert {:error,
-              {:duplicate_messages,
-               [
-                 {"found duplicate on line 4 for msgid: 'foo'", 4, 1},
-                 {"found duplicate on line 7 for msgid: 'foo'", 7, 1}
-               ]}} =
+              %DuplicateMessagesError{
+                duplicates: [
+                  {"found duplicate on line 4 for msgid: 'foo'", 4, 1},
+                  {"found duplicate on line 7 for msgid: 'foo'", 7, 1}
+                ]
+              }} =
                PO.parse_string("""
                msgid "foo"
                msgstr "bar"
@@ -790,7 +791,9 @@ defmodule Expo.POTest do
 
       # Works if the msgid is split differently as well
       assert {:error,
-              {:duplicate_messages, [{"found duplicate on line 4 for msgid: 'foo'", 4, 1}]}} =
+              %DuplicateMessagesError{
+                duplicates: [{"found duplicate on line 4 for msgid: 'foo'", 4, 1}]
+              }} =
                PO.parse_string("""
                msgid "foo" ""
                msgstr "bar"
@@ -802,8 +805,11 @@ defmodule Expo.POTest do
 
     test "duplicated plural messages cause an error" do
       assert {:error,
-              {:duplicate_messages,
-               [{"found duplicate on line 5 for msgid: 'foo' and msgid_plural: 'foos'", 5, 1}]}} =
+              %DuplicateMessagesError{
+                duplicates: [
+                  {"found duplicate on line 5 for msgid: 'foo' and msgid_plural: 'foos'", 5, 1}
+                ]
+              }} =
                PO.parse_string("""
                msgid "foo"
                msgid_plural "foos"
@@ -886,7 +892,7 @@ defmodule Expo.POTest do
 
     test "msgctxt causes a syntax error when misplaced" do
       # Badly placed msgctxt still causes a syntax error
-      assert {:error, {:parse_error, "syntax error before: msgctxt", 2}} =
+      assert {:error, %SyntaxError{reason: "syntax error before: msgctxt", line: 2}} =
                PO.parse_string("""
                msgid "my_msgid"
                msgctxt "my_context"
@@ -962,8 +968,8 @@ defmodule Expo.POTest do
         # comment
         """)
 
-      assert {:error, {:parse_error, msg, 2}} = parsed
-      assert msg == "syntax error before: \"# comment\""
+      assert {:error, %SyntaxError{reason: reason, line: 2}} = parsed
+      assert reason == "syntax error before: \"# comment\""
     end
   end
 
@@ -1069,11 +1075,14 @@ defmodule Expo.POTest do
       fixture_path = "test/fixtures/po/invalid_syntax_error.po"
 
       assert PO.parse_file(fixture_path) ==
-               {:error, {:parse_error, "syntax error before: msgstr", 4}}
+               {:error,
+                %SyntaxError{reason: "syntax error before: msgstr", line: 4, file: fixture_path}}
 
       fixture_path = "test/fixtures/po/invalid_token_error.po"
 
-      assert PO.parse_file(fixture_path) == {:error, {:parse_error, "unknown keyword 'msg'", 3}}
+      assert PO.parse_file(fixture_path) ==
+               {:error,
+                %SyntaxError{reason: "unknown keyword 'msg'", line: 3, file: fixture_path}}
     end
 
     test "missing file" do
