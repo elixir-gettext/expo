@@ -98,18 +98,5 @@ defmodule Expo.MessagesTest do
       assert nil ==
                Messages.find(messages, %Message.Singular{msgid: ["baz"]})
     end
-
-    test "works with list" do
-      messages = [
-        %Message.Singular{msgid: ["foo"], msgstr: ["foo"]},
-        %Message.Singular{msgid: ["bar"], msgstr: ["bar"]}
-      ]
-
-      assert %Message.Singular{msgstr: ["foo"]} =
-               Messages.find(messages, %Message.Singular{msgid: ["foo"]})
-
-      assert nil ==
-               Messages.find(messages, %Message.Singular{msgid: ["baz"]})
-    end
   end
 end

@@ -111,18 +111,14 @@ defmodule Expo.Messages do
   end
 
   @doc """
-  Finds a given `search_message` in a list of `messages`.
+  Finds a given `message_to_find` in a list of `messages`.
 
   Equality between messages is checked using `Expo.Message.same?/2`.
 
-  Returns `nil` if `search_message` is not found.
+  Returns `nil` if `message_to_find` is not found.
   """
   @spec find([Message.t()] | t(), Message.t()) :: Message.t() | nil
-  def find(messages, search_message)
-
-  def find(messages, search_message) when is_list(messages),
-    do: Enum.find(messages, &Message.same?(&1, search_message))
-
-  def find(%__MODULE__{messages: messages}, search_message),
-    do: find(messages, search_message)
+  def find(%__MODULE__{messages: messages} = _messages, message_to_find) do
+    Enum.find(messages, &Message.same?(&1, message_to_find))
+  end
 end
