@@ -4,6 +4,7 @@ defmodule Expo.MixProject do
 
   @version "0.1.0-beta.7"
   @source_url "https://github.com/elixir-gettext/expo"
+  @description "Low-level Gettext file handling (.po/.pot/.mo file writer and parser)."
 
   def project do
     [
@@ -14,7 +15,7 @@ defmodule Expo.MixProject do
       deps: deps(),
       docs: docs(),
       test_coverage: [tool: ExCoveralls],
-      description: description(),
+      description: @description,
       dialyzer:
         [list_unused_filters: true, plt_add_apps: [:mix]] ++
           if (System.get_env("DIALYZER_PLT_PRIV") || "false") in ["1", "true"] do
@@ -38,7 +39,7 @@ defmodule Expo.MixProject do
   defp package do
     %{
       licenses: ["Apache-2.0"],
-      maintainers: ["Jonatan Männchen"],
+      maintainers: ["Jonatan Männchen", "José Valim", "Andrea Leopardi"],
       links: %{
         "GitHub" => @source_url,
         "Changelog" => @source_url <> "/releases",
@@ -47,16 +48,9 @@ defmodule Expo.MixProject do
     }
   end
 
-  defp description do
-    """
-    Low Level Gettext (.po / .pot / .mo file writer / parser).
-    """
-  end
-
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: []
     ]
   end
 
@@ -67,13 +61,12 @@ defmodule Expo.MixProject do
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, ">= 0.0.0", only: [:dev], runtime: false},
-      {:excoveralls, "~> 0.5", only: [:test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:credo, "~> 1.0", only: [:dev], runtime: false}
+      {:ex_doc, ">= 0.0.0", only: [:dev]},
+      {:excoveralls, "~> 0.5", only: [:test]},
+      {:dialyxir, "~> 1.0", only: [:dev]},
+      {:credo, "~> 1.0", only: [:dev]}
     ]
   end
 end
