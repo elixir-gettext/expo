@@ -18,8 +18,8 @@ defmodule Mix.Tasks.Expo.Msgfmt do
 
   use Mix.Task
 
-  alias Expo.Mo
-  alias Expo.Po
+  alias Expo.MO
+  alias Expo.PO
 
   @switches [
     use_fuzzy: :boolean,
@@ -55,9 +55,9 @@ defmodule Mix.Tasks.Expo.Msgfmt do
           file
       end
 
-    messages = Po.parse_file!(source_file)
+    messages = PO.parse_file!(source_file)
 
-    output = Mo.compose(messages, mo_compose_opts)
+    output = MO.compose(messages, mo_compose_opts)
 
     case output_file do
       nil -> IO.binwrite(:standard_io, IO.iodata_to_binary(output))
@@ -66,7 +66,7 @@ defmodule Mix.Tasks.Expo.Msgfmt do
 
     if Keyword.fetch!(mo_compose_opts, :statistics) do
       receive do
-        {Mo, :message_count, count} ->
+        {MO, :message_count, count} ->
           # Not using Mix.shell().info/1 since that will print into stdout and not stderr
           IO.puts(:standard_error, "#{count} translated messages.")
       end

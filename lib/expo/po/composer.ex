@@ -1,4 +1,4 @@
-defmodule Expo.Po.Composer do
+defmodule Expo.PO.Composer do
   @moduledoc false
 
   alias Expo.Message

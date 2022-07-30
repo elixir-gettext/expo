@@ -1,12 +1,12 @@
-defmodule Expo.Mo.Composer do
+defmodule Expo.MO.Composer do
   @moduledoc false
 
   alias Expo.Message
   alias Expo.Messages
-  alias Expo.Mo
+  alias Expo.MO
   alias Expo.Util
 
-  @spec compose(messages :: Messages.t(), opts :: Mo.compose_options()) :: iodata()
+  @spec compose(messages :: Messages.t(), opts :: MO.compose_options()) :: iodata()
   def compose(messages, opts \\ []) do
     messages =
       Util.inject_meta_headers(
@@ -30,7 +30,7 @@ defmodule Expo.Mo.Composer do
       end
 
     if Keyword.get(opts, :statistics, false) do
-      send(self(), {Mo, :message_count, length(messages)})
+      send(self(), {MO, :message_count, length(messages)})
     end
 
     number_of_messages = length(messages)

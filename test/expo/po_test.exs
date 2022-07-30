@@ -1,4 +1,4 @@
-defmodule Expo.PoTest do
+defmodule Expo.POTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
@@ -7,11 +7,11 @@ defmodule Expo.PoTest do
 
   alias Expo.Message
   alias Expo.Messages
-  alias Expo.Po
-  alias Expo.Po.DuplicateMessagesError
-  alias Expo.Po.SyntaxError
+  alias Expo.PO
+  alias Expo.PO.DuplicateMessagesError
+  alias Expo.PO.SyntaxError
 
-  doctest Po
+  doctest PO
 
   describe "compose/2" do
     test "single message" do
@@ -22,7 +22,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid "foo"
              msgstr "bar"
              """
@@ -43,7 +43,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid "one foo"
              msgid_plural "%{count} foos"
              msgstr[0] "one bar"
@@ -60,7 +60,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid "foo"
              msgstr "bar"
 
@@ -81,7 +81,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              # comment
              # another comment
              msgid "foo"
@@ -101,7 +101,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              #. some comment
              #. another comment
              msgid "foo"
@@ -126,7 +126,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              #: foo.ex:1, lib/bar.ex:2
              #: file_without_line
              msgid "foo"
@@ -155,7 +155,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              #: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ex:1
              #: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ex:1
              #: cccccccccccccccccccccccccccccc.ex:1
@@ -176,7 +176,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              # other comment
              #, bar, baz, foo
              msgid "foo"
@@ -194,7 +194,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid ""
              msgstr ""
              "Content-Type: text/plain\n"
@@ -221,7 +221,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid ""
              "foo\n"
              "morefoo\n"
@@ -262,7 +262,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid ""
              msgstr ""
              "Project-Id-Version: 1\n"
@@ -291,7 +291,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid "\"quotes\""
              msgstr "foo \"bar\" baz"
 
@@ -303,7 +303,7 @@ defmodule Expo.PoTest do
     test "double quotes in headers are escaped" do
       messages = %Messages{headers: [~s(Foo: "bar"\n)], messages: []}
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid ""
              msgstr "Foo: \"bar\"\n"
              """
@@ -318,7 +318,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgid "foo"
              msgstr "bar"
 
@@ -344,7 +344,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              msgctxt "baz"
              msgid "one foo"
              msgid_plural "%{count} foos"
@@ -365,7 +365,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              #| msgid "test"
              msgid "foo"
              msgstr "bar"
@@ -384,7 +384,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              #~ msgid "fo"
              #~ "o"
              #~ msgstr "bar"
@@ -413,7 +413,7 @@ defmodule Expo.PoTest do
         ]
       }
 
-      assert IO.iodata_to_binary(Po.compose(messages)) == ~S"""
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
              #| msgid "holla"
              msgid "hello"
              msgstr "ciao"
@@ -435,7 +435,7 @@ defmodule Expo.PoTest do
                   %Message.Singular{msgid: ["hel", "l", "o"], msgstr: ["ciao"]} = message
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "hel" "l"
                "o"
                msgstr "ciao"
@@ -465,7 +465,7 @@ defmodule Expo.PoTest do
                   }
                 ]
               }} =
-               Po.parse_string(~S"""
+               PO.parse_string(~S"""
                #: reference:7
                #, fuzzy
                #| msgid ""
@@ -497,7 +497,7 @@ defmodule Expo.PoTest do
                   }
                 ]
               }} =
-               Po.parse_string(~S"""
+               PO.parse_string(~S"""
                #: reference:8
                #| msgid "old"
                #| msgid_plural "olds"
@@ -526,7 +526,7 @@ defmodule Expo.PoTest do
                   }
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                # comment
                #~ msgid "hel" "l"
                #~ "o"
@@ -549,7 +549,7 @@ defmodule Expo.PoTest do
                   %Message.Singular{msgid: ["hello", " world"], msgstr: ["ciao", " mondo"]}
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "hello" " world"
                msgstr "ciao" " mondo"
                """)
@@ -563,7 +563,7 @@ defmodule Expo.PoTest do
                   %Message.Singular{msgid: ["word"], msgstr: ["parola"]}
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "hello"
                msgstr "ciao"
                msgid "word"
@@ -576,7 +576,7 @@ defmodule Expo.PoTest do
               %Messages{
                 messages: [%Message.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "føø"
                msgstr "bårπ"
                """)
@@ -592,7 +592,7 @@ defmodule Expo.PoTest do
                   } = message
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "foo"
                msgid_plural "foos"
                msgstr[0] "bar"
@@ -616,7 +616,7 @@ defmodule Expo.PoTest do
                   }
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                # This is a message
                #: lib/foo.ex:32
                # Ah, another comment!
@@ -634,7 +634,7 @@ defmodule Expo.PoTest do
                   %Message.Singular{msgid: ["c"], msgstr: ["d"], comments: [" Comment"]}
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "a"
                msgstr "b"
                # Comment
@@ -645,18 +645,18 @@ defmodule Expo.PoTest do
 
     test "syntax error when there is no 'msgid'" do
       assert {:error, {:parse_error, "syntax error before: msgstr", 1}} =
-               Po.parse_string("msgstr \"foo\"")
+               PO.parse_string("msgstr \"foo\"")
 
       assert {:error, {:parse_error, "syntax error before: msgstr", 1}} =
-               Po.parse_string("msgstr \"foo\"")
+               PO.parse_string("msgstr \"foo\"")
 
       assert {:error, {:parse_error, "syntax error before: \"foo\"", 1}} =
-               Po.parse_string("\"foo\"")
+               PO.parse_string("\"foo\"")
     end
 
     test "if there's a msgid_plural, then plural forms must follow" do
       assert {:error, {:parse_error, "syntax error before: \"bar\"", 3}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "foo"
                msgid_plural "foos"
                msgstr "bar"
@@ -665,19 +665,19 @@ defmodule Expo.PoTest do
 
     test "'msgid_plural' must come after 'msgid'" do
       assert {:error, {:parse_error, "syntax error before: msgid_plural", 1}} =
-               Po.parse_string("msgid_plural ")
+               PO.parse_string("msgid_plural ")
     end
 
     test "comments can't be placed between 'msgid' and 'msgstr'" do
       assert {:error, {:parse_error, "syntax error before: \"# Comment\"", 2}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "foo"
                # Comment
                msgstr "bar"
                """)
 
       assert {:error, {:parse_error, "syntax error before: \"# Comment\"", 3}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "foo"
                msgid_plural "foo"
                # Comment
@@ -687,7 +687,7 @@ defmodule Expo.PoTest do
 
     test "files with just comments are ok" do
       assert {:ok, %Messages{top_comments: ["# A comment", "# Another comment"]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                # A comment
                # Another comment
                """)
@@ -695,7 +695,7 @@ defmodule Expo.PoTest do
 
     test "reference are extracted into the :reference field of a message" do
       assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                #: foo.ex:1
                #: f:2
                #: filename with spaces.ex:12
@@ -724,7 +724,7 @@ defmodule Expo.PoTest do
 
     test "extracted comments are extracted into the :extracted_comments field of a message" do
       assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                #. Extracted comment
                # Not an extracted comment
                #.Another extracted comment
@@ -745,7 +745,7 @@ defmodule Expo.PoTest do
 
     test "flags are extracted in to the :flags field of a message" do
       assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                #, flag,a-flag b-flag, c-flag
                # comment
                #, flag,  ,d-flag ,, e-flag
@@ -763,7 +763,7 @@ defmodule Expo.PoTest do
 
     test "headers are parsed when present" do
       assert {:ok, %Messages{messages: [], headers: headers}} =
-               Po.parse_string(~S"""
+               PO.parse_string(~S"""
                msgid ""
                msgstr "Language: en_US\n"
                       "Last-Translator: Jane Doe <jane@doe.com>\n"
@@ -779,7 +779,7 @@ defmodule Expo.PoTest do
                  {"found duplicate on line 4 for msgid: 'foo'", 4, 1},
                  {"found duplicate on line 7 for msgid: 'foo'", 7, 1}
                ]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "foo"
                msgstr "bar"
 
@@ -793,7 +793,7 @@ defmodule Expo.PoTest do
       # Works if the msgid is split differently as well
       assert {:error,
               {:duplicate_messages, [{"found duplicate on line 4 for msgid: 'foo'", 4, 1}]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "foo" ""
                msgstr "bar"
 
@@ -806,7 +806,7 @@ defmodule Expo.PoTest do
       assert {:error,
               {:duplicate_messages,
                [{"found duplicate on line 5 for msgid: 'foo' and msgid_plural: 'foos'", 5, 1}]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "foo"
                msgid_plural "foos"
                msgstr[0] "bar"
@@ -818,12 +818,12 @@ defmodule Expo.PoTest do
     end
 
     test "an empty list of tokens is parsed as an empty list of messages" do
-      assert {:ok, %Messages{messages: [], headers: []}} = Po.parse_string("")
+      assert {:ok, %Messages{messages: [], headers: []}} = PO.parse_string("")
     end
 
     test "multiple references on the same line are parsed correctly" do
       assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                #: foo.ex:1 bar.ex:2 with spaces.ex:3
                #: baz.ex:3 with:colon.ex:12
                msgid "foo"
@@ -838,7 +838,7 @@ defmodule Expo.PoTest do
 
     test "top-of-the-file comments are extracted correctly" do
       assert {:ok, %Messages{messages: [], top_comments: top_comments}} =
-               Po.parse_string("""
+               PO.parse_string("""
                # Top of the file
                ## Top of the file with two hashes
                msgid ""
@@ -850,7 +850,7 @@ defmodule Expo.PoTest do
 
     test "msgctxt is parsed correctly for messages" do
       assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgctxt "my_" "context"
                msgid "my_msgid"
                msgstr "my_msgstr"
@@ -863,7 +863,7 @@ defmodule Expo.PoTest do
 
     test "msgctxt is parsed correctly for plural messages" do
       assert {:ok, %Messages{messages: [%Message.Plural{} = message]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgctxt "my_" "context"
                msgid "my_msgid"
                msgid_plural "my_msgid_plural"
@@ -878,7 +878,7 @@ defmodule Expo.PoTest do
 
     test "msgctxt is nil when no msgctxt is present in a message" do
       assert {:ok, %Messages{messages: [%Message.Singular{} = message]}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "my_msgid"
                msgstr "my_msgstr"
                """)
@@ -889,7 +889,7 @@ defmodule Expo.PoTest do
     test "msgctxt causes a syntax error when misplaced" do
       # Badly placed msgctxt still causes a syntax error
       assert {:error, {:parse_error, "syntax error before: msgctxt", 2}} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgid "my_msgid"
                msgctxt "my_context"
                msgstr "my_msgstr"
@@ -904,7 +904,7 @@ defmodule Expo.PoTest do
                   %Message.Singular{} = message2
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgctxt "my_" "context"
                msgid "my_msgid"
                msgstr "my_msgstr"
@@ -929,7 +929,7 @@ defmodule Expo.PoTest do
                   %Message.Plural{} = message2
                 ]
               }} =
-               Po.parse_string("""
+               PO.parse_string("""
                msgctxt "my_" "context"
                msgid "my_msgid"
                msgid_plural "my_msgid_plural"
@@ -954,12 +954,12 @@ defmodule Expo.PoTest do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
       assert {:ok, %Messages{file: ^fixture_path}} =
-               Po.parse_string(File.read!(fixture_path), file: fixture_path)
+               PO.parse_string(File.read!(fixture_path), file: fixture_path)
     end
 
     test "tokens are printed as Elixir terms, not Erlang terms" do
       parsed =
-        Po.parse_string("""
+        PO.parse_string("""
         msgid ""
         # comment
         """)
@@ -974,7 +974,7 @@ defmodule Expo.PoTest do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
       assert %Messages{file: ^fixture_path} =
-               Po.parse_string!(File.read!(fixture_path), file: fixture_path)
+               PO.parse_string!(File.read!(fixture_path), file: fixture_path)
     end
 
     test "valid strings" do
@@ -986,14 +986,14 @@ defmodule Expo.PoTest do
       assert %Messages{
                messages: [%Message.Singular{msgid: ["foo"], msgstr: ["bar"]}],
                headers: []
-             } = Po.parse_string!(str)
+             } = PO.parse_string!(str)
     end
 
     test "invalid strings" do
       str = "msg"
 
       assert_raise SyntaxError, "1: unknown keyword 'msg'", fn ->
-        Po.parse_string!(str)
+        PO.parse_string!(str)
       end
 
       str = """
@@ -1003,11 +1003,11 @@ defmodule Expo.PoTest do
       """
 
       assert_raise SyntaxError, "2: syntax error before: msgstr", fn ->
-        Po.parse_string!(str)
+        PO.parse_string!(str)
       end
 
       assert_raise SyntaxError, "file:2: syntax error before: msgstr", fn ->
-        Po.parse_string!(str, file: "file")
+        PO.parse_string!(str, file: "file")
       end
     end
 
@@ -1017,7 +1017,7 @@ defmodule Expo.PoTest do
       msg = "file:4: found duplicate on line 4 for msgid: 'test'"
 
       assert_raise DuplicateMessagesError, msg, fn ->
-        Po.parse_string!(File.read!(fixture_path), file: "file")
+        PO.parse_string!(File.read!(fixture_path), file: "file")
       end
     end
   end
@@ -1042,13 +1042,13 @@ defmodule Expo.PoTest do
                 "Report-Msgid-Bugs-To: \n",
                 "POT-Creation-Date: 2010-07-06 12:31-0500\n"
               ]
-            }} = Po.parse_string(str)
+            }} = PO.parse_string(str)
   end
 
   describe "parse_file/1" do
     test "populates the :file field with the path of the parsed file" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
-      assert {:ok, %Messages{file: ^fixture_path}} = Po.parse_file(fixture_path)
+      assert {:ok, %Messages{file: ^fixture_path}} = PO.parse_file(fixture_path)
     end
 
     test "valid file contents" do
@@ -1064,22 +1064,22 @@ defmodule Expo.PoTest do
                     msgstr: ["come stai,", " amico?"]
                   }
                 ]
-              }} = Po.parse_file(fixture_path)
+              }} = PO.parse_file(fixture_path)
     end
 
     test "invalid file contents" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_syntax_error.po")
 
-      assert Po.parse_file(fixture_path) ==
+      assert PO.parse_file(fixture_path) ==
                {:error, {:parse_error, "syntax error before: msgstr", 4}}
 
       fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_token_error.po")
 
-      assert Po.parse_file(fixture_path) == {:error, {:parse_error, "unknown keyword 'msg'", 3}}
+      assert PO.parse_file(fixture_path) == {:error, {:parse_error, "unknown keyword 'msg'", 3}}
     end
 
     test "missing file" do
-      assert Po.parse_file("nonexistent") == {:error, :enoent}
+      assert PO.parse_file("nonexistent") == {:error, :enoent}
     end
 
     test "file starting with a BOM byte sequence" do
@@ -1087,7 +1087,7 @@ defmodule Expo.PoTest do
 
       output =
         capture_io(:stderr, fn ->
-          assert {:ok, po} = Po.parse_file(fixture_path)
+          assert {:ok, po} = PO.parse_file(fixture_path)
           assert [%Message.Singular{msgid: ["foo"], msgstr: ["bar"]}] = po.messages
         end)
 
@@ -1099,7 +1099,7 @@ defmodule Expo.PoTest do
   describe "parse_file!/1" do
     test "populates the :file field with the path of the parsed file" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/valid.po")
-      assert %Messages{file: ^fixture_path} = Po.parse_file!(fixture_path)
+      assert %Messages{file: ^fixture_path} = PO.parse_file!(fixture_path)
     end
 
     test "valid file contents" do
@@ -1114,7 +1114,7 @@ defmodule Expo.PoTest do
                    msgstr: ["come stai,", " amico?"]
                  }
                ]
-             } = Po.parse_file!(fixture_path)
+             } = PO.parse_file!(fixture_path)
     end
 
     test "invalid file contents" do
@@ -1124,14 +1124,14 @@ defmodule Expo.PoTest do
         "_build/test/lib/expo/priv/test/po/invalid_syntax_error.po:4: syntax error before: msgstr"
 
       assert_raise SyntaxError, msg, fn ->
-        Po.parse_file!(fixture_path)
+        PO.parse_file!(fixture_path)
       end
 
       fixture_path = Application.app_dir(:expo, "priv/test/po/invalid_token_error.po")
       msg = "_build/test/lib/expo/priv/test/po/invalid_token_error.po:3: unknown keyword 'msg'"
 
       assert_raise SyntaxError, msg, fn ->
-        Po.parse_file!(fixture_path)
+        PO.parse_file!(fixture_path)
       end
     end
 
@@ -1142,13 +1142,13 @@ defmodule Expo.PoTest do
       msg = ~r/could not parse "?nonexistent"?: no such file or directory/
 
       assert_raise File.Error, msg, fn ->
-        Po.parse_file!("nonexistent")
+        PO.parse_file!("nonexistent")
       end
     end
 
     test "empty files don't cause parsing errors" do
       fixture_path = Application.app_dir(:expo, "priv/test/po/empty.po")
-      assert %Messages{messages: [], headers: []} = Po.parse_file!(fixture_path)
+      assert %Messages{messages: [], headers: []} = PO.parse_file!(fixture_path)
     end
 
     test "file with duplicate messages" do
@@ -1158,7 +1158,7 @@ defmodule Expo.PoTest do
         "_build/test/lib/expo/priv/test/po/duplicate_messages.po:4: found duplicate on line 4 for msgid: 'test'"
 
       assert_raise DuplicateMessagesError, msg, fn ->
-        Po.parse_file!(fixture_path)
+        PO.parse_file!(fixture_path)
       end
     end
   end

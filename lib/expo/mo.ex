@@ -1,12 +1,12 @@
-defmodule Expo.Mo do
+defmodule Expo.MO do
   @moduledoc """
   `.mo` file handler
   """
 
   alias Expo.Messages
-  alias Expo.Mo.InvalidFileError
-  alias Expo.Mo.Parser
-  alias Expo.Mo.UnsupportedVersionError
+  alias Expo.MO.InvalidFileError
+  alias Expo.MO.Parser
+  alias Expo.MO.UnsupportedVersionError
 
   @type compose_options :: [
           {:endianness, :little | :big},
@@ -32,7 +32,7 @@ defmodule Expo.Mo do
       ...>     %Expo.Message.Singular{msgid: ["foo"], msgstr: ["bar"], comments: "A comment"}
       ...>   ]
       ...> }
-      ...> |> Expo.Mo.compose()
+      ...> |> Expo.MO.compose()
       ...> |> IO.iodata_to_binary()
       <<222, 18, 4, 149, 0, 0, 0, 0, 2, 0, 0, 0, 28, 0, 0, 0, 44, 0, 0, 0, 0, 0, 0, 0,
         60, 0, 0, 0, 0, 0, 0, 0, 60, 0, 0, 0, 3, 0, 0, 0, 61, 0, 0, 0, 25, 0, 0, 0,
@@ -42,14 +42,14 @@ defmodule Expo.Mo do
 
   """
   @spec compose(messages :: Messages.t(), opts :: compose_options()) :: iodata()
-  defdelegate compose(content, opts \\ []), to: Expo.Mo.Composer
+  defdelegate compose(content, opts \\ []), to: Expo.MO.Composer
 
   @doc """
   Parse `.mo` file
 
   ### Examples
 
-      iex> Expo.Mo.parse_binary(<<0xDE120495::size(4)-unit(8),
+      iex> Expo.MO.parse_binary(<<0xDE120495::size(4)-unit(8),
       ...>   0::little-unsigned-integer-size(2)-unit(8),
       ...>   0::little-unsigned-integer-size(2)-unit(8),
       ...>   0::little-unsigned-integer-size(4)-unit(8),
@@ -71,15 +71,15 @@ defmodule Expo.Mo do
   any errors.
 
   Works exactly like `parse_binary/1`, but returns a `Expo.Messages` struct
-  if there are no errors or raises a `Expo.Mo.InvalidFileError` error if there
+  if there are no errors or raises a `Expo.MO.InvalidFileError` error if there
   are.
 
   If the version of the `.mo` file is not supported, a
-  `Expo.Mo.UnsupportedVersionError` is raised.
+  `Expo.MO.UnsupportedVersionError` is raised.
 
   ## Examples
 
-      iex> Expo.Mo.parse_binary!(<<0xDE120495::size(4)-unit(8),
+      iex> Expo.MO.parse_binary!(<<0xDE120495::size(4)-unit(8),
       ...>   0::little-unsigned-integer-size(2)-unit(8),
       ...>   0::little-unsigned-integer-size(2)-unit(8),
       ...>   0::little-unsigned-integer-size(4)-unit(8),
@@ -89,8 +89,8 @@ defmodule Expo.Mo do
       ...>   0::little-unsigned-integer-size(4)-unit(8)>>)
       %Expo.Messages{headers: [], messages: []}
 
-      iex> Expo.Mo.parse_binary!("invalid")
-      ** (Expo.Mo.InvalidFileError) invalid file
+      iex> Expo.MO.parse_binary!("invalid")
+      ** (Expo.MO.InvalidFileError) invalid file
 
   """
   @spec parse_binary!(content :: binary(), options :: parse_options()) ::
@@ -136,11 +136,11 @@ defmodule Expo.Mo do
 
   ## Examples
 
-      {:ok, po} = Expo.Mo.parse_file "messages.po"
+      {:ok, po} = Expo.MO.parse_file "messages.po"
       po.file
       #=> "messages.po"
 
-      Expo.Mo.parse_file "nonexistent"
+      Expo.MO.parse_file "nonexistent"
       #=> {:error, :enoent}
 
   """
@@ -160,13 +160,13 @@ defmodule Expo.Mo do
   Parses the contents of a file into a `Expo.Messages` struct, raising if there
   are any errors.
 
-  Works like `parse_file/1`, except that it raises a `Expo.Mo.SyntaxError`
+  Works like `parse_file/1`, except that it raises a `Expo.MO.SyntaxError`
   exception if there's a syntax error in the file or a `File.Error` error if
   there's an error with reading the file.
 
   ## Examples
 
-      Expo.Mo.parse_file! "nonexistent.po"
+      Expo.MO.parse_file! "nonexistent.po"
       #=> ** (File.Error) could not parse "nonexistent.po": no such file or directory
 
   """

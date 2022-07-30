@@ -1,12 +1,12 @@
-defmodule Expo.Po do
+defmodule Expo.PO do
   @moduledoc """
   `.po` / `.pot` file handler
   """
 
   alias Expo.Messages
-  alias Expo.Po.DuplicateMessagesError
-  alias Expo.Po.Parser
-  alias Expo.Po.SyntaxError
+  alias Expo.PO.DuplicateMessagesError
+  alias Expo.PO.Parser
+  alias Expo.PO.SyntaxError
 
   @type parse_options :: [{:file, Path.t()}]
 
@@ -28,7 +28,7 @@ defmodule Expo.Po do
 
   After running the following code:
 
-      iodata = Expo.Po.compose %Expo.Messages{
+      iodata = Expo.PO.compose %Expo.Messages{
         headers: ["Last-Translator: Jane Doe"],
         messages: [
           %Expo.Message.Singular{msgid: ["foo"], msgstr: ["bar"], comments: "A comment"}
@@ -49,7 +49,7 @@ defmodule Expo.Po do
 
   """
   @spec compose(messages :: Messages.t()) :: iodata()
-  defdelegate compose(content), to: Expo.Po.Composer
+  defdelegate compose(content), to: Expo.PO.Composer
 
   @doc """
   Parses a string into a `Expo.Messages` struct.
@@ -60,7 +60,7 @@ defmodule Expo.Po do
 
   ## Examples
 
-      iex> {:ok, po} = Expo.Po.parse_string \"""
+      iex> {:ok, po} = Expo.PO.parse_string \"""
       ...> msgid "foo"
       ...> msgstr "bar"
       ...> \"""
@@ -72,7 +72,7 @@ defmodule Expo.Po do
       iex> po.headers
       []
 
-      iex> Expo.Po.parse_string "foo"
+      iex> Expo.PO.parse_string "foo"
       {:error, {:parse_error, "unknown keyword 'foo'", 1}}
 
   """
@@ -89,12 +89,12 @@ defmodule Expo.Po do
   any errors.
 
   Works exactly like `parse_string/1`, but returns a `Expo.Messages` struct
-  if there are no errors or raises a `Expo.Po.SyntaxError` error if there
+  if there are no errors or raises a `Expo.PO.SyntaxError` error if there
   are.
 
   ## Examples
 
-      iex> po = Expo.Po.parse_string! \"""
+      iex> po = Expo.PO.parse_string! \"""
       ...> msgid "foo"
       ...> msgstr "bar"
       ...> \"""
@@ -106,17 +106,17 @@ defmodule Expo.Po do
       iex> po.headers
       []
 
-      iex> Expo.Po.parse_string!("msgid")
-      ** (Expo.Po.SyntaxError) 1: no space after 'msgid'
+      iex> Expo.PO.parse_string!("msgid")
+      ** (Expo.PO.SyntaxError) 1: no space after 'msgid'
 
-      iex> Expo.Po.parse_string!(\"""
+      iex> Expo.PO.parse_string!(\"""
       ...> msgid "test"
       ...> msgstr ""
       ...>
       ...> msgid "test"
       ...> msgstr ""
       ...> \""")
-      ** (Expo.Po.DuplicateMessagesError) 4: found duplicate on line 4 for msgid: 'test'
+      ** (Expo.PO.DuplicateMessagesError) 4: found duplicate on line 4 for msgid: 'test'
 
   """
   @spec parse_string!(content :: String.t(), opts :: parse_options()) ::
@@ -164,11 +164,11 @@ defmodule Expo.Po do
 
   ## Examples
 
-      {:ok, po} = Expo.Po.parse_file "messages.po"
+      {:ok, po} = Expo.PO.parse_file "messages.po"
       po.file
       #=> "messages.po"
 
-      Expo.Po.parse_file "nonexistent"
+      Expo.PO.parse_file "nonexistent"
       #=> {:error, :enoent}
 
   """
@@ -187,13 +187,13 @@ defmodule Expo.Po do
   Parses the contents of a file into a `Expo.Messages` struct, raising if there
   are any errors.
 
-  Works like `parse_file/1`, except that it raises a `Expo.Po.SyntaxError`
+  Works like `parse_file/1`, except that it raises a `Expo.PO.SyntaxError`
   exception if there's a syntax error in the file or a `File.Error` error if
   there's an error with reading the file.
 
   ## Examples
 
-      Expo.Po.parse_file! "nonexistent.po"
+      Expo.PO.parse_file! "nonexistent.po"
       #=> ** (File.Error) could not parse "nonexistent.po": no such file or directory
 
   """

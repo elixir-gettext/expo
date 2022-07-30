@@ -4,7 +4,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
   import ExUnit.CaptureIO
 
   alias Expo.Messages
-  alias Expo.Mo
+  alias Expo.MO
   alias Mix.Tasks.Expo.Msgfmt
 
   setup do
@@ -25,7 +25,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
         Msgfmt.run([po_path])
       end)
 
-    assert {:ok, _parsed} = Mo.parse_binary(out)
+    assert {:ok, _parsed} = MO.parse_binary(out)
   end
 
   test "exports mo to file", %{temp_file: temp_file} do
@@ -33,7 +33,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
 
     Msgfmt.run([po_path, "--output-file=#{temp_file}"])
 
-    assert {:ok, _parsed} = Mo.parse_file(temp_file)
+    assert {:ok, _parsed} = MO.parse_file(temp_file)
   end
 
   test "shows statistics", %{temp_file: temp_file} do
@@ -52,7 +52,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
 
     Msgfmt.run([po_path, "--output-file=#{temp_file}", "--use-fuzzy"])
 
-    assert {:ok, %Messages{messages: [_one, _two]}} = Mo.parse_file(temp_file)
+    assert {:ok, %Messages{messages: [_one, _two]}} = MO.parse_file(temp_file)
   end
 
   test "errors with missing file" do
@@ -73,10 +73,10 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
     po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
     Msgfmt.run([po_path, "--output-file=#{temp_file}", "--endianness=little"])
-    assert {:ok, _parsed} = Mo.parse_file(temp_file)
+    assert {:ok, _parsed} = MO.parse_file(temp_file)
 
     Msgfmt.run([po_path, "--output-file=#{temp_file}", "--endianness=big"])
-    assert {:ok, _parsed} = Mo.parse_file(temp_file)
+    assert {:ok, _parsed} = MO.parse_file(temp_file)
 
     assert_raise Mix.Error,
                  "mix expo.msgfmt failed due to invalid endianness option\nExpected: \"little\" or \"big\"\nReceived: \"invalid\"\n",

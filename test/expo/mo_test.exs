@@ -1,15 +1,15 @@
-defmodule Expo.MoTest do
+defmodule Expo.MOTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
 
   alias Expo.Message
   alias Expo.Messages
-  alias Expo.Mo
-  alias Expo.Mo.InvalidFileError
-  alias Expo.Mo.UnsupportedVersionError
+  alias Expo.MO
+  alias Expo.MO.InvalidFileError
+  alias Expo.MO.UnsupportedVersionError
 
-  doctest Mo
+  doctest MO
 
   describe "compose/2" do
     for {endianness, start} <- [
@@ -42,10 +42,10 @@ defmodule Expo.MoTest do
         assert <<unquote(start), _rest::binary>> =
                  mo =
                  messages
-                 |> Mo.compose(endianness: unquote(endianness))
+                 |> MO.compose(endianness: unquote(endianness))
                  |> IO.iodata_to_binary()
 
-        assert {:ok, messages} == Mo.parse_binary(mo)
+        assert {:ok, messages} == MO.parse_binary(mo)
       end
 
       test "#{endianness} encodes unicode correctly" do
@@ -60,7 +60,7 @@ defmodule Expo.MoTest do
 
         encoded =
           messages
-          |> Mo.compose(endianness: unquote(endianness))
+          |> MO.compose(endianness: unquote(endianness))
           |> IO.iodata_to_binary()
 
         assert encoded == File.read!(file)
@@ -75,7 +75,7 @@ defmodule Expo.MoTest do
       }
 
       assert {:ok, %Messages{messages: []}} =
-               messages |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse_binary()
+               messages |> MO.compose() |> IO.iodata_to_binary() |> MO.parse_binary()
     end
 
     test "does not encode fuzzy messages except when requested" do
@@ -86,13 +86,13 @@ defmodule Expo.MoTest do
       }
 
       assert {:ok, %Messages{messages: []}} =
-               messages |> Mo.compose() |> IO.iodata_to_binary() |> Mo.parse_binary()
+               messages |> MO.compose() |> IO.iodata_to_binary() |> MO.parse_binary()
 
       assert {:ok, %Messages{messages: [_fuzzy]}} =
                messages
-               |> Mo.compose(use_fuzzy: true)
+               |> MO.compose(use_fuzzy: true)
                |> IO.iodata_to_binary()
-               |> Mo.parse_binary()
+               |> MO.parse_binary()
     end
 
     test "does send statistics when requested" do
@@ -102,13 +102,13 @@ defmodule Expo.MoTest do
         ]
       }
 
-      Mo.compose(messages, statistics: false)
+      MO.compose(messages, statistics: false)
 
-      refute_receive {Mo, :message_count, 1}
+      refute_receive {MO, :message_count, 1}
 
-      Mo.compose(messages, statistics: true)
+      MO.compose(messages, statistics: true)
 
-      assert_receive {Mo, :message_count, 1}
+      assert_receive {MO, :message_count, 1}
     end
   end
 
@@ -116,7 +116,7 @@ defmodule Expo.MoTest do
     for endianness <- [:big, :little] do
       test "#{endianness} parses headers" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/headers.mo")
-        assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
+        assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
                  headers: [
@@ -129,7 +129,7 @@ defmodule Expo.MoTest do
 
       test "#{endianness} parses singular message" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/singular.mo")
-        assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
+        assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
                  headers: [],
@@ -154,7 +154,7 @@ defmodule Expo.MoTest do
         file =
           Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/singular-msgctxt.mo")
 
-        assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
+        assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
                  headers: [],
@@ -177,7 +177,7 @@ defmodule Expo.MoTest do
 
       test "#{endianness} parses plural message" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/plural.mo")
-        assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
+        assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
                  headers: [],
@@ -201,7 +201,7 @@ defmodule Expo.MoTest do
 
       test "#{endianness} parses plural with msgctxt message" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/plural-msgctxt.mo")
-        assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
+        assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
                  headers: [],
@@ -225,7 +225,7 @@ defmodule Expo.MoTest do
 
       test "#{endianness} parses empty mo" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/empty.mo")
-        assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
+        assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
                  headers: [],
@@ -236,7 +236,7 @@ defmodule Expo.MoTest do
 
       test "#{endianness} parses mo with hash table" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/hash-table.mo")
-        assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
+        assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
                  messages: [%Message.Singular{msgid: ["foo"]}]
@@ -245,7 +245,7 @@ defmodule Expo.MoTest do
 
       test "#{endianness} parses unicode messages" do
         file = Application.app_dir(:expo, "priv/test/mo/#{unquote(endianness)}/unicode.mo")
-        assert {:ok, parsed} = Mo.parse_binary(File.read!(file))
+        assert {:ok, parsed} = MO.parse_binary(File.read!(file))
 
         assert %Messages{
                  headers: [
@@ -257,11 +257,11 @@ defmodule Expo.MoTest do
     end
 
     test "does not parse with invalid header" do
-      assert {:error, :invalid_file} = Mo.parse_binary(<<0>>)
-      assert {:error, :invalid_file} = Mo.parse_binary(<<0::unit(8)-size(32)>>)
+      assert {:error, :invalid_file} = MO.parse_binary(<<0>>)
+      assert {:error, :invalid_file} = MO.parse_binary(<<0::unit(8)-size(32)>>)
 
       assert {:error, {:unsupported_version, 1, 0}} =
-               Mo.parse_binary(
+               MO.parse_binary(
                  <<0xDE120495::size(4)-unit(8), 1::little-unsigned-integer-size(2)-unit(8),
                    0::little-unsigned-integer-size(2)-unit(8),
                    0::little-unsigned-integer-size(4)-unit(8),
@@ -276,7 +276,7 @@ defmodule Expo.MoTest do
   describe "parse_binary!/1" do
     test "works" do
       file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
-      parsed = Mo.parse_binary!(File.read!(file))
+      parsed = MO.parse_binary!(File.read!(file))
 
       assert %Messages{
                headers: [
@@ -289,11 +289,11 @@ defmodule Expo.MoTest do
 
     test "raises for invalid file" do
       assert_raise InvalidFileError, "invalid file", fn ->
-        Mo.parse_binary!("invalid")
+        MO.parse_binary!("invalid")
       end
 
       assert_raise InvalidFileError, "file: invalid file", fn ->
-        Mo.parse_binary!("invalid", file: "file")
+        MO.parse_binary!("invalid", file: "file")
       end
     end
 
@@ -303,13 +303,13 @@ defmodule Expo.MoTest do
       assert_raise UnsupportedVersionError,
                    "invalid version, only ~> 0.0 is supported, 1.0 given",
                    fn ->
-                     Mo.parse_binary!(File.read!(file))
+                     MO.parse_binary!(File.read!(file))
                    end
 
       assert_raise UnsupportedVersionError,
                    "file: invalid version, only ~> 0.0 is supported, 1.0 given",
                    fn ->
-                     Mo.parse_binary!(File.read!(file), file: "file")
+                     MO.parse_binary!(File.read!(file), file: "file")
                    end
     end
   end
@@ -317,7 +317,7 @@ defmodule Expo.MoTest do
   describe "parse_file/1" do
     test "works" do
       file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
-      assert {:ok, parsed} = Mo.parse_file(file)
+      assert {:ok, parsed} = MO.parse_file(file)
 
       assert %Messages{
                headers: [
@@ -331,24 +331,24 @@ defmodule Expo.MoTest do
     test "raises for invalid file" do
       file = Application.app_dir(:expo, "priv/test/po/bom.po")
 
-      assert {:error, :invalid_file} = Mo.parse_file(file)
+      assert {:error, :invalid_file} = MO.parse_file(file)
     end
 
     test "raises for unsupported version" do
       file = Application.app_dir(:expo, "priv/test/mo/unsupported_version.mo")
 
-      assert {:error, {:unsupported_version, 1, 0}} = Mo.parse_file(file)
+      assert {:error, {:unsupported_version, 1, 0}} = MO.parse_file(file)
     end
 
     test "missing file" do
-      assert Mo.parse_file("nonexistent") == {:error, :enoent}
+      assert MO.parse_file("nonexistent") == {:error, :enoent}
     end
   end
 
   describe "parse_file!/1" do
     test "works" do
       file = Application.app_dir(:expo, "priv/test/mo/little/headers.mo")
-      assert parsed = Mo.parse_file!(file)
+      assert parsed = MO.parse_file!(file)
 
       assert %Messages{
                headers: [
@@ -365,7 +365,7 @@ defmodule Expo.MoTest do
       assert_raise InvalidFileError,
                    "_build/test/lib/expo/priv/test/po/bom.po: invalid file",
                    fn ->
-                     Mo.parse_file!(file)
+                     MO.parse_file!(file)
                    end
     end
 
@@ -375,7 +375,7 @@ defmodule Expo.MoTest do
       assert_raise UnsupportedVersionError,
                    "_build/test/lib/expo/priv/test/mo/unsupported_version.mo: invalid version, only ~> 0.0 is supported, 1.0 given",
                    fn ->
-                     Mo.parse_file!(file)
+                     MO.parse_file!(file)
                    end
     end
 
@@ -386,7 +386,7 @@ defmodule Expo.MoTest do
       msg = ~r/could not parse "?nonexistent"?: no such file or directory/
 
       assert_raise File.Error, msg, fn ->
-        Mo.parse_file!("nonexistent")
+        MO.parse_file!("nonexistent")
       end
     end
   end
