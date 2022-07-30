@@ -1,4 +1,4 @@
-defmodule Expo.Po.Tokenizer do
+defmodule Expo.PO.Tokenizer do
   @moduledoc false
 
   # This module is responsible for turning a chunk of text (a string) into a

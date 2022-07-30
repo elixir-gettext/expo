@@ -1,18 +1,18 @@
-defmodule Expo.Po.Parser do
+defmodule Expo.PO.Parser do
   @moduledoc false
 
   alias Expo.Message
   alias Expo.Messages
-  alias Expo.Po
-  alias Expo.Po.Tokenizer
+  alias Expo.PO
+  alias Expo.PO.Tokenizer
   alias Expo.Util
 
   @bom <<0xEF, 0xBB, 0xBF>>
 
-  @spec parse(content :: binary(), opts :: Po.parse_options()) ::
+  @spec parse(content :: binary(), opts :: PO.parse_options()) ::
           {:ok, Messages.t()}
-          | Po.parse_error()
-          | Po.duplicate_messages_error()
+          | PO.parse_error()
+          | PO.duplicate_messages_error()
   def parse(content, opts) do
     content = prune_bom(content, Keyword.get(opts, :file, "nofile"))
 

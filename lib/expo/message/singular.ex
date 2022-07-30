@@ -94,7 +94,7 @@ defmodule Expo.Message.Singular do
 
   ## Examples
 
-      iex> %Expo.Messages{messages: [message]} = Expo.Po.parse_string!(\"""
+      iex> %Expo.Messages{messages: [message]} = Expo.PO.parse_string!(\"""
       ...> msgid "foo"
       ...> msgstr "bar"
       ...> \""")

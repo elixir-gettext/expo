@@ -1,15 +1,15 @@
-defmodule Expo.Mo.Parser do
+defmodule Expo.MO.Parser do
   @moduledoc false
 
   alias Expo.Message
   alias Expo.Messages
-  alias Expo.Mo
+  alias Expo.MO
   alias Expo.Util
 
-  @spec parse(content :: binary(), opts :: Mo.parse_options()) ::
+  @spec parse(content :: binary(), opts :: MO.parse_options()) ::
           {:ok, Messages.t()}
-          | Mo.invalid_file_error()
-          | Mo.unsupported_version_error()
+          | MO.invalid_file_error()
+          | MO.unsupported_version_error()
   def parse(content, opts)
 
   def parse(content, opts) when byte_size(content) >= 28 do

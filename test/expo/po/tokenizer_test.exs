@@ -1,7 +1,7 @@
-defmodule Expo.Po.TokenizerTest do
+defmodule Expo.PO.TokenizerTest do
   use ExUnit.Case, async: true
 
-  import Expo.Po.Tokenizer, only: [tokenize: 1]
+  import Expo.PO.Tokenizer, only: [tokenize: 1]
 
   test "keywords" do
     str = "msgid msgstr "

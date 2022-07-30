@@ -104,7 +104,7 @@ defmodule Expo.Message.Plural do
 
   ## Examples
 
-      iex> %Expo.Messages{messages: [message]} = Expo.Po.parse_string!(\"""
+      iex> %Expo.Messages{messages: [message]} = Expo.PO.parse_string!(\"""
       ...> msgid "foo"
       ...> msgid_plural "foos"
       ...> msgstr[0] "bar"

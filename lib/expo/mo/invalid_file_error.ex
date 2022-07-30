@@ -1,6 +1,6 @@
-defmodule Expo.Mo.InvalidFileError do
+defmodule Expo.MO.InvalidFileError do
   @moduledoc """
-  An error raised when the content does not follow the Mo file structure.
+  An error raised when the content does not follow the MO file structure.
   """
 
   defexception [:message]

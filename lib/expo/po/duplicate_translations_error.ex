@@ -1,4 +1,4 @@
-defmodule Expo.Po.DuplicateMessagesError do
+defmodule Expo.PO.DuplicateMessagesError do
   @moduledoc """
   An error raised when duplicate messages are detected.
   """

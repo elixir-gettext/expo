@@ -1,4 +1,4 @@
-defmodule Expo.Po.SyntaxError do
+defmodule Expo.PO.SyntaxError do
   @moduledoc """
   An error raised when the syntax in a PO file (a file ending in `.po`) isn't
   correct.

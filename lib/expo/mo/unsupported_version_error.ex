@@ -1,4 +1,4 @@
-defmodule Expo.Mo.UnsupportedVersionError do
+defmodule Expo.MO.UnsupportedVersionError do
   @moduledoc """
   An error raised when the version of the mo file is not supported.
   """
