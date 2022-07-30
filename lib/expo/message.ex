@@ -1,10 +1,9 @@
 defmodule Expo.Message do
   @moduledoc """
-  Message Structs
+  Functions to work on message structs (`Expo.Message.Singular` and `Expo.Message.Plural`).
   """
 
-  alias Expo.Message.Plural
-  alias Expo.Message.Singular
+  alias Expo.Message.{Plural, Singular}
 
   @type msgid :: [String.t()]
   @type msgstr :: [String.t()]
@@ -13,11 +12,13 @@ defmodule Expo.Message do
   @type t :: Singular.t() | Plural.t()
 
   @typedoc """
-  key that can be used to identify a message
+  The key that can be used to identify a message.
+
+  See `key/1`.
   """
   @opaque key ::
             {msgctxt :: String.t(),
-             (msgid :: String.t()) | {msgid :: String.t(), msgid_plural :: String.t()}}
+             msgid :: String.t() | {msgid :: String.t(), msgid_plural :: String.t()}}
 
   @doc """
   Returns a "key" that can be used to identify a message.
@@ -42,7 +43,7 @@ defmodule Expo.Message do
       false
 
   """
-  @spec key(message :: t()) :: key()
+  @spec key(t()) :: key()
   def key(message)
   def key(%Singular{} = message), do: Singular.key(message)
   def key(%Plural{} = message), do: Plural.key(message)
@@ -68,11 +69,11 @@ defmodule Expo.Message do
       false
 
   """
-  @spec same?(message1 :: t(), message2 :: t()) :: boolean
+  @spec same?(t(), t()) :: boolean
   def same?(message1, message2), do: key(message1) == key(message2)
 
   @doc """
-  Tells whether the given message has the flag specified
+  Tells whether the given `message` has the given `flag` specified.
 
   ### Examples
 
@@ -83,41 +84,38 @@ defmodule Expo.Message do
       false
 
   """
-  @spec has_flag?(message :: t(), flag :: String.t()) :: boolean()
-  def has_flag?(message, flag)
-  def has_flag?(%Singular{flags: flags}, flag), do: flag in List.flatten(flags)
-  def has_flag?(%Plural{flags: flags}, flag), do: flag in List.flatten(flags)
+  @spec has_flag?(t(), String.t()) :: boolean()
+  def has_flag?(%mod{flags: flags} = _message, flag)
+      when mod in [Singular, Plural] and is_binary(flag) do
+    flag in List.flatten(flags)
+  end
 
   @doc """
-  Append flag to message
+  Appends the given `flag` to the given `message`.
 
-  Keeps the line formatting intact
+  Keeps the line formatting intact.
 
   ### Examples
 
       iex> message = %Expo.Message.Singular{msgid: [], flags: []}
       iex> Expo.Message.append_flag(message, "foo")
       %Expo.Message.Singular{msgid: [], flags: [["foo"]]}
+
   """
-  @spec append_flag(message :: t(), flag :: String.t()) :: t()
-  def append_flag(message, flag)
-
-  def append_flag(%Singular{flags: flags} = message, flag),
-    do: %Singular{message | flags: _append_flag(flags, flag)}
-
-  def append_flag(%Plural{flags: flags} = message, flag),
-    do: %Plural{message | flags: _append_flag(flags, flag)}
-
-  defp _append_flag(flags, flag) do
-    if flag in List.flatten(flags) do
-      flags
-    else
-      case flags do
-        [] -> [[flag]]
-        [flag_line] -> [flag_line ++ [flag]]
-        _multiple_lines -> flags ++ [[flag]]
+  @spec append_flag(t(), String.t()) :: t()
+  def append_flag(%mod{flags: flags} = message, flag) when mod in [Singular, Plural] do
+    flags =
+      if has_flag?(message, flag) do
+        flags
+      else
+        case flags do
+          [] -> [[flag]]
+          [flag_line] -> [flag_line ++ [flag]]
+          _multiple_lines -> flags ++ [[flag]]
+        end
       end
-    end
+
+    struct!(message, flags: flags)
   end
 
   @doc """
@@ -137,11 +135,8 @@ defmodule Expo.Message do
         when default: term
   @spec source_line_number(Plural.t(), Plural.block(), default) :: non_neg_integer() | default
         when default: term
-  def source_line_number(message, block, default \\ nil)
-
-  def source_line_number(%Singular{} = message, block, default),
-    do: Singular.source_line_number(message, block, default)
-
-  def source_line_number(%Plural{} = message, block, default),
-    do: Plural.source_line_number(message, block, default)
+  def source_line_number(%mod{} = message, block, default \\ nil)
+      when mod in [Singular, Plural] do
+    mod.source_line_number(message, block, default)
+  end
 end

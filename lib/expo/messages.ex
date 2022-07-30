@@ -1,10 +1,11 @@
 defmodule Expo.Messages do
   @moduledoc """
-  Message List Struct for mo / po files
+  A struct that represents lists of `Expo.Message` for MO and PO files.
+
+  All fields in the struct are public. See `t:t/0`.
   """
 
-  alias Expo.Message
-  alias Expo.Util
+  alias Expo.{Message, Util}
 
   @type t :: %__MODULE__{
           headers: [String.t()],
@@ -17,10 +18,10 @@ defmodule Expo.Messages do
   defstruct headers: [], messages: [], top_comments: [], file: nil
 
   @doc """
-  Rebalances all strings
+  Rebalances all strings.
 
-  * All headers (see `Expo.Message.Singular.rebalance/1` / `Expo.Message.Plural.rebalance/1`)
-  * Put one string per newline of `headers` and add one empty line at start
+    * All headers (see `Expo.Message.Singular.rebalance/1` and `Expo.Message.Plural.rebalance/1`)
+    * Put one string per newline of `headers` and add one empty line at start
 
   ### Examples
 
@@ -40,7 +41,7 @@ defmodule Expo.Messages do
       }
 
   """
-  @spec rebalance(message :: t()) :: t()
+  @spec rebalance(t()) :: t()
   def rebalance(
         %__MODULE__{headers: headers, messages: all_messages, top_comments: top_comments} =
           messages
@@ -66,7 +67,7 @@ defmodule Expo.Messages do
   end
 
   @doc """
-  Get Header by name (case insensitive)
+  Get header by name (case insensitive).
 
   ### Examples
 
@@ -79,8 +80,8 @@ defmodule Expo.Messages do
       []
 
   """
-  @spec get_header(messages :: t(), header_name :: String.t()) :: [String.t()]
-  def get_header(%__MODULE__{headers: headers}, header_name) do
+  @spec get_header(t(), String.t()) :: [String.t()]
+  def get_header(%__MODULE__{headers: headers}, header_name) when is_binary(header_name) do
     header_name_match = Regex.escape(header_name)
     escaped_newline = Regex.escape("\\\n")
 
@@ -110,19 +111,18 @@ defmodule Expo.Messages do
   end
 
   @doc """
-  Finds a given message in a list of messages.
+  Finds a given `search_message` in a list of `messages`.
 
   Equality between messages is checked using `Expo.Message.same?/2`.
+
+  Returns `nil` if `search_message` is not found.
   """
+  @spec find([Message.t()] | t(), Message.t()) :: Message.t() | nil
   def find(messages, search_message)
 
-  @spec find(messages :: [Message.t()], search_message :: Message.t()) ::
-          Message.t() | nil
   def find(messages, search_message) when is_list(messages),
     do: Enum.find(messages, &Message.same?(&1, search_message))
 
-  @spec find(messages :: t(), search_message :: Message.t()) ::
-          Message.t() | nil
   def find(%__MODULE__{messages: messages}, search_message),
     do: find(messages, search_message)
 end

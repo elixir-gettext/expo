@@ -1,6 +1,6 @@
 defmodule Expo.Message.Plural do
   @moduledoc """
-  Struct for plural messages
+  Struct for plural messages.
   """
 
   alias Expo.Message
