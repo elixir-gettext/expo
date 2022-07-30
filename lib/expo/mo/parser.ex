@@ -6,7 +6,7 @@ defmodule Expo.MO.Parser do
   alias Expo.MO
   alias Expo.Util
 
-  @spec parse(content :: binary(), opts :: MO.parse_options()) ::
+  @spec parse(binary(), MO.parse_options()) ::
           {:ok, Messages.t()}
           | MO.invalid_file_error()
           | MO.unsupported_version_error()

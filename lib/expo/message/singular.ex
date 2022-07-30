@@ -65,7 +65,7 @@ defmodule Expo.Message.Singular do
       }
 
   """
-  @spec rebalance(message :: t()) :: t()
+  @spec rebalance(t()) :: t()
   def rebalance(
         %__MODULE__{
           msgid: msgid,

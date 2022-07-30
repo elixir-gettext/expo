@@ -72,7 +72,7 @@ defmodule Expo.Message.Plural do
       }
 
   """
-  @spec rebalance(message :: t()) :: t()
+  @spec rebalance(t()) :: t()
   def rebalance(
         %__MODULE__{
           msgid: msgid,

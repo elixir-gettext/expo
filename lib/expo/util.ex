@@ -3,8 +3,7 @@ defmodule Expo.Util do
 
   alias Expo.Message
 
-  @spec extract_meta_headers(messages :: [Message.t()]) ::
-          {[String.t()], [[String.t()]], [Message.t()]}
+  @spec extract_meta_headers([Message.t()]) :: {[String.t()], [[String.t()]], [Message.t()]}
   def extract_meta_headers(messages)
 
   def extract_meta_headers([
@@ -14,11 +13,7 @@ defmodule Expo.Util do
 
   def extract_meta_headers(messages), do: {[], [], messages}
 
-  @spec inject_meta_headers(
-          headers :: [String.t()],
-          comments :: [[String.t()]],
-          messages :: [Message.t()]
-        ) :: [Message.t()]
+  @spec inject_meta_headers([String.t()], [[String.t()]], [Message.t()]) :: [Message.t()]
   def inject_meta_headers(headers, comments, messages)
   def inject_meta_headers([], [], messages), do: messages
 
@@ -29,9 +24,10 @@ defmodule Expo.Util do
     ]
   end
 
-  @spec rebalance_strings(string :: iodata()) :: iodata()
-  def rebalance_strings(strings),
-    do: strings |> IO.iodata_to_binary() |> split_at_newline()
+  @spec rebalance_strings(iodata()) :: iodata()
+  def rebalance_strings(strings) do
+    strings |> IO.iodata_to_binary() |> split_at_newline()
+  end
 
   defp split_at_newline(subject, acc_string \\ "", acc_list \\ [])
   defp split_at_newline(<<>>, acc_string, acc_list), do: Enum.reverse([acc_string | acc_list])

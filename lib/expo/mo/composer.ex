@@ -6,7 +6,7 @@ defmodule Expo.MO.Composer do
   alias Expo.MO
   alias Expo.Util
 
-  @spec compose(messages :: Messages.t(), opts :: MO.compose_options()) :: iodata()
+  @spec compose(Messages.t(), MO.compose_options()) :: iodata()
   def compose(messages, opts \\ []) do
     messages =
       Util.inject_meta_headers(

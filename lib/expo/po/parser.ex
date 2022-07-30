@@ -9,7 +9,7 @@ defmodule Expo.PO.Parser do
 
   @bom <<0xEF, 0xBB, 0xBF>>
 
-  @spec parse(content :: binary(), opts :: PO.parse_options()) ::
+  @spec parse(binary(), PO.parse_options()) ::
           {:ok, Messages.t()}
           | PO.parse_error()
           | PO.duplicate_messages_error()
