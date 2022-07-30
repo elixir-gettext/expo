@@ -157,7 +157,7 @@
           {Credo.Check.Consistency.UnusedVariableNames, []},
           {Credo.Check.Design.SkipTestWithoutComment, []},
           {Credo.Check.Readability.ImplTrue, []},
-          {Credo.Check.Readability.MultiAlias, []},
+          {Credo.Check.Readability.MultiAlias, false},
           {Credo.Check.Readability.NestedFunctionCalls, [min_pipeline_length: 3]},
           {Credo.Check.Readability.SeparateAliasRequire, []},
           {Credo.Check.Design.DuplicatedCode, []},
