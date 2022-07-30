@@ -12,12 +12,11 @@ defmodule Expo.MO do
           {:statistics, boolean()}
         ]
 
-  @type parse_options :: [{:file, Path.t()}]
+  @type parse_option :: {:file, Path.t()}
 
   @type invalid_file_error :: {:error, :invalid_file}
   @type unsupported_version_error ::
           {:error, {:unsupported_version, major :: non_neg_integer(), minor :: non_neg_integer()}}
-  @type file_error :: {:error, File.posix()}
 
   @doc """
   Composes a MO (`.mo`) file from the given `messages`.
@@ -60,7 +59,7 @@ defmodule Expo.MO do
       {:ok, %Expo.Messages{headers: [], messages: []}}
 
   """
-  @spec parse_binary(binary(), parse_options()) ::
+  @spec parse_binary(binary(), [parse_option()]) ::
           {:ok, Messages.t()}
           | invalid_file_error()
           | unsupported_version_error()
@@ -94,7 +93,7 @@ defmodule Expo.MO do
       ** (Expo.MO.InvalidFileError) invalid file
 
   """
-  @spec parse_binary!(binary(), parse_options()) :: Messages.t()
+  @spec parse_binary!(binary(), [parse_option()]) :: Messages.t()
   def parse_binary!(binary, options \\ []) do
     case parse_binary(binary, options) do
       {:ok, parsed} ->
@@ -144,11 +143,11 @@ defmodule Expo.MO do
       #=> {:error, :enoent}
 
   """
-  @spec parse_file(Path.t(), parse_options()) ::
+  @spec parse_file(Path.t(), [parse_option()]) ::
           {:ok, Messages.t()}
           | invalid_file_error()
           | unsupported_version_error()
-          | file_error()
+          | {:error, File.posix()}
   def parse_file(path, options \\ []) when is_list(options) do
     with {:ok, contents} <- File.read(path),
          {:ok, po} <- Parser.parse(contents, Keyword.put_new(options, :file, path)) do
@@ -170,7 +169,7 @@ defmodule Expo.MO do
       #=> ** (File.Error) could not parse "nonexistent.po": no such file or directory
 
   """
-  @spec parse_file!(Path.t(), parse_options()) :: Messages.t()
+  @spec parse_file!(Path.t(), [parse_option()]) :: Messages.t()
   def parse_file!(path, options \\ []) do
     case parse_file(path, options) do
       {:ok, parsed} ->

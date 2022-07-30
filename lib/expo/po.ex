@@ -6,14 +6,13 @@ defmodule Expo.PO do
   alias Expo.Messages
   alias Expo.PO.{DuplicateMessagesError, Parser, SyntaxError}
 
-  @type parse_options :: [{:file, Path.t()}]
+  @type parse_option :: {:file, Path.t()}
 
   @type parse_error :: {:error, {:parse_error, message :: String.t(), line :: pos_integer()}}
   @type duplicate_messages_error ::
           {:error,
            {:duplicate_messages,
             [{message :: String.t(), new_line :: pos_integer(), old_line :: pos_integer()}]}}
-  @type file_error :: {:error, File.posix()}
 
   @doc """
   Dumps a `Expo.Messages` struct as iodata.
@@ -74,7 +73,7 @@ defmodule Expo.PO do
       {:error, {:parse_error, "unknown keyword 'foo'", 1}}
 
   """
-  @spec parse_string(String.t(), parse_options()) ::
+  @spec parse_string(String.t(), [parse_option()]) ::
           {:ok, Messages.t()}
           | parse_error()
           | duplicate_messages_error()
@@ -116,7 +115,7 @@ defmodule Expo.PO do
       ** (Expo.PO.DuplicateMessagesError) 4: found duplicate on line 4 for msgid: 'test'
 
   """
-  @spec parse_string!(String.t(), parse_options()) :: Messages.t()
+  @spec parse_string!(String.t(), [parse_option()]) :: Messages.t()
   def parse_string!(string, opts \\ []) do
     case parse_string(string, opts) do
       {:ok, parsed} ->
@@ -170,11 +169,11 @@ defmodule Expo.PO do
       #=> {:error, :enoent}
 
   """
-  @spec parse_file(Path.t(), parse_options()) ::
+  @spec parse_file(Path.t(), [parse_option()]) ::
           {:ok, Messages.t()}
           | parse_error()
           | duplicate_messages_error()
-          | file_error()
+          | {:error, File.posix()}
   def parse_file(path, options \\ []) when is_list(options) do
     with {:ok, contents} <- File.read(path) do
       parse_string(contents, Keyword.put_new(options, :file, path))
@@ -194,7 +193,7 @@ defmodule Expo.PO do
       #=> ** (File.Error) could not parse "nonexistent.po": no such file or directory
 
   """
-  @spec parse_file!(Path.t(), parse_options()) :: Messages.t()
+  @spec parse_file!(Path.t(), [parse_option()]) :: Messages.t()
   def parse_file!(path, opts \\ []) do
     case parse_file(path, opts) do
       {:ok, parsed} ->
