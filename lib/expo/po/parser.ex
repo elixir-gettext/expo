@@ -1,18 +1,14 @@
 defmodule Expo.PO.Parser do
   @moduledoc false
 
-  alias Expo.Message
-  alias Expo.Messages
-  alias Expo.PO
-  alias Expo.PO.Tokenizer
-  alias Expo.Util
+  alias Expo.{Message, Messages, PO, Util}
+  alias Expo.PO.{DuplicateMessagesError, SyntaxError, Tokenizer}
 
   @bom <<0xEF, 0xBB, 0xBF>>
 
   @spec parse(binary(), [PO.parse_option()]) ::
           {:ok, Messages.t()}
-          | PO.parse_error()
-          | PO.duplicate_messages_error()
+          | {:error, SyntaxError.t() | DuplicateMessagesError.t()}
   def parse(content, opts) do
     content = prune_bom(content, Keyword.get(opts, :file, "nofile"))
 
@@ -26,13 +22,16 @@ defmodule Expo.PO.Parser do
       }
 
       {:ok, po}
+    else
+      {:error, %mod{} = error} when mod in [SyntaxError, DuplicateMessagesError] ->
+        {:error, %{error | file: opts[:file]}}
     end
   end
 
   defp tokenize(content) do
     case Tokenizer.tokenize(content) do
-      {:error, line, message} -> {:error, {:parse_error, message, line}}
       {:ok, tokens} -> {:ok, tokens}
+      {:error, line, message} -> {:error, %SyntaxError{line: line, reason: message}}
     end
   end
 
@@ -65,7 +64,7 @@ defmodule Expo.PO.Parser do
   end
 
   defp parse_error({:error, {line, _module, reason}}) do
-    {:error, {:parse_error, parse_error_reason(reason), line}}
+    {:error, %SyntaxError{line: line, reason: parse_error_reason(reason)}}
   end
 
   defp extract_comments(%_struct{comments: comments} = message) do
@@ -145,7 +144,7 @@ defmodule Expo.PO.Parser do
   defp check_for_duplicates([], _existing, []), do: :ok
 
   defp check_for_duplicates([], _existing, duplicates),
-    do: {:error, {:duplicate_messages, Enum.reverse(duplicates)}}
+    do: {:error, %DuplicateMessagesError{duplicates: Enum.reverse(duplicates)}}
 
   defp build_duplicated_error(%Message.Singular{} = t, old_line, new_line) do
     id = IO.iodata_to_binary(t.msgid)

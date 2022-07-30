@@ -1,23 +1,20 @@
 defmodule Expo.MO.Parser do
   @moduledoc false
 
-  alias Expo.Message
-  alias Expo.Messages
-  alias Expo.MO
-  alias Expo.Util
+  alias Expo.{Message, Messages, MO, Util}
+  alias Expo.MO.{InvalidFileError, UnsupportedVersionError}
 
   @spec parse(binary(), [MO.parse_option()]) ::
-          {:ok, Messages.t()}
-          | MO.invalid_file_error()
-          | MO.unsupported_version_error()
+          {:ok, Messages.t()} | {:error, InvalidFileError.t() | UnsupportedVersionError.t()}
   def parse(content, opts)
 
   def parse(content, opts) when byte_size(content) >= 28 do
     with {:ok, {endianness, header}} <- parse_header(binary_part(content, 0, 28)),
          :ok <-
-           check_version(header.file_format_revision_major, header.file_format_revision_minor),
-         messages <- parse_messages(endianness, header, content),
-         {headers, top_comments, messages} <- Util.extract_meta_headers(messages) do
+           check_version(header.file_format_revision_major, header.file_format_revision_minor) do
+      messages = parse_messages(endianness, header, content)
+      {headers, top_comments, messages} = Util.extract_meta_headers(messages)
+
       {:ok,
        %Messages{
          messages: messages,
@@ -25,12 +22,13 @@ defmodule Expo.MO.Parser do
          top_comments: top_comments,
          file: Keyword.get(opts, :file)
        }}
+    else
+      {:error, %mod{} = error} when mod in [InvalidFileError, UnsupportedVersionError] ->
+        {:error, %{error | file: opts[:file]}}
     end
   end
 
-  def parse(_content, _opts), do: {:error, :invalid_file}
-
-  defp parse_header(header_binary)
+  def parse(_content, opts), do: {:error, %InvalidFileError{file: opts[:file]}}
 
   defp parse_header(
          <<0xDE120495::size(4)-unit(8),
@@ -74,12 +72,13 @@ defmodule Expo.MO.Parser do
              offset_of_table_with_message_strings: offset_of_table_with_message_strings
            }}}
 
-  defp parse_header(_header_binary), do: {:error, :invalid_file}
+  defp parse_header(_header_binary), do: {:error, %InvalidFileError{}}
 
-  defp check_version(major, minor)
   # Not checking minor since they must be BC compatible
   defp check_version(0, _minor), do: :ok
-  defp check_version(major, minor), do: {:error, {:unsupported_version, major, minor}}
+
+  defp check_version(major, minor),
+    do: {:error, %UnsupportedVersionError{major: major, minor: minor}}
 
   defp parse_messages(endianness, header, content) do
     [
@@ -96,10 +95,8 @@ defmodule Expo.MO.Parser do
       |> read_table_headers(binary_part(content, start_offset, number_of_elements * 2 * 4), [])
       |> Enum.map(&read_table_cell(content, &1))
 
-  defp read_table_headers(endianness, table_header, acc)
-
   defp read_table_headers(
-         :big,
+         :big = _endianness,
          <<cell_length::big-unsigned-integer-size(4)-unit(8),
            cell_offset::big-unsigned-integer-size(4)-unit(8), rest::binary>>,
          acc
@@ -107,7 +104,7 @@ defmodule Expo.MO.Parser do
        do: read_table_headers(:big, rest, [{cell_offset, cell_length} | acc])
 
   defp read_table_headers(
-         :little,
+         :little = _endianness,
          <<cell_length::little-unsigned-integer-size(4)-unit(8),
            cell_offset::little-unsigned-integer-size(4)-unit(8), rest::binary>>,
          acc
@@ -116,7 +113,6 @@ defmodule Expo.MO.Parser do
 
   defp read_table_headers(_endianness, <<>>, acc), do: Enum.reverse(acc)
 
-  defp read_table_cell(content, position)
   defp read_table_cell(content, {offset, length}), do: binary_part(content, offset, length)
 
   defp to_message([msgid, msgstr]) do

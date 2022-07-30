@@ -3,24 +3,19 @@ defmodule Expo.PO.DuplicateMessagesError do
   An error raised when duplicate messages are detected.
   """
 
-  defexception [:message]
+  @type t :: %__MODULE__{
+          file: Path.t() | nil,
+          duplicates: [{message :: String.t(), line :: pos_integer, original_line: pos_integer}]
+        }
 
-  defp location(file, line)
-  defp location(nil, line), do: "#{line}"
-  defp location(file, line), do: "#{Path.relative_to_cwd(file)}:#{line}"
+  defexception [:file, :duplicates]
 
   @impl Exception
-  def exception(opts) do
-    file = Keyword.get(opts, :file)
+  def message(%__MODULE__{file: file, duplicates: duplicates}) do
+    prefix = if file, do: "#{Path.relative_to_cwd(file)}:", else: ""
 
-    message =
-      opts
-      |> Keyword.fetch!(:duplicates)
-      |> Enum.map(fn {message, new_line, _old_line} ->
-        "#{location(file, new_line)}: #{message}"
-      end)
-      |> Enum.join("\n")
-
-    %__MODULE__{message: message}
+    Enum.map_join(duplicates, "\n", fn {message, new_line, _old_line} ->
+      "#{prefix}#{new_line}: #{message}"
+    end)
   end
 end

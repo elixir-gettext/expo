@@ -8,12 +8,6 @@ defmodule Expo.PO do
 
   @type parse_option :: {:file, Path.t()}
 
-  @type parse_error :: {:error, {:parse_error, message :: String.t(), line :: pos_integer()}}
-  @type duplicate_messages_error ::
-          {:error,
-           {:duplicate_messages,
-            [{message :: String.t(), new_line :: pos_integer(), old_line :: pos_integer()}]}}
-
   @doc """
   Dumps a `Expo.Messages` struct as iodata.
 
@@ -50,10 +44,10 @@ defmodule Expo.PO do
   defdelegate compose(messages), to: Expo.PO.Composer
 
   @doc """
-  Parses the ginve `string` into a `Expo.Messages` struct.
+  Parses the given `string` into a `Expo.Messages` struct.
 
-  It returns `{:ok, messages}` if there are no errors,
-  otherwise `{:error, line, reason}`.
+  It returns `{:ok, messages}` if there are no errors, otherwise
+  `{:error, error}` where `error` is an exception struct.
 
   ## Examples
 
@@ -70,14 +64,12 @@ defmodule Expo.PO do
       []
 
       iex> Expo.PO.parse_string("foo")
-      {:error, {:parse_error, "unknown keyword 'foo'", 1}}
+      {:error, %Expo.PO.SyntaxError{line: 1, reason: "unknown keyword 'foo'"}}
 
   """
   @spec parse_string(String.t(), [parse_option()]) ::
-          {:ok, Messages.t()}
-          | parse_error()
-          | duplicate_messages_error()
-  def parse_string(string, options \\ []) do
+          {:ok, Messages.t()} | {:error, SyntaxError.t() | DuplicateMessagesError.t()}
+  def parse_string(string, options \\ []) when is_binary(string) and is_list(options) do
     Parser.parse(string, options)
   end
 
@@ -118,30 +110,8 @@ defmodule Expo.PO do
   @spec parse_string!(String.t(), [parse_option()]) :: Messages.t()
   def parse_string!(string, opts \\ []) do
     case parse_string(string, opts) do
-      {:ok, parsed} ->
-        parsed
-
-      {:error, {:parse_error, reason, line}} ->
-        options = [line: line, reason: reason]
-
-        options =
-          case opts[:file] do
-            nil -> options
-            path -> [{:file, path} | options]
-          end
-
-        raise SyntaxError, options
-
-      {:error, {:duplicate_messages, duplicates}} ->
-        options = [duplicates: duplicates]
-
-        options =
-          case opts[:file] do
-            nil -> options
-            path -> [{:file, path} | options]
-          end
-
-        raise DuplicateMessagesError, options
+      {:ok, parsed} -> parsed
+      {:error, error} -> raise error
     end
   end
 
@@ -153,8 +123,8 @@ defmodule Expo.PO do
 
     * `{:ok, po}` if the parsing is successful
 
-    * `{:error, line, reason}` if there is an error with the contents of the
-      `.po` file (for example, a syntax error)
+    * `{:error, error}` if there is an error with the contents of the
+      `.po` file (for example, a syntax error); `error` is an exception struct
 
     * `{:error, reason}` if there is an error with reading the file (this error
       is one of the errors that can be returned by `File.read/1`)
@@ -171,9 +141,7 @@ defmodule Expo.PO do
   """
   @spec parse_file(Path.t(), [parse_option()]) ::
           {:ok, Messages.t()}
-          | parse_error()
-          | duplicate_messages_error()
-          | {:error, File.posix()}
+          | {:error, SyntaxError.t() | DuplicateMessagesError.t() | File.posix()}
   def parse_file(path, options \\ []) when is_list(options) do
     with {:ok, contents} <- File.read(path) do
       parse_string(contents, Keyword.put_new(options, :file, path))
@@ -199,13 +167,8 @@ defmodule Expo.PO do
       {:ok, parsed} ->
         parsed
 
-      {:error, {:parse_error, reason, line}} ->
-        raise SyntaxError, line: line, reason: reason, file: path
-
-      {:error, {:duplicate_messages, duplicates}} ->
-        raise DuplicateMessagesError,
-          duplicates: duplicates,
-          file: Keyword.get(opts, :file, path)
+      {:error, %mod{} = error} when mod in [SyntaxError, DuplicateMessagesError] ->
+        raise error
 
       {:error, reason} ->
         raise File.Error, reason: reason, action: "parse", path: Keyword.get(opts, :file, path)
