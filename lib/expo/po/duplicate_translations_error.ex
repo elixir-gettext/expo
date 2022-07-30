@@ -4,7 +4,7 @@ defmodule Expo.PO.DuplicateMessagesError do
   """
 
   @type t :: %__MODULE__{
-          file: Path.t(),
+          file: Path.t() | nil,
           duplicates: [{message :: String.t(), line :: pos_integer, original_line: pos_integer}]
         }
 

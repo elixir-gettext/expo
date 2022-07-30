@@ -8,7 +8,7 @@ defmodule Expo.MO.UnsupportedVersionError do
   @type t :: %__MODULE__{
           major: non_neg_integer,
           minor: non_neg_integer,
-          file: Path.t()
+          file: Path.t() | nil
         }
 
   defexception [:major, :minor, :file]

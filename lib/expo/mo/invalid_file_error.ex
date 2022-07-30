@@ -6,7 +6,7 @@ defmodule Expo.MO.InvalidFileError do
   """
 
   @type t :: %__MODULE__{
-          file: Path.t()
+          file: Path.t() | nil
         }
 
   defexception [:file]

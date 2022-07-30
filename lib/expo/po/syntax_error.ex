@@ -5,7 +5,7 @@ defmodule Expo.PO.SyntaxError do
   """
 
   @type t :: %__MODULE__{
-          file: Path.t(),
+          file: Path.t() | nil,
           line: pos_integer,
           reason: String.t()
         }
