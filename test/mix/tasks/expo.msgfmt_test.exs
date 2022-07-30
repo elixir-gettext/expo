@@ -15,8 +15,6 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
     {:ok, temp_file: temp_file}
   end
 
-  # TODO: Remove when exclusively Elixir ~> 1.10 is supported
-  @tag :"disable_elixir_lt_1.10"
   test "exports mo to console" do
     po_path = Application.app_dir(:expo, "priv/test/po/valid.po")
 
