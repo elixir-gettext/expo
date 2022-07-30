@@ -7,7 +7,7 @@ defmodule Expo.MO.UnsupportedVersionError do
 
   defexception [:major, :minor, :file]
 
-  @impl true
+  @impl Exception
   def message(%__MODULE__{major: major, minor: minor, file: file}) do
     prefix = if file, do: "#{Path.relative_to_cwd(file)}: ", else: ""
     "#{prefix}invalid version, only ~> 0.0 is supported, #{major}.#{minor} given"

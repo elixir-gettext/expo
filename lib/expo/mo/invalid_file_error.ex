@@ -11,7 +11,7 @@ defmodule Expo.MO.InvalidFileError do
 
   defexception [:file]
 
-  @impl true
+  @impl Exception
   def message(%__MODULE__{file: file}) do
     prefix = if file, do: "#{Path.relative_to_cwd(file)}: ", else: ""
     "#{prefix}invalid file"
