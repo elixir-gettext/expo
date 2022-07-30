@@ -1,6 +1,4 @@
 defmodule Expo.Message.PluralTest do
-  @moduledoc false
-
   use ExUnit.Case, async: true
 
   alias Expo.Message.Plural

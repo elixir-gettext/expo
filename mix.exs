@@ -1,7 +1,5 @@
 # credo:disable-for-this-file Credo.Check.Readability.Specs
 defmodule Expo.MixProject do
-  @moduledoc false
-
   use Mix.Project
 
   @version "0.1.0-beta.7"

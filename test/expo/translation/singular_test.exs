@@ -1,6 +1,4 @@
 defmodule Expo.Message.SingularTest do
-  @moduledoc false
-
   use ExUnit.Case, async: true
 
   alias Expo.Message.Singular

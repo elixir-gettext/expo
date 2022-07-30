@@ -1,6 +1,4 @@
 defmodule Expo.POTest do
-  @moduledoc false
-
   use ExUnit.Case, async: true
 
   import ExUnit.CaptureIO
