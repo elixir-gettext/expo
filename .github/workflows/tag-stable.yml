@@ -20,7 +20,7 @@ jobs:
   docs:
     name: "Docs"
 
-    needs: ["release", "detectToolVersions"]
+    needs: ["release"]
 
     uses: ./.github/workflows/part_docs.yml
     with:

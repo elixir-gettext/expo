@@ -23,8 +23,6 @@ jobs:
   docs:
     name: "Docs"
 
-    needs: ["detectToolVersions"]
-
     uses: ./.github/workflows/part_docs.yml
     with:
       elixirVersion: "1.13.4-otp-25"
