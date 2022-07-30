@@ -121,7 +121,7 @@ defmodule Expo.Message do
   end
 
   @doc """
-  Get Source Line Number of statement
+  Get the source line number of the message.
 
   ## Examples
 
@@ -133,14 +133,10 @@ defmodule Expo.Message do
       1
 
   """
-  @spec source_line_number(message :: Singular.t(), block :: Singular.block(), default :: default) ::
-          non_neg_integer() | default
+  @spec source_line_number(Singular.t(), Singular.block(), default) :: non_neg_integer() | default
         when default: term
-
-  @spec source_line_number(message :: Plural.t(), block :: Plural.block(), default :: default) ::
-          non_neg_integer() | default
+  @spec source_line_number(Plural.t(), Plural.block(), default) :: non_neg_integer() | default
         when default: term
-
   def source_line_number(message, block, default \\ nil)
 
   def source_line_number(%Singular{} = message, block, default),
