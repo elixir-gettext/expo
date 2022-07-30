@@ -14,10 +14,6 @@ defmodule Expo.MO do
 
   @type parse_option :: {:file, Path.t()}
 
-  @type invalid_file_error :: {:error, :invalid_file}
-  @type unsupported_version_error ::
-          {:error, {:unsupported_version, major :: non_neg_integer(), minor :: non_neg_integer()}}
-
   @doc """
   Composes a MO (`.mo`) file from the given `messages`.
 
@@ -61,8 +57,7 @@ defmodule Expo.MO do
   """
   @spec parse_binary(binary(), [parse_option()]) ::
           {:ok, Messages.t()}
-          | invalid_file_error()
-          | unsupported_version_error()
+          | {:error, InvalidFileError.t() | UnsupportedVersionError.t()}
   def parse_binary(binary, options \\ []), do: Parser.parse(binary, options)
 
   @doc """
@@ -96,28 +91,8 @@ defmodule Expo.MO do
   @spec parse_binary!(binary(), [parse_option()]) :: Messages.t()
   def parse_binary!(binary, options \\ []) do
     case parse_binary(binary, options) do
-      {:ok, parsed} ->
-        parsed
-
-      {:error, :invalid_file} ->
-        error_options =
-          case options[:file] do
-            nil -> []
-            path -> [file: path]
-          end
-
-        raise InvalidFileError, error_options
-
-      {:error, {:unsupported_version, major, minor}} ->
-        error_options = [major: major, minor: minor]
-
-        error_options =
-          case options[:file] do
-            nil -> error_options
-            path -> [{:file, path} | error_options]
-          end
-
-        raise UnsupportedVersionError, error_options
+      {:ok, parsed} -> parsed
+      {:error, error} -> raise error
     end
   end
 
@@ -145,13 +120,17 @@ defmodule Expo.MO do
   """
   @spec parse_file(Path.t(), [parse_option()]) ::
           {:ok, Messages.t()}
-          | invalid_file_error()
-          | unsupported_version_error()
-          | {:error, File.posix()}
+          | {:error, InvalidFileError.t() | UnsupportedVersionError.t() | File.posix()}
   def parse_file(path, options \\ []) when is_list(options) do
     with {:ok, contents} <- File.read(path),
          {:ok, po} <- Parser.parse(contents, Keyword.put_new(options, :file, path)) do
       {:ok, %{po | file: path}}
+    else
+      {:error, %mod{} = error} when mod in [InvalidFileError, UnsupportedVersionError] ->
+        {:error, %{error | file: Keyword.get(options, :file, path)}}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -175,14 +154,8 @@ defmodule Expo.MO do
       {:ok, parsed} ->
         parsed
 
-      {:error, :invalid_file} ->
-        raise InvalidFileError, file: path
-
-      {:error, {:unsupported_version, major, minor}} ->
-        raise UnsupportedVersionError,
-          major: major,
-          minor: minor,
-          file: Keyword.get(options, :file, path)
+      {:error, %mod{} = error} when mod in [InvalidFileError, UnsupportedVersionError] ->
+        raise error
 
       {:error, reason} ->
         raise File.Error, reason: reason, action: "parse", path: Keyword.get(options, :file, path)

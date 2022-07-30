@@ -1,11 +1,8 @@
 defmodule Expo.MOTest do
   use ExUnit.Case, async: true
 
-  alias Expo.Message
-  alias Expo.Messages
-  alias Expo.MO
-  alias Expo.MO.InvalidFileError
-  alias Expo.MO.UnsupportedVersionError
+  alias Expo.{Message, Messages, MO}
+  alias Expo.MO.{InvalidFileError, UnsupportedVersionError}
 
   doctest MO
 
@@ -254,10 +251,10 @@ defmodule Expo.MOTest do
     end
 
     test "does not parse with invalid header" do
-      assert {:error, :invalid_file} = MO.parse_binary(<<0>>)
-      assert {:error, :invalid_file} = MO.parse_binary(<<0::unit(8)-size(32)>>)
+      assert {:error, %InvalidFileError{file: nil}} = MO.parse_binary(<<0>>)
+      assert {:error, %InvalidFileError{file: nil}} = MO.parse_binary(<<0::unit(8)-size(32)>>)
 
-      assert {:error, {:unsupported_version, 1, 0}} =
+      assert {:error, %UnsupportedVersionError{major: 1, minor: 0}} =
                MO.parse_binary(
                  <<0xDE120495::size(4)-unit(8), 1::little-unsigned-integer-size(2)-unit(8),
                    0::little-unsigned-integer-size(2)-unit(8),
@@ -325,16 +322,16 @@ defmodule Expo.MOTest do
              } = parsed
     end
 
-    test "raises for invalid file" do
+    test "returns an error with an invalid file" do
       file = "test/fixtures/po/bom.po"
-
-      assert {:error, :invalid_file} = MO.parse_file(file)
+      assert {:error, %InvalidFileError{file: ^file}} = MO.parse_file(file)
     end
 
     test "raises for unsupported version" do
       file = "test/fixtures/mo/unsupported_version.mo"
 
-      assert {:error, {:unsupported_version, 1, 0}} = MO.parse_file(file)
+      assert {:error, %UnsupportedVersionError{major: 1, minor: 0, file: ^file}} =
+               MO.parse_file(file)
     end
 
     test "missing file" do
