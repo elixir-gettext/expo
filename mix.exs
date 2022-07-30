@@ -63,10 +63,10 @@ defmodule Expo.MixProject do
 
   defp deps do
     [
-      {:ex_doc, ">= 0.0.0", only: [:dev]},
-      {:excoveralls, "~> 0.5", only: [:test]},
-      {:dialyxir, "~> 1.0", only: [:dev]},
-      {:credo, "~> 1.0", only: [:dev]}
+      {:ex_doc, ">= 0.0.0", only: [:dev], runtime: false},
+      {:excoveralls, "~> 0.5", only: [:test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:credo, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
 end
