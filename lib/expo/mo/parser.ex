@@ -30,8 +30,6 @@ defmodule Expo.MO.Parser do
 
   def parse(_content, opts), do: {:error, %InvalidFileError{file: opts[:file]}}
 
-  defp parse_header(header_binary)
-
   defp parse_header(
          <<0xDE120495::size(4)-unit(8),
            file_format_revision_major::little-unsigned-integer-size(2)-unit(8),
@@ -97,8 +95,6 @@ defmodule Expo.MO.Parser do
       |> read_table_headers(binary_part(content, start_offset, number_of_elements * 2 * 4), [])
       |> Enum.map(&read_table_cell(content, &1))
 
-  defp read_table_headers(endianness, table_header, acc)
-
   defp read_table_headers(
          :big,
          <<cell_length::big-unsigned-integer-size(4)-unit(8),
@@ -117,7 +113,6 @@ defmodule Expo.MO.Parser do
 
   defp read_table_headers(_endianness, <<>>, acc), do: Enum.reverse(acc)
 
-  defp read_table_cell(content, position)
   defp read_table_cell(content, {offset, length}), do: binary_part(content, offset, length)
 
   defp to_message([msgid, msgstr]) do
