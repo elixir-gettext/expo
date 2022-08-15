@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: erlef/setup-elixir@v1
+      - uses: erlef/setup-beam@v1
         id: setupBEAM
         with:
           otp-version: ${{ inputs.otpVersion }}
@@ -74,7 +74,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: erlef/setup-elixir@v1
+      - uses: erlef/setup-beam@v1
         id: setupBEAM
         with:
           otp-version: ${{ matrix.otp }}
@@ -113,7 +113,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: erlef/setup-elixir@v1
+      - uses: erlef/setup-beam@v1
         id: setupBEAM
         with:
           otp-version: ${{ inputs.otpVersion }}
@@ -146,7 +146,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: erlef/setup-elixir@v1
+      - uses: erlef/setup-beam@v1
         id: setupBEAM
         with:
           otp-version: ${{ inputs.otpVersion }}
@@ -191,7 +191,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: erlef/setup-elixir@v1
+      - uses: erlef/setup-beam@v1
         id: setupBEAM
         with:
           otp-version: ${{ inputs.otpVersion }}
