@@ -1,6 +1,16 @@
 defmodule Expo.Message do
   @moduledoc """
   Functions to work on message structs (`Expo.Message.Singular` and `Expo.Message.Plural`).
+
+  A message is a single PO message. For example:
+
+      ```
+      msgid "Hello"
+      msgstr ""
+      ```
+
+  Message structs are used both to represent reference messages (where the `msgstr` is empty)
+  in POT files as well as actual translations.
   """
 
   alias Expo.Message.{Plural, Singular}

@@ -1,6 +1,35 @@
 defmodule Expo.Message.Plural do
   @moduledoc """
   Struct for plural messages.
+
+  For example:
+
+      ```
+      msgid "Cat"
+      msgid_plural "Cats"
+      msgstr ""
+      ```
+
+  All fields in this struct are public except for `:__meta__`. The `:flags` and `:references`
+  fields are defined as lists of lists in order to represent **lines** in the original file. For
+  example, this message:
+
+      ```
+      #, flag1, flag2
+      #, flag3
+      #: a.ex:1
+      #: b.ex:2 c.ex:3
+      msgid "Hello"
+      msgstr ""
+      ```
+
+  would have:
+
+    * `flags: [["flag1", "flag2"], ["flag3"]]`
+    * `references: [["a.ex:1"], ["b.ex:2", "c.ex:3"]]`
+
+  You can use `Expo.Message.has_flag?/2` to make it easier to check whether a message
+  has a given flag.
   """
 
   alias Expo.Message

@@ -1,6 +1,7 @@
 defmodule Expo.Messages do
   @moduledoc """
-  A struct that represents lists of `Expo.Message` for MO and PO files.
+  A struct that represents lists of `Expo.Message.Singular` and `Expo.Message.Plural`
+  structs for MO and PO files.
 
   All fields in the struct are public. See `t:t/0`.
   """
