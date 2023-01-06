@@ -2,7 +2,7 @@
 defmodule Expo.MixProject do
   use Mix.Project
 
-  @version "0.1.0-beta.7"
+  @version "0.1.0"
   @source_url "https://github.com/elixir-gettext/expo"
   @description "Low-level Gettext file handling (.po/.pot/.mo file writer and parser)."
 
@@ -57,7 +57,9 @@ defmodule Expo.MixProject do
   defp docs do
     [
       source_url: @source_url,
-      source_ref: "v" <> @version
+      source_ref: "v" <> @version,
+      main: "README",
+      extras: ["README.md"]
     ]
   end
 
