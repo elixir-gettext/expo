@@ -58,7 +58,7 @@ defmodule Expo.MixProject do
     [
       source_url: @source_url,
       source_ref: "v" <> @version,
-      main: "README",
+      main: "readme",
       extras: ["README.md"]
     ]
   end

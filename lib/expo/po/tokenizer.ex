@@ -149,7 +149,7 @@ defmodule Expo.PO.Tokenizer do
 
   # Unknown keyword.
   # At this point, there has to be a syntax error. Here, since the first byte is
-  # a letter (we don't take care of unicode ot fancy stuff, just ASCII letters),
+  # a letter (we don't take care of unicode or fancy stuff, just ASCII letters),
   # we assume there's an unknown keyword. We parse it with a regex
   # (`next_word/1`) so that the error message is informative.
   defp tokenize_line(<<letter, _rest::binary>> = binary, line, _line_prefix, _acc)
