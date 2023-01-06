@@ -19,7 +19,7 @@ defmodule Mix.Tasks.Expo.MsgfmtTest do
     po_path = "test/fixtures/po/valid.po"
 
     # Latin1 Encoding is needed so that the binary is untouched
-    # and does not acutally mean latin1.
+    # and does not actually mean latin1.
     out =
       capture_io([encoding: :latin1], fn ->
         Msgfmt.run([po_path])

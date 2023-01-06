@@ -62,12 +62,12 @@ defmodule Expo.MessagesTest do
              ]
     end
 
-    test "gets non existant header" do
+    test "gets non existent header" do
       assert Messages.get_header(%Messages{headers: [], messages: []}, "language") ==
                []
     end
 
-    test "gets multiple headers iwth same name" do
+    test "gets multiple headers with same name" do
       assert Messages.get_header(
                %Messages{
                  headers: [
