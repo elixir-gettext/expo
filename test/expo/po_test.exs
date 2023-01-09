@@ -519,7 +519,8 @@ defmodule Expo.POTest do
                     msgid: ["hell", "o"],
                     msgid_plural: ["hell", "os"],
                     msgstr: %{0 => ["holl", "a"]},
-                    comments: [" comment"],
+                    comments: [" comment", " comment"],
+                    previous_messages: [%Message.Singular{msgid: ["test"]}],
                     obsolete: true
                   }
                 ]
@@ -531,6 +532,8 @@ defmodule Expo.POTest do
                #~ msgstr "ciao"
 
                # comment
+               #~ # comment
+               #~ #| msgid "test"
                #~ msgid "hell"
                #~ "o"
                #~ msgid_plural "hell"

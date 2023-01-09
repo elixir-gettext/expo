@@ -196,6 +196,11 @@ message_meta ->
     | '$2'
   ].
 message_meta ->
+  obsolete comment message_meta : [
+    {comments, extract_simple_token('$2')}
+    | '$3'
+  ].
+message_meta ->
   previous msgid str_lines previous msgid_plural str_lines message_meta : [
     {previous_messages, to_plural_message(
       [{msgid, extract_simple_token('$3')}, {msgid_plural, extract_simple_token('$6')}],
@@ -203,11 +208,25 @@ message_meta ->
     )} | '$7'
   ].
 message_meta ->
+  obsolete previous msgid str_lines obsolete previous msgid_plural str_lines message_meta : [
+    {previous_messages, to_plural_message(
+      [{msgid, extract_simple_token('$4')}, {msgid_plural, extract_simple_token('$8')}],
+      [{msgid, extract_line('$2')}, {msgid_plural, extract_line('$7')}]
+    )} | '$9'
+  ].
+message_meta ->
   previous msgid str_lines message_meta : [
     {previous_messages, to_singular_message(
       [{msgid, extract_simple_token('$3')}],
       [{msgid, extract_line('$2')}]
     )} | '$4'
+  ].
+message_meta ->
+  obsolete previous msgid str_lines message_meta : [
+    {previous_messages, to_singular_message(
+      [{msgid, extract_simple_token('$4')}],
+      [{msgid, extract_line('$3')}]
+    )} | '$5'
   ].
 
 Erlang code.

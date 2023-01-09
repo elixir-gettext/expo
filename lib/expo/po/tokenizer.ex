@@ -82,8 +82,8 @@ defmodule Expo.PO.Tokenizer do
   end
 
   # Previous
-  defp tokenize_line(<<?#, ?|, rest::binary>>, line, "", acc) do
-    tokenize_line(rest, line, "#|", [{:previous, line} | acc])
+  defp tokenize_line(<<?#, ?|, rest::binary>>, line, line_prefix, acc) do
+    tokenize_line(rest, line, line_prefix <> "#|", [{:previous, line} | acc])
   end
 
   # Skip whitespace.
@@ -106,10 +106,10 @@ defmodule Expo.PO.Tokenizer do
   end
 
   # Comments.
-  defp tokenize_line(<<?#, _rest::binary>> = rest, line, "", acc) do
+  defp tokenize_line(<<?#, _rest::binary>> = rest, line, line_prefix, acc) do
     {contents, rest} = to_eol_or_eof(rest, "")
     acc = [{:comment, line, contents} | acc]
-    tokenize_line(rest, line, "", acc)
+    tokenize_line(rest, line, line_prefix, acc)
   end
 
   # `msgstr`.
