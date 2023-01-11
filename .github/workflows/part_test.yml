@@ -51,24 +51,24 @@ jobs:
   test:
     name: Run Tests & Submit Coverage
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - otp: '23.3'
+          - otp: '21.3'
             elixir: '1.11'
-          - otp: '24.3'
-            elixir: '1.12'
-          - otp: '24.3'
-            elixir: '1.13'
+            runs-on: ubuntu-18.04
           - otp: '25.0'
             elixir: '1.14'
+            runs-on: ubuntu-latest
           - otp: '25.0'
             elixir: 'main'
+            runs-on: ubuntu-latest
           - otp: '${{ inputs.otpVersion }}'
             elixir: '${{ inputs.elixirVersion }}'
+            runs-on: ubuntu-latest
             enable_coverage_export: 'true'
 
     env:
