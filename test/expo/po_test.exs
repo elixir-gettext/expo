@@ -377,12 +377,20 @@ defmodule Expo.POTest do
           %Message.Singular{
             msgid: ["fo", "o"],
             msgstr: ["bar"],
+            comments: [" comment"],
+            previous_messages: [
+              %Message.Singular{msgid: ["fo"]},
+              %Message.Singular{msgid: ["fooo"], obsolete: true}
+            ],
             obsolete: true
           }
         ]
       }
 
       assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
+             #~ # comment
+             #~ #| msgid "fo"
+             #~ #~| msgid "fooo"
              #~ msgid "fo"
              #~ "o"
              #~ msgstr "bar"

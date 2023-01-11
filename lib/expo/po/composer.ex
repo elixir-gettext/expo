@@ -22,40 +22,50 @@ defmodule Expo.PO.Composer do
     |> Enum.intersperse(?\n)
   end
 
-  defp dump_message(%Message.Singular{} = t) do
+  defp dump_message(%Message.Singular{obsolete: obsolete} = t) do
+    line_prefix = if(obsolete, do: "#~ ", else: [])
+
     [
-      dump_comments(t.comments),
-      dump_extracted_comments(t.extracted_comments),
-      dump_references(t.references),
-      dump_flags(t.flags),
-      dump_previous_messages(t.previous_messages),
-      dump_msgctxt(t.msgctxt, t.obsolete),
-      dump_kw_and_strings("msgid", t.msgid, t.obsolete),
-      dump_kw_and_strings("msgstr", t.msgstr, t.obsolete)
+      dump_comments(t.comments, line_prefix),
+      dump_extracted_comments(t.extracted_comments, line_prefix),
+      dump_references(t.references, line_prefix),
+      dump_flags(t.flags, line_prefix),
+      dump_previous_messages(t.previous_messages, line_prefix),
+      dump_msgctxt(t.msgctxt, line_prefix),
+      dump_kw_and_strings("msgid", t.msgid, line_prefix),
+      dump_kw_and_strings("msgstr", t.msgstr, line_prefix)
     ]
   end
 
-  defp dump_message(%Message.Plural{} = t) do
+  defp dump_message(%Message.Plural{obsolete: obsolete} = t) do
+    line_prefix = if(obsolete, do: "#~ ", else: [])
+
     [
-      dump_comments(t.comments),
-      dump_comments(t.extracted_comments),
-      dump_references(t.references),
-      dump_flags(t.flags),
-      dump_previous_messages(t.previous_messages),
-      dump_msgctxt(t.msgctxt, t.obsolete),
-      dump_kw_and_strings("msgid", t.msgid, t.obsolete),
-      dump_kw_and_strings("msgid_plural", t.msgid_plural, t.obsolete),
-      dump_plural_msgstr(t.msgstr, t.obsolete)
+      dump_comments(t.comments, line_prefix),
+      dump_comments(t.extracted_comments, line_prefix),
+      dump_references(t.references, line_prefix),
+      dump_flags(t.flags, line_prefix),
+      dump_previous_messages(t.previous_messages, line_prefix),
+      dump_msgctxt(t.msgctxt, line_prefix),
+      dump_kw_and_strings("msgid", t.msgid, line_prefix),
+      dump_kw_and_strings("msgid_plural", t.msgid_plural, line_prefix),
+      dump_plural_msgstr(t.msgstr, line_prefix)
     ]
   end
 
-  defp dump_comments(comments), do: Enum.map(comments, &["#", &1, ?\n])
+  defp dump_comments(comments, line_prefix), do: Enum.map(comments, &[line_prefix, "#", &1, ?\n])
 
-  defp dump_extracted_comments(comments), do: Enum.map(comments, &["#.", &1, ?\n])
+  defp dump_extracted_comments(comments, line_prefix),
+    do: Enum.map(comments, &[line_prefix, "#.", &1, ?\n])
 
-  defp dump_references(references) do
+  defp dump_references(references, line_prefix) do
     Enum.map(references, fn reference_line ->
-      ["#: ", reference_line |> Enum.map(&dump_reference_file/1) |> Enum.join(", "), ?\n]
+      [
+        line_prefix,
+        "#: ",
+        reference_line |> Enum.map(&dump_reference_file/1) |> Enum.join(", "),
+        ?\n
+      ]
     end)
   end
 
@@ -63,9 +73,9 @@ defmodule Expo.PO.Composer do
   defp dump_reference_file({file, line}), do: "#{file}:#{line}"
   defp dump_reference_file(file), do: file
 
-  defp dump_flags(flags) do
+  defp dump_flags(flags, line_prefix) do
     Enum.map(flags, fn flag_line ->
-      ["#, ", Enum.intersperse(flag_line, ", "), ?\n]
+      [line_prefix, "#, ", Enum.intersperse(flag_line, ", "), ?\n]
     end)
   end
 
@@ -75,9 +85,9 @@ defmodule Expo.PO.Composer do
     end)
   end
 
-  defp dump_kw_and_strings(keyword, [first | rest], obsolete \\ false) do
+  defp dump_kw_and_strings(keyword, [first | rest], line_prefix) do
     first = [
-      if(obsolete, do: "#~ ", else: []),
+      line_prefix,
       keyword,
       " ",
       ?",
@@ -86,34 +96,34 @@ defmodule Expo.PO.Composer do
       ?\n
     ]
 
-    rest = Enum.map(rest, &[if(obsolete, do: "#~ ", else: []), ?", escape(&1), ?", ?\n])
+    rest = Enum.map(rest, &[line_prefix, ?", escape(&1), ?", ?\n])
     [first | rest]
   end
 
-  defp dump_msgctxt(nil, _obsolete), do: []
+  defp dump_msgctxt(nil, _line_prefix), do: []
 
-  defp dump_msgctxt(string, obsolete), do: dump_kw_and_strings("msgctxt", string, obsolete)
+  defp dump_msgctxt(string, line_prefix), do: dump_kw_and_strings("msgctxt", string, line_prefix)
 
-  defp dump_previous_messages(messages) do
+  defp dump_previous_messages(messages, line_prefix) do
     Enum.map(messages, fn
       %Message.Singular{msgid: msgid, obsolete: obsolete} ->
-        dump_previous_msgids(msgid, obsolete)
+        dump_previous_msgids(msgid, obsolete, line_prefix)
 
       %Message.Plural{msgid: msgid, msgid_plural: msgid_plural, obsolete: obsolete} ->
         [
-          dump_previous_msgids(msgid, obsolete),
-          dump_previous_msgids(msgid_plural, obsolete, "msgid_plural")
+          dump_previous_msgids(msgid, obsolete, line_prefix),
+          dump_previous_msgids(msgid_plural, obsolete, "msgid_plural", line_prefix)
         ]
     end)
   end
 
-  defp dump_previous_msgids(previous_msgids, obsolete, keyword \\ "msgid") do
+  defp dump_previous_msgids(previous_msgids, obsolete, keyword \\ "msgid", line_prefix) do
     Enum.map(
       previous_msgids,
-      &[
-        if(obsolete, do: "#~| ", else: "#| "),
-        dump_kw_and_strings(keyword, [IO.iodata_to_binary(&1)])
-      ]
+      &dump_kw_and_strings(keyword, [IO.iodata_to_binary(&1)], [
+        line_prefix,
+        if(obsolete, do: "#~| ", else: "#| ")
+      ])
     )
   end
 
