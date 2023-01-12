@@ -433,83 +433,14 @@ defmodule Expo.POTest do
     end
   end
 
+  # These are tests for the parse_string/1 API itself. Tests related to parsing are in
+  # Expo.ParserTest.
   describe "parse_string/1" do
-    test "with single strings" do
-      assert {:ok,
-              %Messages{
-                messages: [
-                  %Message.Singular{msgid: ["hel", "l", "o"], msgstr: ["ciao"]} = message
-                ]
-              }} =
+    test "parses a string and returns {:ok, %Expo.Messages{}}" do
+      assert {:ok, %Messages{messages: [%Message.Singular{msgid: ["hello"], msgstr: ["ciao"]}]}} =
                PO.parse_string("""
-               msgid "hel" "l"
-               "o"
+               msgid "hello"
                msgstr "ciao"
-               """)
-
-      assert 3 == Message.source_line_number(message, :msgstr)
-    end
-
-    test "with singular previous msgid" do
-      assert {:ok,
-              %Messages{
-                messages: [
-                  %Message.Singular{
-                    msgid: ["", "foo\n", "bar\n", "baz\n"],
-                    msgstr: ["bar"],
-                    previous_messages: [%Message.Singular{msgid: ["", "fo\n", "bar\n", "baz\n"]}]
-                  },
-                  %Message.Singular{
-                    msgid: ["hello dude"],
-                    msgstr: ["ciao"],
-                    previous_messages: [
-                      %Message.Plural{
-                        msgid: ["holla amigo"],
-                        msgid_plural: ["holla amigos"]
-                      }
-                    ]
-                  }
-                ]
-              }} =
-               PO.parse_string(~S"""
-               #: reference:7
-               #, fuzzy
-               #| msgid ""
-               #| "fo\n"
-               #| "bar\n"
-               #| "baz\n"
-               msgid ""
-               "foo\n"
-               "bar\n"
-               "baz\n"
-               msgstr "bar"
-
-               #| msgid "holla amigo"
-               #| msgid_plural "holla amigos"
-               msgid "hello dude"
-               msgstr "ciao"
-               """)
-    end
-
-    test "with plural previous msgid" do
-      assert {:ok,
-              %Messages{
-                messages: [
-                  %Message.Plural{
-                    msgid: ["new"],
-                    msgid_plural: ["news"],
-                    msgstr: %{0 => ["translated"]},
-                    previous_messages: [%Message.Plural{msgid: ["old"], msgid_plural: ["olds"]}]
-                  }
-                ]
-              }} =
-               PO.parse_string(~S"""
-               #: reference:8
-               #| msgid "old"
-               #| msgid_plural "olds"
-               msgid "new"
-               msgid_plural "news"
-               msgstr[0] "translated"
                """)
     end
 
@@ -548,107 +479,6 @@ defmodule Expo.POTest do
                """)
     end
 
-    test "with multiple concatenated strings" do
-      assert {:ok,
-              %Messages{
-                messages: [
-                  %Message.Singular{msgid: ["hello", " world"], msgstr: ["ciao", " mondo"]}
-                ]
-              }} =
-               PO.parse_string("""
-               msgid "hello" " world"
-               msgstr "ciao" " mondo"
-               """)
-    end
-
-    test "with multiple messages" do
-      assert {:ok,
-              %Messages{
-                messages: [
-                  %Message.Singular{msgid: ["hello"], msgstr: ["ciao"]},
-                  %Message.Singular{msgid: ["word"], msgstr: ["parola"]}
-                ]
-              }} =
-               PO.parse_string("""
-               msgid "hello"
-               msgstr "ciao"
-               msgid "word"
-               msgstr "parola"
-               """)
-    end
-
-    test "with unicode characters in the strings" do
-      assert {:ok,
-              %Messages{
-                messages: [%Message.Singular{msgid: ["føø"], msgstr: ["bårπ"]}]
-              }} =
-               PO.parse_string("""
-               msgid "føø"
-               msgstr "bårπ"
-               """)
-    end
-
-    test "with a pluralized string" do
-      assert {:ok,
-              %Messages{
-                messages: [
-                  %Message.Plural{
-                    msgid: ["foo"],
-                    msgstr: %{0 => ["bar"], 1 => ["bars"], 2 => ["barres"]}
-                  } = message
-                ]
-              }} =
-               PO.parse_string("""
-               msgid "foo"
-               msgid_plural "foos"
-               msgstr[0] "bar"
-               msgstr[1] "bars"
-               msgstr[2] "barres"
-               """)
-
-      assert 5 == Message.source_line_number(message, {:msgstr, 2})
-    end
-
-    test "comments are associated with messages" do
-      assert {:ok,
-              %Messages{
-                messages: [
-                  %Message.Singular{
-                    msgid: ["foo"],
-                    msgstr: ["bar"],
-                    comments: [" This is a message", " Ah, another comment!"],
-                    extracted_comments: [" An extracted comment"],
-                    references: [[{"lib/foo.ex", 32}]]
-                  }
-                ]
-              }} =
-               PO.parse_string("""
-               # This is a message
-               #: lib/foo.ex:32
-               # Ah, another comment!
-               #. An extracted comment
-               msgid "foo"
-               msgstr "bar"
-               """)
-    end
-
-    test "comments always belong to the next message" do
-      assert {:ok,
-              %Messages{
-                messages: [
-                  %Message.Singular{msgid: ["a"], msgstr: ["b"]},
-                  %Message.Singular{msgid: ["c"], msgstr: ["d"], comments: [" Comment"]}
-                ]
-              }} =
-               PO.parse_string("""
-               msgid "a"
-               msgstr "b"
-               # Comment
-               msgid "c"
-               msgstr "d"
-               """)
-    end
-
     test "syntax error when there is no 'msgid'" do
       assert {:error, %SyntaxError{reason: "syntax error before: msgstr", line: 1}} =
                PO.parse_string("msgstr \"foo\"")
@@ -672,23 +502,6 @@ defmodule Expo.POTest do
     test "'msgid_plural' must come after 'msgid'" do
       assert {:error, %SyntaxError{reason: "syntax error before: msgid_plural", line: 1}} =
                PO.parse_string("msgid_plural ")
-    end
-
-    test "comments can't be placed between 'msgid' and 'msgstr'" do
-      assert {:error, %SyntaxError{reason: "syntax error before: \"# Comment\"", line: 2}} =
-               PO.parse_string("""
-               msgid "foo"
-               # Comment
-               msgstr "bar"
-               """)
-
-      assert {:error, %SyntaxError{reason: "syntax error before: \"# Comment\"", line: 3}} =
-               PO.parse_string("""
-               msgid "foo"
-               msgid_plural "foo"
-               # Comment
-               msgstr[0] "bar"
-               """)
     end
 
     test "files with just comments are ok" do
