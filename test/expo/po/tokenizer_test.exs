@@ -105,6 +105,24 @@ defmodule Expo.PO.TokenizerTest do
     assert tokenize(str) == {:error, 1, ~s(missing token ")}
   end
 
+  test "strings on multiple lines with keywords" do
+    str = ~s"""
+    msgid "how are you," " friend?"
+    msgstr "come stai,"
+      " amico?"
+    """
+
+    assert tokenize(str) ==
+             {:ok,
+              [
+                {:msgid, 1},
+                {:str_lines, 1, ["how are you,", " friend?"]},
+                {:msgstr, 2},
+                {:str_lines, 2, ["come stai,", " amico?"]},
+                {:"$end", 4}
+              ]}
+  end
+
   test "tokens know on what line they are" do
     str = ~S"""
     msgid "foo"
@@ -245,19 +263,31 @@ defmodule Expo.PO.TokenizerTest do
     assert tokenize(~S(#~ msgid "foo")) ==
              {:ok, [{:obsolete, 1}, {:msgid, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
+    assert tokenize(~S(#~ msgid "foo" "bar")) ==
+             {:ok, [{:obsolete, 1}, {:msgid, 1}, {:str_lines, 1, ["foo", "bar"]}, {:"$end", 1}]}
+
     assert tokenize(~S(#~ msgid_plural "foo")) ==
              {:ok, [{:obsolete, 1}, {:msgid_plural, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
+    assert tokenize(~S(#~ msgid_plural "foo" "bar")) ==
+             {:ok,
+              [{:obsolete, 1}, {:msgid_plural, 1}, {:str_lines, 1, ["foo", "bar"]}, {:"$end", 1}]}
+
     assert tokenize(~S"""
+           #~ msgid "foo" "bar"
+           #~ "baz"
            #~ msgid_plural "foo\n"
            #~ "bar"
            """) ==
              {:ok,
               [
                 {:obsolete, 1},
-                {:msgid_plural, 1},
-                {:str_lines, 1, ["foo\n", "bar"]},
-                {:"$end", 3}
+                {:msgid, 1},
+                {:str_lines, 1, ["foo", "bar", "baz"]},
+                {:obsolete, 3},
+                {:msgid_plural, 3},
+                {:str_lines, 3, ["foo\n", "bar"]},
+                {:"$end", 5}
               ]}
   end
 
@@ -265,19 +295,31 @@ defmodule Expo.PO.TokenizerTest do
     assert tokenize(~S(#| msgid "foo")) ==
              {:ok, [{:previous, 1}, {:msgid, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
+    assert tokenize(~S(#| msgid "foo" "bar")) ==
+             {:ok, [{:previous, 1}, {:msgid, 1}, {:str_lines, 1, ["foo", "bar"]}, {:"$end", 1}]}
+
     assert tokenize(~S(#| msgid_plural "foo")) ==
              {:ok, [{:previous, 1}, {:msgid_plural, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
+    assert tokenize(~S(#| msgid_plural "foo" "bar")) ==
+             {:ok,
+              [{:previous, 1}, {:msgid_plural, 1}, {:str_lines, 1, ["foo", "bar"]}, {:"$end", 1}]}
+
     assert tokenize(~S"""
+           #| msgid "foo" "bar"
+           #| "baz"
            #| msgid_plural "foo\n"
            #| "bar"
            """) ==
              {:ok,
               [
                 {:previous, 1},
-                {:msgid_plural, 1},
-                {:str_lines, 1, ["foo\n", "bar"]},
-                {:"$end", 3}
+                {:msgid, 1},
+                {:str_lines, 1, ["foo", "bar", "baz"]},
+                {:previous, 3},
+                {:msgid_plural, 3},
+                {:str_lines, 3, ["foo\n", "bar"]},
+                {:"$end", 5}
               ]}
   end
 end
