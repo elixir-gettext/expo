@@ -196,10 +196,32 @@ message_meta ->
     | '$2'
   ].
 message_meta ->
+  previous msgctxt str_lines previous msgid str_lines previous msgid_plural str_lines message_meta : [
+    {previous_messages, to_plural_message(
+      [
+        {msgctxt, extract_simple_token('$3')},
+        {msgid, extract_simple_token('$6')},
+        {msgid_plural, extract_simple_token('$9')}
+      ],
+      [
+        {msgctxt, extract_line('$2')},
+        {msgid, extract_line('$5')},
+        {msgid_plural, extract_line('$8')}
+      ]
+    )} | '$10'
+  ].
+message_meta ->
   previous msgid str_lines previous msgid_plural str_lines message_meta : [
     {previous_messages, to_plural_message(
       [{msgid, extract_simple_token('$3')}, {msgid_plural, extract_simple_token('$6')}],
       [{msgid, extract_line('$2')}, {msgid_plural, extract_line('$5')}]
+    )} | '$7'
+  ].
+message_meta ->
+  previous msgctxt str_lines previous msgid str_lines message_meta : [
+    {previous_messages, to_singular_message(
+      [{msgctxt, extract_simple_token('$3')}, {msgid, extract_simple_token('$6')}],
+      [{msgctxt, extract_line('$2')}, {msgid, extract_line('$5')}]
     )} | '$7'
   ].
 message_meta ->
