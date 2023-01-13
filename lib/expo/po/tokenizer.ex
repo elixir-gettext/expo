@@ -65,13 +65,14 @@ defmodule Expo.PO.Tokenizer do
   # These make parsing easier.
   for kw <- [:msgid, :msgid_plural, :msgctxt, :msgstr] do
     defp postprocess_tokens([{:obsolete, _line}, {unquote(kw), line} | rest]) do
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
       [{:"obsolete_#{unquote(kw)}", line} | postprocess_tokens(rest)]
     end
   end
 
   # There's no point in having the "obsolete" token before some tokens, we can just collapse
   # it away.
-  defp postprocess_tokens([{:obsolete, line}, {token_name, line, _} = token | rest])
+  defp postprocess_tokens([{:obsolete, line}, {token_name, line, _value} = token | rest])
        when token_name in [:comment, :str_lines] do
     [token | postprocess_tokens(rest)]
   end
