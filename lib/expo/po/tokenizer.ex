@@ -13,8 +13,11 @@ defmodule Expo.PO.Tokenizer do
           | {:msgid_plural, line}
           | {:msgstr, line}
           | {:msgctxt, line}
+          | {:obsolete_msgid, line}
+          | {:obsolete_msgid_plural, line}
+          | {:obsolete_msgstr, line}
+          | {:obsolete_msgctxt, line}
           | {:comment, line, binary}
-          | {:obsolete, line}
           | {:previous, line}
           | {:eof, line}
 
@@ -54,15 +57,36 @@ defmodule Expo.PO.Tokenizer do
     tokenize_line(str, _line = 1, _tokens_acc = [])
   end
 
+  # Reverse str_lines strings.
+  defp postprocess_tokens([{:str_lines, line, strings} | rest]) do
+    [{:str_lines, line, Enum.reverse(strings)} | postprocess_tokens(rest)]
+  end
+
+  # These make parsing easier.
+  for kw <- [:msgid, :msgid_plural, :msgctxt, :msgstr] do
+    defp postprocess_tokens([{:obsolete, _line}, {unquote(kw), line} | rest]) do
+      [{:"obsolete_#{unquote(kw)}", line} | postprocess_tokens(rest)]
+    end
+  end
+
+  # There's no point in having the "obsolete" token before some tokens, we can just collapse
+  # it away.
+  defp postprocess_tokens([{:obsolete, line}, {token_name, line, _} = token | rest])
+       when token_name in [:comment, :str_lines] do
+    [token | postprocess_tokens(rest)]
+  end
+
+  defp postprocess_tokens([token | rest]) do
+    [token | postprocess_tokens(rest)]
+  end
+
+  defp postprocess_tokens([]) do
+    []
+  end
+
   # End of file.
   defp tokenize_line(<<>>, line, acc) do
-    tokens =
-      Enum.reduce(acc, [{:"$end", line}], fn
-        {:str_lines, line, strings}, acc -> [{:str_lines, line, Enum.reverse(strings)} | acc]
-        token, acc -> [token | acc]
-      end)
-
-    {:ok, tokens}
+    {:ok, [{:"$end", line} | acc] |> Enum.reverse() |> postprocess_tokens()}
   end
 
   # Go to the next line.
