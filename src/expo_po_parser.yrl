@@ -1,5 +1,6 @@
 Nonterminals
   grammar
+  obsolete_pluralization
   obsolete_pluralizations
   obsolete_plural_message
   obsolete_singular_message
@@ -17,7 +18,10 @@ Terminals
   msgid
   msgid_plural
   msgstr
-  obsolete
+  obsolete_msgctxt
+  obsolete_msgid
+  obsolete_msgid_plural
+  obsolete_msgstr
   plural_form
   previous
   str_lines.
@@ -77,30 +81,30 @@ singular_message ->
   ).
 
 obsolete_singular_message ->
-  message_meta obsolete msgid str_lines obsolete msgstr str_lines : to_singular_message(
+  message_meta obsolete_msgid str_lines obsolete_msgstr str_lines : to_singular_message(
     [
       {obsolete, true},
-      {msgid, extract_simple_token('$4')},
-      {msgstr, extract_simple_token('$7')}
+      {msgid, extract_simple_token('$3')},
+      {msgstr, extract_simple_token('$5')}
       | group_meta('$1')
     ], [
-      {msgid, extract_line('$3')},
-      {msgstr, extract_line('$5')}
+      {msgid, extract_line('$2')},
+      {msgstr, extract_line('$4')}
     ]
   ).
 obsolete_singular_message ->
-  message_meta obsolete msgctxt str_lines obsolete msgid str_lines obsolete msgstr str_lines : to_singular_message(
+  message_meta obsolete_msgctxt str_lines obsolete_msgid str_lines obsolete_msgstr str_lines : to_singular_message(
     [
       {obsolete, true},
-      {msgctxt, extract_simple_token('$4')},
-      {msgid, extract_simple_token('$7')},
-      {msgstr, extract_simple_token('$10')}
+      {msgctxt, extract_simple_token('$3')},
+      {msgid, extract_simple_token('$5')},
+      {msgstr, extract_simple_token('$7')}
       | group_meta('$1')
     ],
     [
-      {msgctxt, extract_line('$3')},
-      {msgid, extract_line('$6')},
-      {msgstr, extract_line('$9')}
+      {msgctxt, extract_line('$2')},
+      {msgid, extract_line('$4')},
+      {msgstr, extract_line('$6')}
     ]
   ).
 
@@ -139,38 +143,38 @@ plural_message ->
   ).
 
 obsolete_plural_message ->
-  message_meta obsolete msgid str_lines obsolete msgid_plural str_lines obsolete_pluralizations :
+  message_meta obsolete_msgid str_lines obsolete_msgid_plural str_lines obsolete_pluralizations :
+  {Pluralizations, PluralLineInformation} = split_msgstr('$6'),
+  to_plural_message(
+    [
+      {obsolete, true},
+      {msgid, extract_simple_token('$3')},
+      {msgid_plural, extract_simple_token('$5')},
+      {msgstr, maps:from_list(Pluralizations)}
+      | group_meta('$1')
+    ],
+    [
+      {msgid, extract_line('$2')},
+      {msgid_plural, extract_line('$4')}
+      | PluralLineInformation
+    ]
+  ).
+obsolete_plural_message ->
+  message_meta obsolete_msgctxt str_lines obsolete_msgid str_lines obsolete_msgid_plural str_lines obsolete_pluralizations :
   {Pluralizations, PluralLineInformation} = split_msgstr('$8'),
   to_plural_message(
     [
       {obsolete, true},
-      {msgid, extract_simple_token('$4')},
+      {msgctxt, extract_simple_token('$3')},
+      {msgid, extract_simple_token('$5')},
       {msgid_plural, extract_simple_token('$7')},
       {msgstr, maps:from_list(Pluralizations)}
       | group_meta('$1')
     ],
     [
-      {msgid, extract_line('$3')},
+      {msgctx, extract_line('$2')},
+      {msgid, extract_line('$4')},
       {msgid_plural, extract_line('$6')}
-      | PluralLineInformation
-    ]
-  ).
-obsolete_plural_message ->
-  message_meta obsolete msgctxt str_lines obsolete msgid str_lines obsolete msgid_plural str_lines obsolete_pluralizations :
-  {Pluralizations, PluralLineInformation} = split_msgstr('$11'),
-  to_plural_message(
-    [
-      {obsolete, true},
-      {msgctxt, extract_simple_token('$4')},
-      {msgid, extract_simple_token('$7')},
-      {msgid_plural, extract_simple_token('$10')},
-      {msgstr, maps:from_list(Pluralizations)}
-      | group_meta('$1')
-    ],
-    [
-      {msgctx, extract_line('$3')},
-      {msgid, extract_line('$6')},
-      {msgid_plural, extract_line('$9')}
       | PluralLineInformation
     ]
   ).
@@ -181,12 +185,15 @@ pluralizations ->
   pluralization pluralizations : ['$1'|'$2'].
 
 obsolete_pluralizations ->
-  obsolete pluralization : ['$2'].
+  obsolete_pluralization : ['$1'].
 obsolete_pluralizations ->
-  obsolete pluralization obsolete_pluralizations : ['$2'|'$3'].
+  obsolete_pluralization obsolete_pluralizations : ['$1' | '$2'].
 
 pluralization ->
   msgstr plural_form str_lines : {extract_simple_token('$2'), extract_simple_token('$3'), extract_line('$2')}.
+
+obsolete_pluralization ->
+  obsolete_msgstr plural_form str_lines : {extract_simple_token('$2'), extract_simple_token('$3'), extract_line('$2')}.
 
 message_meta ->
   '$empty': [].

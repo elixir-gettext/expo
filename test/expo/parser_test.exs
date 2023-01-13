@@ -203,6 +203,142 @@ defmodule Expo.ParserTest do
     end
   end
 
+  describe "#~ (obsolete) comments" do
+    test "are supported for singular translations" do
+      assert [
+               %Message.Singular{
+                 msgid: ["hello"],
+                 msgstr: ["ciao"],
+                 obsolete: true
+               }
+             ] =
+               parse("""
+               #~ msgid "hello"
+               #~ msgstr "ciao"
+               """)
+
+      assert [
+               %Message.Singular{
+                 msgid: ["hello", "world"],
+                 msgstr: ["ciao", "mondo"],
+                 obsolete: true
+               }
+             ] =
+               parse("""
+               #~ msgid "hello"
+               #~       "world"
+               #~ msgstr "ciao"
+               #~  "mondo"
+               """)
+    end
+
+    test "support msgctxt for singular translations" do
+      assert [
+               %Message.Singular{
+                 msgid: ["hello"],
+                 msgctxt: ["context"],
+                 msgstr: [""],
+                 obsolete: true
+               }
+             ] =
+               parse("""
+               #~ msgctxt "context"
+               #~ msgid "hello"
+               #~ msgstr ""
+               """)
+    end
+
+    test "are supported for plural translations" do
+      assert [
+               %Message.Plural{
+                 msgid: ["hello"],
+                 msgid_plural: ["hellos"],
+                 msgstr: %{0 => ["ciao"]},
+                 obsolete: true
+               }
+             ] =
+               parse("""
+               #~ msgid "hello"
+               #~ msgid_plural "hellos"
+               #~ msgstr[0] "ciao"
+               """)
+    end
+
+    test "support msgctxt for plural translations" do
+      assert [
+               %Message.Plural{
+                 msgctxt: ["context"],
+                 msgid: ["hello"],
+                 msgid_plural: ["hellos"],
+                 msgstr: %{0 => ["ciao"]},
+                 obsolete: true
+               }
+             ] =
+               parse("""
+               #~ msgctxt "context"
+               #~ msgid "hello"
+               #~ msgid_plural "hellos"
+               #~ msgstr[0] "ciao"
+               """)
+    end
+
+    test "can have comments without preceding #~" do
+      assert [
+               %Message.Singular{
+                 msgid: ["new"],
+                 comments: [" An obsolete translation."],
+                 flags: [["ex-obsolete"]],
+                 references: [[{"old_file", 4}]],
+                 previous_messages: [
+                   %Message.Singular{msgid: ["old"]}
+                 ]
+               }
+             ] =
+               parse("""
+               # An obsolete translation.
+               #, ex-obsolete
+               #: old_file:4
+               #| msgid "old"
+               #~ msgid "new"
+               #~ msgstr ""
+               """)
+    end
+
+    test "works with #| previous translations" do
+      assert [
+               %Message.Singular{
+                 msgid: ["new"],
+                 previous_messages: [%Message.Singular{msgid: ["old"]}],
+                 obsolete: true
+               }
+             ] =
+               parse("""
+               #| msgid "old"
+               #~ msgid "new"
+               #~ msgstr ""
+               """)
+    end
+
+    test "can be used before other comments as well" do
+      assert [
+               %Message.Singular{
+                 msgid: ["foo"],
+                 msgstr: [""],
+                 flags: [["ex-flag"]],
+                 comments: [" First comment.", " Second comment."],
+                 obsolete: true
+               }
+             ] =
+               parse("""
+               #~ # First comment.
+               #~ #, ex-flag
+               #~ # Second comment.
+               #~ msgid "foo"
+               #~ msgstr ""
+               """)
+    end
+  end
+
   describe "generic comments" do
     test "are associated with messages" do
       assert [
@@ -257,8 +393,21 @@ defmodule Expo.ParserTest do
   end
 
   defp parse(string) do
-    assert {:ok, %Messages{messages: messages}} = PO.parse_string(string)
-    messages
+    case PO.parse_string(string) do
+      {:ok, %Messages{messages: messages}} ->
+        messages
+
+      {:error, syntax_error} ->
+        flunk("""
+        parsing failed with error:
+
+            #{Exception.message(syntax_error)}
+
+        The failing string is:
+
+            #{String.replace(string, "\n", "\n    ")}
+        """)
+    end
   end
 
   defp parse_error(string) do

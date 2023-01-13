@@ -259,19 +259,18 @@ defmodule Expo.PO.TokenizerTest do
     assert tokenize("\r\n\t") == {:ok, [{:"$end", 2}]}
   end
 
-  test "obsolete are tokenized with obsolete flag" do
+  test "obsolete tokens are collapsed" do
     assert tokenize(~S(#~ msgid "foo")) ==
-             {:ok, [{:obsolete, 1}, {:msgid, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
+             {:ok, [{:obsolete_msgid, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
     assert tokenize(~S(#~ msgid "foo" "bar")) ==
-             {:ok, [{:obsolete, 1}, {:msgid, 1}, {:str_lines, 1, ["foo", "bar"]}, {:"$end", 1}]}
+             {:ok, [{:obsolete_msgid, 1}, {:str_lines, 1, ["foo", "bar"]}, {:"$end", 1}]}
 
     assert tokenize(~S(#~ msgid_plural "foo")) ==
-             {:ok, [{:obsolete, 1}, {:msgid_plural, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
+             {:ok, [{:obsolete_msgid_plural, 1}, {:str_lines, 1, ["foo"]}, {:"$end", 1}]}
 
     assert tokenize(~S(#~ msgid_plural "foo" "bar")) ==
-             {:ok,
-              [{:obsolete, 1}, {:msgid_plural, 1}, {:str_lines, 1, ["foo", "bar"]}, {:"$end", 1}]}
+             {:ok, [{:obsolete_msgid_plural, 1}, {:str_lines, 1, ["foo", "bar"]}, {:"$end", 1}]}
 
     assert tokenize(~S"""
            #~ msgid "foo" "bar"
@@ -281,11 +280,9 @@ defmodule Expo.PO.TokenizerTest do
            """) ==
              {:ok,
               [
-                {:obsolete, 1},
-                {:msgid, 1},
+                {:obsolete_msgid, 1},
                 {:str_lines, 1, ["foo", "bar", "baz"]},
-                {:obsolete, 3},
-                {:msgid_plural, 3},
+                {:obsolete_msgid_plural, 3},
                 {:str_lines, 3, ["foo\n", "bar"]},
                 {:"$end", 5}
               ]}
