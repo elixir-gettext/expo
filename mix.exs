@@ -42,7 +42,7 @@ defmodule Expo.MixProject do
       maintainers: ["Jonatan Männchen", "José Valim", "Andrea Leopardi"],
       links: %{
         "GitHub" => @source_url,
-        "Changelog" => @source_url <> "/releases",
+        "Changelog" => @source_url <> "/blob/main/CHANGELOG.md",
         "Issues" => @source_url <> "/issues"
       }
     }
