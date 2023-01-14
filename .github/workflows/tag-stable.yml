@@ -10,12 +10,24 @@ name: "Stable Tag"
 
 jobs:
   release:
-    name: "Release"
+    name: Create Release
 
-    uses: ./.github/workflows/part_release.yml
-    with:
-      releaseName: "${{ github.ref_name }}"
-      stable: true
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Create draft release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release create \
+            --repo ${{ github.repository }} \
+            --title ${{ github.ref_name }} \
+            --notes '' \
+            --draft \
+            ${{ github.ref_name }}
 
   docs:
     name: "Docs"
