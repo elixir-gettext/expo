@@ -1,5 +1,6 @@
 {
     "skip_files": [
-        "src/expo_po_parser.erl"
+        "src/expo_po_parser.erl",
+        "src/expo_plural_forms_parser.erl"
     ]
 }
