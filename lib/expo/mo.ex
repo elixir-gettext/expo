@@ -4,7 +4,7 @@ defmodule Expo.MO do
   """
 
   alias Expo.Messages
-  alias Expo.MO.{InvalidFileError, Parser, UnsupportedVersionError}
+  alias Expo.MO.{Composer, InvalidFileError, Parser, UnsupportedVersionError}
 
   @type compose_option ::
           {:endianness, :little | :big}
@@ -35,7 +35,7 @@ defmodule Expo.MO do
   """
   @spec compose(Messages.t(), [compose_option()]) :: iodata()
   def compose(%Messages{} = messages, options \\ []) when is_list(options) do
-    Expo.MO.Composer.compose(messages, options)
+    Composer.compose(messages, options)
   end
 
   @doc """
