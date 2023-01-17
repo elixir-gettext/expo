@@ -13,6 +13,7 @@ defmodule Expo.PluralForms do
   """
 
   alias Expo.PluralForms.SyntaxError
+  alias Expo.PluralForms.Tokenizer
 
   defstruct [:nplurals, :plural]
 
@@ -51,7 +52,7 @@ defmodule Expo.PluralForms do
   """
   @spec parse(String.t()) :: {:ok, t()} | {:error, SyntaxError.t()}
   def parse(content) when is_binary(content) do
-    with {:ok, tokens} <- Expo.PluralForms.Tokenizer.tokenize(content),
+    with {:ok, tokens} <- Tokenizer.tokenize(content),
          {:ok, {nplurals, plural}} <- :expo_plural_forms_parser.parse(tokens) do
       {:ok, %__MODULE__{nplurals: nplurals, plural: plural}}
     else
