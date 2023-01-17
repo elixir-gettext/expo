@@ -5,24 +5,44 @@
 [![.github/workflows/branch_main.yml](https://github.com/elixir-gettext/expo/actions/workflows/branch_main.yml/badge.svg)](https://github.com/elixir-gettext/expo/actions/workflows/branch_main.yml)
 [![Coverage Status](https://coveralls.io/repos/github/elixir-gettext/expo/badge.svg?branch=main)](https://coveralls.io/github/elixir-gettext/expo?branch=main)
 
-Low-level [GNU gettext][gettext] file handling (for `.po`, `.pot`, and `.mo`
-files), including writing and parsing.
+> Low-level [GNU gettext][gettext] file handling (for `.po`, `.pot`, and `.mo`
+> files), including writing and parsing.
 
 See [the documentation][docs].
 
 For a full Gettext integration, see the [Gettext library][elixir-gettext].
 
-## Installation
+## Usage
 
-The package can be installed by adding `expo` to your list of
-dependencies in `mix.exs`:
+Expo can *parse* PO, POT, and MO files from [GNU gettext][gettext]:
 
 ```elixir
-def deps do
-  [
-    {:expo, "~> 0.1.0"}
-  ]
-end
+Expo.PO.parse_file!("priv/gettext/default.pot")
+#=> %Expo.Messages{...}
+```
+
+It can also *write* well-formed PO, POT, and MO files:
+
+```elixir
+"priv/gettext/default.pot"
+|> Expo.PO.parse_file!()
+|> Expo.PO.compose()
+|> then(fn content -> File.write!("priv/gettext/copy.pot") end)
+```
+
+This library can also parse [`Plural-Form`
+headers](https://www.gnu.org/software/gettext/manual/html_node/Plural-forms.html)
+in PO or POT files, and ships with a built-in list of languages and their plural
+forms. You can find which plural form to use for a given *amount* by using
+`Expo.PluralForms.index/2`:
+
+```elixir
+{:ok, plural_form} = Expo.PluralForms.plural_form("de")
+
+Expo.PluralForms.index(plural_form, 1)
+#=> 0
+Expo.PluralForms.index(plural_form, 213)
+#=> 1
 ```
 
 ## License
