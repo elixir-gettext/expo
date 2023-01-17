@@ -34,7 +34,9 @@ defmodule Expo.MO do
 
   """
   @spec compose(Messages.t(), [compose_option()]) :: iodata()
-  defdelegate compose(messages, options \\ []), to: Expo.MO.Composer
+  def compose(%Messages{} = messages, options \\ []) when is_list(options) do
+    Expo.MO.Composer.compose(messages, options)
+  end
 
   @doc """
   Parses the given `binary` as an MO file.

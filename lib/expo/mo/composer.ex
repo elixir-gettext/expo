@@ -7,7 +7,7 @@ defmodule Expo.MO.Composer do
   alias Expo.Util
 
   @spec compose(Messages.t(), [MO.compose_option()]) :: iodata()
-  def compose(messages, opts \\ []) do
+  def compose(messages, opts) do
     messages =
       Util.inject_meta_headers(
         messages.headers,
@@ -155,24 +155,20 @@ defmodule Expo.MO.Composer do
       content_callback,
       acc_offset + 1,
       [acc_table | [table_entry]],
-      [
-        acc_data | [content, <<0>>]
-      ]
+      [acc_data | [content, <<0>>]]
     )
   end
 
   defp string_table(_endianness, [], _content_callback, acc_offset, acc_table, acc_data),
     do: {acc_table, acc_data, acc_offset}
 
-  defp table_entry(endianness, cell_offset, cell_length)
+  defp table_entry(:little, cell_offset, cell_length) do
+    {<<cell_length::little-unsigned-integer-size(4)-unit(8),
+       cell_offset::little-unsigned-integer-size(4)-unit(8)>>, cell_offset + cell_length}
+  end
 
-  defp table_entry(:little, cell_offset, cell_length),
-    do:
-      {<<cell_length::little-unsigned-integer-size(4)-unit(8),
-         cell_offset::little-unsigned-integer-size(4)-unit(8)>>, cell_offset + cell_length}
-
-  defp table_entry(:big, cell_offset, cell_length),
-    do:
-      {<<cell_length::big-unsigned-integer-size(4)-unit(8),
-         cell_offset::big-unsigned-integer-size(4)-unit(8)>>, cell_offset + cell_length}
+  defp table_entry(:big, cell_offset, cell_length) do
+    {<<cell_length::big-unsigned-integer-size(4)-unit(8),
+       cell_offset::big-unsigned-integer-size(4)-unit(8)>>, cell_offset + cell_length}
+  end
 end
