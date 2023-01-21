@@ -211,6 +211,19 @@ defmodule Expo.PluralFormsTest do
     end
   end
 
+  describe "parse!/1" do
+    test "valid" do
+      assert Expo.PluralForms.parse!("nplurals=1; plural=0;") ==
+               %Expo.PluralForms{nplurals: 1, plural: 0}
+    end
+
+    test "invalid" do
+      assert_raise SyntaxError, ~s(1:20: unexpected token: "m"), fn ->
+        Expo.PluralForms.parse!("nplurals=6; plural=m % 20 == 1;")
+      end
+    end
+  end
+
   describe "index/2" do
     # Tests copied from https://github.com/elixir-gettext/gettext/blob/600e4630fb7db514d464f92e2069a138cf9c68a1/test/gettext/plural_test.exs#L1
 
