@@ -17,6 +17,10 @@ defmodule Expo.Util do
   def inject_meta_headers(headers, comments, messages)
   def inject_meta_headers([], [], messages), do: messages
 
+  def inject_meta_headers([], comments, messages) do
+    inject_meta_headers([""], comments, messages)
+  end
+
   def inject_meta_headers(headers, comments, messages) do
     [
       %Message.Singular{msgid: [""], msgstr: headers, comments: comments}

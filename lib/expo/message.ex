@@ -15,8 +15,8 @@ defmodule Expo.Message do
 
   alias Expo.Message.{Plural, Singular}
 
-  @type msgid :: [String.t()]
-  @type msgstr :: [String.t()]
+  @type msgid :: nonempty_list(String.t())
+  @type msgstr :: nonempty_list(String.t())
   @type msgctxt :: String.t()
 
   @type t :: Singular.t() | Plural.t()
