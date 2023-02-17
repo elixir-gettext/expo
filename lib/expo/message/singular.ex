@@ -55,7 +55,7 @@ defmodule Expo.Message.Singular do
   @derive {Inspect, except: [:__meta__]}
   defstruct [
     :msgid,
-    msgstr: [],
+    msgstr: [""],
     msgctxt: nil,
     comments: [],
     extracted_comments: [],

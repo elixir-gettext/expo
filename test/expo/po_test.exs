@@ -26,6 +26,34 @@ defmodule Expo.POTest do
              """
     end
 
+    test "empty message" do
+      messages = %Messages{
+        headers: [],
+        messages: [
+          %Message.Singular{msgid: [""]}
+        ]
+      }
+
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
+             msgid ""
+             msgstr ""
+             """
+    end
+
+    test "only comments" do
+      messages = %Messages{
+        headers: [],
+        messages: [],
+        top_comments: ["test"]
+      }
+
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
+             #test
+             msgid ""
+             msgstr ""
+             """
+    end
+
     test "single plural message" do
       messages = %Messages{
         headers: [],
