@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.0
+
+  * Strictly require at least one line of text in `msgid` and `msgstr`.
+
+  * Fix `Expo.PO.compose/1` with only top comments and no headers.
+
 ## v0.3.0
 
   * Add `Expo.PluralForms` for functionality related to the `Plural-Forms`
