@@ -3,7 +3,7 @@ defmodule Expo.Messages do
   A struct that represents lists of `Expo.Message.Singular` and `Expo.Message.Plural`
   structs for MO and PO files.
 
-  All fields in the struct are public. See `t:t/0`.
+  All fields in the struct are public. See [`%Expo.Messages{}`](`__struct__/0`).
   """
 
   alias Expo.{Message, Util}
@@ -15,14 +15,23 @@ defmodule Expo.Messages do
           file: nil | Path.t()
         }
 
+  @doc """
+  The struct to represent a list of messages.
+
+  For the type of each field, see `t:t/0`.
+  """
   @enforce_keys [:messages]
   defstruct headers: [], messages: [], top_comments: [], file: nil
 
   @doc """
-  Rebalances all strings.
+  Re-balances all strings.
 
-    * All headers (see `Expo.Message.Singular.rebalance/1` and `Expo.Message.Plural.rebalance/1`)
-    * Put one string per newline of `headers` and add one empty line at start
+  This function does the following things:
+
+    * Re-balances all headers (see `Expo.Message.Singular.rebalance/1` and
+      `Expo.Message.Plural.rebalance/1`)
+
+    * Puts one string per newline of `headers` and add one empty line at start
 
   ### Examples
 
@@ -68,7 +77,9 @@ defmodule Expo.Messages do
   end
 
   @doc """
-  Get header by name (case insensitive).
+  Gets a header by name.
+
+  The name of the header is case-insensitive.
 
   ### Examples
 
