@@ -4,37 +4,19 @@ defmodule Expo.Message.Plural do
 
   For example:
 
-      ```
       msgid "Cat"
       msgid_plural "Cats"
       msgstr ""
-      ```
 
-  All fields in this struct are public except for `:__meta__`. The `:flags` and `:references`
-  fields are defined as lists of lists in order to represent **lines** in the original file. For
-  example, this message:
-
-      ```
-      #, flag1, flag2
-      #, flag3
-      #: a.ex:1
-      #: b.ex:2 c.ex:3
-      msgid "Hello"
-      msgstr ""
-      ```
-
-  would have:
-
-    * `flags: [["flag1", "flag2"], ["flag3"]]`
-    * `references: [["a.ex:1"], ["b.ex:2", "c.ex:3"]]`
-
-  You can use `Expo.Message.has_flag?/2` to make it easier to check whether a message
-  has a given flag.
+  See [`%Expo.Message.Plural{}`](`__struct__/0`) for documentation on the fields of this struct.
   """
 
   alias Expo.Message
   alias Expo.Util
 
+  @typedoc """
+  The "component" of a message.
+  """
   @type block :: :msgid | {:msgstr, non_neg_integer()} | :msgctxt | :msgid_plural
 
   @opaque meta :: %{optional(:source_line) => %{block() => non_neg_integer()}}
@@ -53,6 +35,28 @@ defmodule Expo.Message.Plural do
           __meta__: meta()
         }
 
+  @doc """
+  The struct for a plural message.
+
+  All fields in this struct are public except for `:__meta__`. The `:flags` and `:references`
+  fields are defined as lists of lists in order to represent **lines** in the original file. For
+  example, this message:
+
+      #, flag1, flag2
+      #, flag3
+      #: a.ex:1
+      #: b.ex:2 c.ex:3
+      msgid "Hello"
+      msgstr ""
+
+  would have:
+
+    * `flags: [["flag1", "flag2"], ["flag3"]]`
+    * `references: [["a.ex:1"], ["b.ex:2", "c.ex:3"]]`
+
+  You can use `Expo.Message.has_flag?/2` to make it easier to check whether a message
+  has a given flag.
+  """
   @enforce_keys [:msgid, :msgid_plural]
   @derive {Inspect, except: [:__meta__]}
   defstruct [
@@ -69,23 +73,38 @@ defmodule Expo.Message.Plural do
     __meta__: %{}
   ]
 
-  @doc false
+  @doc """
+  Returns the **key** of the message.
+
+  The key takes the msgctxt into consideration by returning a tuple `{msgctxt, msgid}`.
+  Both `msgctxt` and `msgid` are normalized to binaries (instead of keeping line information)
+  for easier comparison.
+
+  ## Examples
+
+      iex> Plural.key(%Plural{msgid: ["cat"], msgid_plural: ["cats"]})
+      {"", {"cat", "cats"}}
+
+  """
+  @doc since: "0.5.0"
   @spec key(t()) :: {String.t(), {String.t(), String.t()}}
-  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid, msgid_plural: msgid_plural} = _message),
-    do:
-      {IO.iodata_to_binary(msgctxt || []),
-       {IO.iodata_to_binary(msgid), IO.iodata_to_binary(msgid_plural)}}
+  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid, msgid_plural: msgid_plural} = _message) do
+    {IO.iodata_to_binary(msgctxt || []),
+     {IO.iodata_to_binary(msgid), IO.iodata_to_binary(msgid_plural)}}
+  end
 
   @doc """
-  Rebalances all strings
+  Re-balances all strings in the message.
 
-  * Put one string per newline of `msgid` / `msgid_plural` / `msgstr`
-  * Put all flags onto one line
-  * Put all references onto a separate line
+  This function does these things:
+
+    * Put one string per newline of `msgid`/`msgid_plural`/`msgstr`
+    * Put all flags onto one line
+    * Put all references onto a separate line
 
   ### Examples
 
-      iex> Expo.Message.Plural.rebalance(%Expo.Message.Plural{
+      iex> Plural.rebalance(%Plural{
       ...>   msgid: ["", "hello", "\\n", "", "world", ""],
       ...>   msgid_plural: ["", "hello", "\\n", "", "world", ""],
       ...>   msgstr: %{0 => ["", "hello", "\\n", "", "world", ""]},
@@ -138,13 +157,17 @@ defmodule Expo.Message.Plural do
       ...> msgid_plural "foos"
       ...> msgstr[0] "bar"
       ...> \""")
-      iex> Expo.Message.Plural.source_line_number(message, :msgid)
+      iex> Plural.source_line_number(message, :msgid)
       1
+      iex> Plural.source_line_number(message, {:msgstr, 0})
+      3
 
   """
   @spec source_line_number(t(), block(), default) :: non_neg_integer() | default
         when default: term()
-  def source_line_number(%__MODULE__{__meta__: meta} = _message, block, default \\ nil) do
+  def source_line_number(%__MODULE__{__meta__: meta} = _message, block, default \\ nil)
+      when block in [:msgid, :msgid_plural, :msgctxt] or
+             (is_tuple(block) and elem(block, 0) == :msgstr and is_integer(elem(block, 1))) do
     meta[:source_line][block] || default
   end
 end
