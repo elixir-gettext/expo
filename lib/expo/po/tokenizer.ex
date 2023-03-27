@@ -202,6 +202,19 @@ defmodule Expo.PO.Tokenizer do
     [{:str_lines, line, [string | strings]}, keyword_token | acc]
   end
 
+  # Same as the previous clause, but here we collapse for plural forms.
+  defp add_str_lines(_line, string, [
+         {:str_lines, line, strings},
+         {:plural_form, _plural_form_line, _plural_form} = plural_form_token,
+         {:msgstr, _keyword_line} = keyword_token | acc
+       ]) do
+    [
+      {:str_lines, line, [string | strings]},
+      plural_form_token,
+      keyword_token | acc
+    ]
+  end
+
   # If this str_lines token comes after a "modifier" comment (#| or #~), then
   # we collapse into the previous str_lines token to avoid tokens like:
   # obsolete str_lines obsolete str_lines obsolete str_lines ...
