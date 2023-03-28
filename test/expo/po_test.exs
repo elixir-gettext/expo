@@ -472,6 +472,38 @@ defmodule Expo.POTest do
                """)
     end
 
+    test "parses multiline strings" do
+      assert {:ok,
+              %Messages{
+                messages: [
+                  %Message.Singular{msgid: ["a", "b"], msgstr: ["a", "b"]},
+                  %Expo.Message.Plural{
+                    msgid: ["a", "b"],
+                    msgid_plural: ["a", "bs"],
+                    msgstr: %{
+                      0 => ["a", "b"],
+                      1 => ["a", "bs"]
+                    }
+                  }
+                ]
+              }} =
+               PO.parse_string(~S"""
+               msgid "a"
+               "b"
+               msgstr "a"
+               "b"
+
+               msgid "a"
+               "b"
+               msgid_plural "a"
+               "bs"
+               msgstr[0] "a"
+               "b"
+               msgstr[1] "a"
+               "bs"
+               """)
+    end
+
     test "with obsolete message" do
       assert {:ok,
               %Messages{
