@@ -20,6 +20,8 @@ defmodule Expo.Message.Singular do
 
   @opaque meta :: %{optional(:source_line) => %{block() => non_neg_integer()}}
 
+  @opaque key :: {msgctxt :: String.t(), msgid :: String.t()}
+
   @type t :: %__MODULE__{
           msgid: Message.msgid(),
           msgstr: Message.msgstr(),
@@ -85,7 +87,7 @@ defmodule Expo.Message.Singular do
       {"context", "foo"}
 
   """
-  @spec key(t()) :: {String.t(), String.t()}
+  @spec key(t()) :: key()
   def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid} = _message) do
     {IO.iodata_to_binary(msgctxt || []), IO.iodata_to_binary(msgid)}
   end
@@ -159,5 +161,35 @@ defmodule Expo.Message.Singular do
   def source_line_number(%__MODULE__{__meta__: meta} = _message, block, default \\ nil)
       when block in [:msgid, :msgstr, :msgctxt] do
     meta[:source_line][block] || default
+  end
+
+  @doc """
+  Merges two singular messages.
+
+  ## Examples
+
+      iex> a = %Expo.Message.Singular{msgid: ["test"], flags: ["one"]}
+      ...> b = %Expo.Message.Singular{msgid: ["test"], flags: ["two"]}
+      ...> Expo.Message.Singular.merge(a, b)
+      %Expo.Message.Singular{msgid: ["test"], flags: ["one", "two"]}
+
+  """
+  @doc since: "0.5.0"
+  @spec merge(t(), t()) :: t()
+  def merge(message_1, message_2) do
+    Map.merge(message_1, message_2, fn
+      key, value_1, value_2 when key in [:msgid, :msgstr] ->
+        if IO.iodata_length(value_2) > 0, do: value_2, else: value_1
+
+      :msgctxt, _msgctxt_a, msgctxt_b ->
+        msgctxt_b
+
+      key, value_1, value_2
+      when key in [:comments, :extracted_comments, :flags, :previous_messages, :references] ->
+        Enum.concat(value_1, value_2)
+
+      _key, _value_1, value_2 ->
+        value_2
+    end)
   end
 end

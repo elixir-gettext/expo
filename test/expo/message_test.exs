@@ -13,13 +13,13 @@ defmodule Expo.MessageTest do
     end
 
     test "plural" do
-      assert {"", {"foo", "foos"}} =
+      assert {"", "foo"} =
                Message.key(%Message.Plural{
                  msgid: ["foo"],
                  msgid_plural: ["foos"]
                })
 
-      assert {"ctxt", {"foo", "foos"}} =
+      assert {"ctxt", "foo"} =
                Message.key(%Message.Plural{
                  msgctxt: "ctxt",
                  msgid: ["foo"],

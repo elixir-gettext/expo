@@ -105,6 +105,7 @@ defmodule Expo.PO do
       ...> msgstr ""
       ...> \""")
       ** (Expo.PO.DuplicateMessagesError) 4: found duplicate on line 4 for msgid: 'test'
+      Run mix expo.msguniq with the input file to merge the duplicates
 
   """
   @spec parse_string!(String.t(), [parse_option()]) :: Messages.t()
