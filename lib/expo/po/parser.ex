@@ -183,10 +183,10 @@ defmodule Expo.PO.Parser do
     IO.chardata_to_string(parse_error_reason(error, to_string(token)))
   end
 
-  defp parse_error_reason('syntax error before: ' = prefix, "<<" <> rest),
+  defp parse_error_reason(~c"syntax error before: " = prefix, "<<" <> rest),
     do: [prefix, binary_part(rest, 0, byte_size(rest) - 2)]
 
-  defp parse_error_reason('syntax error before: ' = prefix, "[<<" <> rest),
+  defp parse_error_reason(~c"syntax error before: " = prefix, "[<<" <> rest),
     do: [prefix, binary_part(rest, 0, byte_size(rest) - 3)]
 
   defp parse_error_reason(error, token), do: [error, token]

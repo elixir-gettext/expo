@@ -183,7 +183,7 @@ defmodule Expo.PO.Tokenizer do
   defp tokenize_line(binary, line, _acc) when is_binary(binary) do
     # To get the first Unicode char, we convert to char list first.
     [char | _] = String.to_charlist(binary)
-    msg = :io_lib.format('unexpected token: "~ts" (codepoint U+~4.16.0B)', [[char], char])
+    msg = :io_lib.format(~c"unexpected token: \"~ts\" (codepoint U+~4.16.0B)", [[char], char])
     {:error, line, :unicode.characters_to_binary(msg)}
   end
 
@@ -272,7 +272,7 @@ defmodule Expo.PO.Tokenizer do
 
   defp tokenize_string(<<>>, _acc), do: {:error, "missing token \""}
 
-  defp tokenize_plural_form(<<digit, rest::binary>>, acc) when digit in '0123456789' do
+  defp tokenize_plural_form(<<digit, rest::binary>>, acc) when digit in ~c"0123456789" do
     tokenize_plural_form(rest, <<acc::binary, digit>>)
   end
 
