@@ -15,8 +15,8 @@ jobs:
 
     uses: ./.github/workflows/part_test.yml
     with:
-      elixirVersion: "1.14.0"
-      otpVersion: "25.0.4"
+      elixirVersion: "1.15.7"
+      otpVersion: "26.1"
     secrets:
       CACHE_VERSION: "${{ secrets.CACHE_VERSION }}"
 
@@ -25,8 +25,8 @@ jobs:
 
     uses: ./.github/workflows/part_docs.yml
     with:
-      elixirVersion: "1.14.0"
-      otpVersion: "25.0.4"
+      elixirVersion: "1.15.7"
+      otpVersion: "26.1"
     secrets:
       CACHE_VERSION: "${{ secrets.CACHE_VERSION }}"
 
