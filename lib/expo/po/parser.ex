@@ -13,15 +13,9 @@ defmodule Expo.PO.Parser do
     content = prune_bom(content, Keyword.get(opts, :file, "nofile"))
 
     with {:ok, tokens} <- tokenize(content),
-         {:ok, top_comments, headers, messages} <- parse_tokens(tokens) do
-      po = %Messages{
-        headers: headers,
-        messages: messages,
-        top_comments: top_comments,
-        file: Keyword.get(opts, :file)
-      }
-
-      {:ok, po}
+         {:ok, po} <- parse_tokens(tokens),
+         {:ok, po} <- check_for_duplicates(po) do
+      {:ok, %Messages{po | file: Keyword.get(opts, :file)}}
     else
       {:error, %mod{} = error} when mod in [SyntaxError, DuplicateMessagesError] ->
         {:error, %{error | file: opts[:file]}}
@@ -36,8 +30,15 @@ defmodule Expo.PO.Parser do
   end
 
   defp parse_tokens(tokens) when is_list(tokens) do
-    case :expo_po_parser.parse(tokens) do
-      {:ok, po_entries} -> parse_yecc_result(po_entries)
+    with {:ok, po_entries} <- :expo_po_parser.parse(tokens),
+         {:ok, top_comments, headers, messages} <- parse_yecc_result(po_entries) do
+      {:ok,
+       %Messages{
+         headers: headers,
+         messages: messages,
+         top_comments: top_comments
+       }}
+    else
       {:error, _reason} = error -> parse_error(error)
     end
   end
@@ -49,10 +50,8 @@ defmodule Expo.PO.Parser do
   defp parse_yecc_result({:messages, messages}) do
     unpacked_messages = Enum.map(messages, &unpack_comments/1)
 
-    with :ok <- check_for_duplicates(messages) do
-      {headers, top_comments, messages} = Util.extract_meta_headers(unpacked_messages)
-      {:ok, top_comments, headers, messages}
-    end
+    {headers, top_comments, messages} = Util.extract_meta_headers(unpacked_messages)
+    {:ok, top_comments, headers, messages}
   end
 
   defp unpack_comments(message) do
@@ -120,42 +119,61 @@ defmodule Expo.PO.Parser do
     end)
   end
 
-  defp check_for_duplicates(messages, existing \\ %{}, duplicates \\ [])
+  defp check_for_duplicates(messages, existing \\ %{}, duplicates \\ [], keep \\ [])
 
-  defp check_for_duplicates([message | messages], existing, duplicates) do
+  defp check_for_duplicates(
+         %Messages{messages: [message | messages]} = po,
+         existing,
+         duplicates,
+         keep
+       ) do
     key = Message.key(message)
     source_line = Message.source_line_number(message, :msgid)
 
-    duplicates =
+    {duplicates, keep} =
       case Map.fetch(existing, key) do
         {:ok, old_line} ->
-          [
-            build_duplicated_error(message, old_line, source_line)
-            | duplicates
-          ]
+          {[
+             build_duplicated_error(message, old_line, source_line)
+             | duplicates
+           ], keep}
 
         :error ->
-          duplicates
+          {duplicates, [message | keep]}
       end
 
-    check_for_duplicates(messages, Map.put_new(existing, key, source_line), duplicates)
+    check_for_duplicates(
+      %Messages{po | messages: messages},
+      Map.put_new(existing, key, source_line),
+      duplicates,
+      keep
+    )
   end
 
-  defp check_for_duplicates([], _existing, []), do: :ok
+  defp check_for_duplicates(%Messages{messages: []} = po, _existing, [], keep),
+    do: {:ok, %Messages{po | messages: Enum.reverse(keep)}}
 
-  defp check_for_duplicates([], _existing, duplicates),
-    do: {:error, %DuplicateMessagesError{duplicates: Enum.reverse(duplicates)}}
+  defp check_for_duplicates(%Messages{messages: []} = po, _existing, duplicates, keep),
+    do:
+      {:error,
+       %DuplicateMessagesError{
+         duplicates: Enum.reverse(duplicates),
+         catalogue: %Messages{po | messages: Enum.reverse(keep)}
+       }}
 
-  defp build_duplicated_error(%Message.Singular{} = t, old_line, new_line) do
-    id = IO.iodata_to_binary(t.msgid)
-    {"found duplicate on line #{new_line} for msgid: '#{id}'", new_line, old_line}
+  defp build_duplicated_error(%Message.Singular{} = message, old_line, new_line) do
+    id = IO.iodata_to_binary(message.msgid)
+    {message, "found duplicate on line #{new_line} for msgid: '#{id}'", new_line, old_line}
   end
 
-  defp build_duplicated_error(%Message.Plural{} = t, old_line, new_line) do
-    id = IO.iodata_to_binary(t.msgid)
-    idp = IO.iodata_to_binary(t.msgid_plural)
-    msg = "found duplicate on line #{new_line} for msgid: '#{id}' and msgid_plural: '#{idp}'"
-    {msg, new_line, old_line}
+  defp build_duplicated_error(%Message.Plural{} = message, old_line, new_line) do
+    id = IO.iodata_to_binary(message.msgid)
+    idp = IO.iodata_to_binary(message.msgid_plural)
+
+    error_message =
+      "found duplicate on line #{new_line} for msgid: '#{id}' and msgid_plural: '#{idp}'"
+
+    {message, error_message, new_line, old_line}
   end
 
   defp strip_leading(subject, to_strip) do

@@ -24,9 +24,7 @@ defmodule Expo.Message do
 
   See `key/1`.
   """
-  @opaque key ::
-            {msgctxt :: String.t(),
-             msgid :: String.t() | {msgid :: String.t(), msgid_plural :: String.t()}}
+  @opaque key :: Singular.key() | Plural.key()
 
   @doc """
   Returns a "key" that can be used to identify a message.
@@ -146,5 +144,47 @@ defmodule Expo.Message do
   def source_line_number(%mod{} = message, block, default \\ nil)
       when mod in [Singular, Plural] do
     mod.source_line_number(message, block, default)
+  end
+
+  @doc """
+  Merges two messages.
+
+  ## Examples
+
+      iex> a = %Expo.Message.Singular{msgid: ["test"], flags: ["one"]}
+      ...> b = %Expo.Message.Singular{msgid: ["test"], flags: ["two"]}
+      ...> Expo.Message.merge(a, b)
+      %Expo.Message.Singular{msgid: ["test"], flags: ["one", "two"]}
+
+      iex> a = %Expo.Message.Singular{msgid: ["test"]}
+      ...> b = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["tests"]}
+      ...> Expo.Message.merge(a, b)
+      %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["tests"]}
+
+  """
+  @doc since: "0.5.0"
+  @spec merge(Singular.t(), Singular.t()) :: Singular.t()
+  @spec merge(t(), Plural.t()) :: Plural.t()
+  @spec merge(Plural.t(), t()) :: Plural.t()
+  def merge(%mod{} = message_1, %mod{} = message_2), do: mod.merge(message_1, message_2)
+
+  def merge(%Singular{} = message_1, %Plural{} = message_2),
+    do: Plural.merge(singular_to_plural(message_1), message_2)
+
+  def merge(%Plural{} = message_1, %Singular{} = message_2),
+    do: Plural.merge(message_1, singular_to_plural(message_2))
+
+  defp singular_to_plural(%Singular{msgstr: msgstr} = singular) do
+    msgstr = if IO.iodata_length(msgstr) > 0, do: %{0 => msgstr}, else: %{}
+
+    struct!(
+      Plural,
+      singular
+      |> Map.from_struct()
+      |> Map.merge(%{
+        msgstr: msgstr,
+        msgid_plural: []
+      })
+    )
   end
 end

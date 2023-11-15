@@ -478,11 +478,11 @@ defmodule Expo.POTest do
                 messages: [
                   %Message.Singular{msgid: ["a", "b"], msgstr: ["a", "b"]},
                   %Expo.Message.Plural{
-                    msgid: ["a", "b"],
-                    msgid_plural: ["a", "bs"],
+                    msgid: ["c", "d"],
+                    msgid_plural: ["c", "ds"],
                     msgstr: %{
-                      0 => ["a", "b"],
-                      1 => ["a", "bs"]
+                      0 => ["c", "d"],
+                      1 => ["c", "ds"]
                     }
                   }
                 ]
@@ -493,14 +493,14 @@ defmodule Expo.POTest do
                msgstr "a"
                "b"
 
-               msgid "a"
-               "b"
-               msgid_plural "a"
-               "bs"
-               msgstr[0] "a"
-               "b"
-               msgstr[1] "a"
-               "bs"
+               msgid "c"
+               "d"
+               msgid_plural "c"
+               "ds"
+               msgstr[0] "c"
+               "d"
+               msgstr[1] "c"
+               "ds"
                """)
     end
 
@@ -509,7 +509,7 @@ defmodule Expo.POTest do
               %Messages{
                 messages: [
                   %Message.Singular{
-                    msgid: ["hel", "l", "o"],
+                    msgid: ["h", "i"],
                     msgstr: ["ciao"],
                     comments: [" comment"],
                     obsolete: true
@@ -525,8 +525,8 @@ defmodule Expo.POTest do
               }} =
                PO.parse_string("""
                # comment
-               #~ msgid "hel" "l"
-               #~ "o"
+               #~ msgid "h"
+               #~ "i"
                #~ msgstr "ciao"
 
                # comment
@@ -655,9 +655,12 @@ defmodule Expo.POTest do
       assert {:error,
               %DuplicateMessagesError{
                 duplicates: [
-                  {"found duplicate on line 4 for msgid: 'foo'", 4, 1},
-                  {"found duplicate on line 7 for msgid: 'foo'", 7, 1}
-                ]
+                  {%Message.Singular{msgstr: ["baz"]},
+                   "found duplicate on line 4 for msgid: 'foo'", 4, 1},
+                  {%Message.Singular{msgstr: ["bong"]},
+                   "found duplicate on line 7 for msgid: 'foo'", 7, 1}
+                ],
+                catalogue: %Messages{messages: [%Message.Singular{msgstr: ["bar"]}]}
               }} =
                PO.parse_string("""
                msgid "foo"
@@ -673,7 +676,7 @@ defmodule Expo.POTest do
       # Works if the msgid is split differently as well
       assert {:error,
               %DuplicateMessagesError{
-                duplicates: [{"found duplicate on line 4 for msgid: 'foo'", 4, 1}]
+                duplicates: [{_message, "found duplicate on line 4 for msgid: 'foo'", 4, 1}]
               }} =
                PO.parse_string("""
                msgid "foo" ""
@@ -682,14 +685,33 @@ defmodule Expo.POTest do
                msgid "" "foo"
                msgstr "baz"
                """)
+
+      # Detects duplicates for plural messages as well
+      assert {:error,
+              %DuplicateMessagesError{
+                duplicates: [
+                  {_message,
+                   "found duplicate on line 4 for msgid: 'foo' and msgid_plural: 'foos'", 4, 1}
+                ]
+              }} =
+               PO.parse_string("""
+               msgid "foo"
+               msgstr "bar"
+
+               msgid "foo"
+               msgid_plural "foos"
+               msgstr[0] "baz"
+               """)
     end
 
     test "duplicated plural messages cause an error" do
       assert {:error,
               %DuplicateMessagesError{
                 duplicates: [
-                  {"found duplicate on line 5 for msgid: 'foo' and msgid_plural: 'foos'", 5, 1}
-                ]
+                  {%Message.Plural{msgstr: %{0 => ["baz"]}},
+                   "found duplicate on line 5 for msgid: 'foo' and msgid_plural: 'foos'", 5, 1}
+                ],
+                catalogue: %Messages{messages: [%Message.Plural{msgstr: %{0 => ["bar"]}}]}
               }} =
                PO.parse_string("""
                msgid "foo"
@@ -899,7 +921,8 @@ defmodule Expo.POTest do
     test "file with duplicate messages" do
       fixture_path = "test/fixtures/po/duplicate_messages.po"
 
-      msg = "file:4: found duplicate on line 4 for msgid: 'test'"
+      msg =
+        "file:4: found duplicate on line 4 for msgid: 'test'\nRun mix expo.msguniq file to merge the duplicates"
 
       assert_raise DuplicateMessagesError, msg, fn ->
         PO.parse_string!(File.read!(fixture_path), file: "file")
@@ -1037,7 +1060,9 @@ defmodule Expo.POTest do
 
     test "file with duplicate messages" do
       fixture_path = "test/fixtures/po/duplicate_messages.po"
-      message = "#{fixture_path}:4: found duplicate on line 4 for msgid: 'test'"
+
+      message =
+        "#{fixture_path}:4: found duplicate on line 4 for msgid: 'test'\nRun mix expo.msguniq #{fixture_path} to merge the duplicates"
 
       assert_raise DuplicateMessagesError, message, fn ->
         PO.parse_file!(fixture_path)

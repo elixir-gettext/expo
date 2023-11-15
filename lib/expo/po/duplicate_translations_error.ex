@@ -3,19 +3,37 @@ defmodule Expo.PO.DuplicateMessagesError do
   An error raised when duplicate messages are detected.
   """
 
+  alias Expo.Message
+  alias Expo.Messages
+
   @type t :: %__MODULE__{
           file: Path.t() | nil,
-          duplicates: [{message :: String.t(), line :: pos_integer, original_line: pos_integer}]
+          duplicates: [
+            {message :: Message.t(), error_message :: String.t(), line :: pos_integer,
+             original_line: pos_integer}
+          ],
+          catalogue: Messages.t()
         }
 
-  defexception [:file, :duplicates]
+  defexception [:file, :duplicates, :catalogue]
 
   @impl Exception
   def message(%__MODULE__{file: file, duplicates: duplicates}) do
-    prefix = if file, do: "#{Path.relative_to_cwd(file)}:", else: ""
+    file = if file, do: Path.relative_to_cwd(file)
 
-    Enum.map_join(duplicates, "\n", fn {message, new_line, _old_line} ->
-      "#{prefix}#{new_line}: #{message}"
-    end)
+    prefix = if file, do: [file, ":"], else: []
+
+    fix_description =
+      if file,
+        do: ["Run mix expo.msguniq ", file, " to merge the duplicates"],
+        else: "Run mix expo.msguniq with the input file to merge the duplicates"
+
+    IO.iodata_to_binary([
+      Enum.map(duplicates, fn {_message, error_message, new_line, _old_line} ->
+        [prefix, Integer.to_string(new_line), ": ", error_message]
+      end),
+      "\n",
+      fix_description
+    ])
   end
 end

@@ -21,6 +21,8 @@ defmodule Expo.Message.Plural do
 
   @opaque meta :: %{optional(:source_line) => %{block() => non_neg_integer()}}
 
+  @opaque key :: {msgctxt :: String.t(), msgid :: String.t()}
+
   @type t :: %__MODULE__{
           msgid: Message.msgid(),
           msgid_plural: [Message.msgid()],
@@ -83,14 +85,13 @@ defmodule Expo.Message.Plural do
   ## Examples
 
       iex> Plural.key(%Plural{msgid: ["cat"], msgid_plural: ["cats"]})
-      {"", {"cat", "cats"}}
+      {"", "cat"}
 
   """
   @doc since: "0.5.0"
-  @spec key(t()) :: {String.t(), {String.t(), String.t()}}
-  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid, msgid_plural: msgid_plural} = _message) do
-    {IO.iodata_to_binary(msgctxt || []),
-     {IO.iodata_to_binary(msgid), IO.iodata_to_binary(msgid_plural)}}
+  @spec key(t()) :: key()
+  def key(%__MODULE__{msgctxt: msgctxt, msgid: msgid} = _message) do
+    {IO.iodata_to_binary(msgctxt || []), IO.iodata_to_binary(msgid)}
   end
 
   @doc """
@@ -169,5 +170,44 @@ defmodule Expo.Message.Plural do
       when block in [:msgid, :msgid_plural, :msgctxt] or
              (is_tuple(block) and elem(block, 0) == :msgstr and is_integer(elem(block, 1))) do
     meta[:source_line][block] || default
+  end
+
+  @doc """
+  Merges two plural messages.
+
+  ## Examples
+
+      iex> a = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["one"], flags: ["one"], msgstr: %{0 => "une"}}
+      ...> b = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: ["two"], msgstr: %{2 => "deux"}}
+      ...> Expo.Message.Plural.merge(a, b)
+      %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: ["one", "two"], msgstr: %{0 => "une", 2 => "deux"}}
+
+  """
+  @doc since: "0.5.0"
+  @spec merge(t(), t()) :: t()
+  def merge(message_1, message_2) do
+    Map.merge(message_1, message_2, fn
+      key, value_1, value_2 when key in [:msgid, :msgid_plural] ->
+        if IO.iodata_length(value_2) > 0, do: value_2, else: value_1
+
+      :msgctxt, _msgctxt_a, msgctxt_b ->
+        msgctxt_b
+
+      key, value_1, value_2
+      when key in [:comments, :extracted_comments, :flags, :previous_messages, :references] ->
+        Enum.concat(value_1, value_2)
+
+      :msgstr, msgstr_a, msgstr_b ->
+        merge_msgstr(msgstr_a, msgstr_b)
+
+      _key, _value_1, value_2 ->
+        value_2
+    end)
+  end
+
+  defp merge_msgstr(msgstrs_1, msgstrs_2) do
+    Map.merge(msgstrs_1, msgstrs_2, fn _key, msgstr_1, msgstr_2 ->
+      if IO.iodata_length(msgstr_2) > 0, do: msgstr_2, else: msgstr_1
+    end)
   end
 end
