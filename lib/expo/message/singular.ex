@@ -168,28 +168,28 @@ defmodule Expo.Message.Singular do
 
   ## Examples
 
-      iex> a = %Expo.Message.Singular{msgid: ["test"], flags: ["one"]}
-      ...> b = %Expo.Message.Singular{msgid: ["test"], flags: ["two"]}
-      ...> Expo.Message.Singular.merge(a, b)
+      iex> msg1 = %Expo.Message.Singular{msgid: ["test"], flags: ["one"]}
+      ...> msg2 = %Expo.Message.Singular{msgid: ["test"], flags: ["two"]}
+      ...> Expo.Message.Singular.merge(msg1, msg2)
       %Expo.Message.Singular{msgid: ["test"], flags: ["one", "two"]}
 
   """
   @doc since: "0.5.0"
   @spec merge(t(), t()) :: t()
-  def merge(message_1, message_2) do
-    Map.merge(message_1, message_2, fn
-      key, value_1, value_2 when key in [:msgid, :msgstr] ->
-        if IO.iodata_length(value_2) > 0, do: value_2, else: value_1
+  def merge(message1, message2) do
+    Map.merge(message1, message2, fn
+      key, value1, value2 when key in [:msgid, :msgstr] ->
+        if IO.iodata_length(value2) > 0, do: value2, else: value1
 
       :msgctxt, _msgctxt_a, msgctxt_b ->
         msgctxt_b
 
-      key, value_1, value_2
+      key, value1, value2
       when key in [:comments, :extracted_comments, :flags, :previous_messages, :references] ->
-        Enum.concat(value_1, value_2)
+        Enum.concat(value1, value2)
 
-      _key, _value_1, value_2 ->
-        value_2
+      _key, _value1, value2 ->
+        value2
     end)
   end
 end

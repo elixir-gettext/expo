@@ -177,16 +177,16 @@ defmodule Expo.Message.Plural do
 
   ## Examples
 
-      iex> a = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["one"], flags: ["one"], msgstr: %{0 => "une"}}
-      ...> b = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: ["two"], msgstr: %{2 => "deux"}}
-      ...> Expo.Message.Plural.merge(a, b)
+      iex> msg1 = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["one"], flags: ["one"], msgstr: %{0 => "une"}}
+      ...> msg2 = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: ["two"], msgstr: %{2 => "deux"}}
+      ...> Expo.Message.Plural.merge(msg1, msg2)
       %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: ["one", "two"], msgstr: %{0 => "une", 2 => "deux"}}
 
   """
   @doc since: "0.5.0"
   @spec merge(t(), t()) :: t()
-  def merge(message_1, message_2) do
-    Map.merge(message_1, message_2, fn
+  def merge(message1, message2) do
+    Map.merge(message1, message2, fn
       key, value_1, value_2 when key in [:msgid, :msgid_plural] ->
         if IO.iodata_length(value_2) > 0, do: value_2, else: value_1
 
@@ -205,9 +205,9 @@ defmodule Expo.Message.Plural do
     end)
   end
 
-  defp merge_msgstr(msgstrs_1, msgstrs_2) do
-    Map.merge(msgstrs_1, msgstrs_2, fn _key, msgstr_1, msgstr_2 ->
-      if IO.iodata_length(msgstr_2) > 0, do: msgstr_2, else: msgstr_1
+  defp merge_msgstr(msgstrs1, msgstrs2) do
+    Map.merge(msgstrs1, msgstrs2, fn _key, msgstr1, msgstr2 ->
+      if IO.iodata_length(msgstr2) > 0, do: msgstr2, else: msgstr1
     end)
   end
 end

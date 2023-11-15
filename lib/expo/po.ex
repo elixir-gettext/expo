@@ -97,16 +97,6 @@ defmodule Expo.PO do
       iex> Expo.PO.parse_string!("msgid")
       ** (Expo.PO.SyntaxError) 1: no space after 'msgid'
 
-      iex> Expo.PO.parse_string!(\"""
-      ...> msgid "test"
-      ...> msgstr ""
-      ...>
-      ...> msgid "test"
-      ...> msgstr ""
-      ...> \""")
-      ** (Expo.PO.DuplicateMessagesError) 4: found duplicate on line 4 for msgid: 'test'
-      Run mix expo.msguniq with the input file to merge the duplicates
-
   """
   @spec parse_string!(String.t(), [parse_option()]) :: Messages.t()
   def parse_string!(string, opts \\ []) do

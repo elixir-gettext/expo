@@ -149,16 +149,20 @@ defmodule Expo.Message do
   @doc """
   Merges two messages.
 
+  If both messages are `Expo.Message.Singular`, the result is a singular message.
+  If one of the two messages is a `Expo.Message.Plural`, the result is a plural message.
+  This is consistent with the behavior of GNU Gettext.
+
   ## Examples
 
-      iex> a = %Expo.Message.Singular{msgid: ["test"], flags: ["one"]}
-      ...> b = %Expo.Message.Singular{msgid: ["test"], flags: ["two"]}
-      ...> Expo.Message.merge(a, b)
+      iex> msg1 = %Expo.Message.Singular{msgid: ["test"], flags: ["one"]}
+      ...> msg2 = %Expo.Message.Singular{msgid: ["test"], flags: ["two"]}
+      ...> Expo.Message.merge(msg1, msg2)
       %Expo.Message.Singular{msgid: ["test"], flags: ["one", "two"]}
 
-      iex> a = %Expo.Message.Singular{msgid: ["test"]}
-      ...> b = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["tests"]}
-      ...> Expo.Message.merge(a, b)
+      iex> msg1 = %Expo.Message.Singular{msgid: ["test"]}
+      ...> msg2 = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["tests"]}
+      ...> Expo.Message.merge(msg1, msg2)
       %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["tests"]}
 
   """
@@ -166,25 +170,20 @@ defmodule Expo.Message do
   @spec merge(Singular.t(), Singular.t()) :: Singular.t()
   @spec merge(t(), Plural.t()) :: Plural.t()
   @spec merge(Plural.t(), t()) :: Plural.t()
-  def merge(%mod{} = message_1, %mod{} = message_2), do: mod.merge(message_1, message_2)
+  def merge(message1, message2)
 
-  def merge(%Singular{} = message_1, %Plural{} = message_2),
-    do: Plural.merge(singular_to_plural(message_1), message_2)
+  def merge(%mod{} = msg1, %mod{} = msg2), do: mod.merge(msg1, msg2)
+  def merge(%Singular{} = msg1, %Plural{} = msg2), do: Plural.merge(to_plural(msg1), msg2)
+  def merge(%Plural{} = msg1, %Singular{} = msg2), do: Plural.merge(msg1, to_plural(msg2))
 
-  def merge(%Plural{} = message_1, %Singular{} = message_2),
-    do: Plural.merge(message_1, singular_to_plural(message_2))
-
-  defp singular_to_plural(%Singular{msgstr: msgstr} = singular) do
+  defp to_plural(%Singular{msgstr: msgstr} = singular) do
     msgstr = if IO.iodata_length(msgstr) > 0, do: %{0 => msgstr}, else: %{}
 
-    struct!(
-      Plural,
+    attributes =
       singular
       |> Map.from_struct()
-      |> Map.merge(%{
-        msgstr: msgstr,
-        msgid_plural: []
-      })
-    )
+      |> Map.merge(%{msgstr: msgstr, msgid_plural: []})
+
+    struct!(Plural, attributes)
   end
 end

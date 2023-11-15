@@ -921,8 +921,13 @@ defmodule Expo.POTest do
     test "file with duplicate messages" do
       fixture_path = "test/fixtures/po/duplicate_messages.po"
 
-      msg =
-        "file:4: found duplicate on line 4 for msgid: 'test'\nRun mix expo.msguniq file to merge the duplicates"
+      msg = """
+      file:4: found duplicate on line 4 for msgid: 'test'
+
+      To merge the duplicates, run:
+
+        mix expo.msguniq file
+      """
 
       assert_raise DuplicateMessagesError, msg, fn ->
         PO.parse_string!(File.read!(fixture_path), file: "file")
@@ -1061,8 +1066,13 @@ defmodule Expo.POTest do
     test "file with duplicate messages" do
       fixture_path = "test/fixtures/po/duplicate_messages.po"
 
-      message =
-        "#{fixture_path}:4: found duplicate on line 4 for msgid: 'test'\nRun mix expo.msguniq #{fixture_path} to merge the duplicates"
+      message = """
+      #{fixture_path}:4: found duplicate on line 4 for msgid: 'test'
+
+      To merge the duplicates, run:
+
+        mix expo.msguniq #{fixture_path}
+      """
 
       assert_raise DuplicateMessagesError, message, fn ->
         PO.parse_file!(fixture_path)

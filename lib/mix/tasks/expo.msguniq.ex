@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.Expo.Msguniq do
-  @shortdoc "Unify duplicate translations in message catalog"
+  @shortdoc "Unifies duplicate translations in message catalog"
 
   @moduledoc """
   Unifies duplicate translations in the given PO file.
@@ -7,14 +7,16 @@ defmodule Mix.Tasks.Expo.Msguniq do
   By default, this task outputs the file on standard output. If you want to
   *overwrite* the given PO file, pass in the `--output` flag.
 
+  *This task is available since v0.5.0.*
+
   ## Usage
 
       mix expo.msguniq PO_FILE [--output=OUTPUT_FILE]
 
   ## Options
 
-  * `--output-file` (`-o`) - Default: `-` - File to store the output at. `-` for
-    STDOUT.
+  * `--output-file` (`-o`) - File to store the output in. `-` for
+    standard output. Defaults to `-`.
 
   """
   @moduledoc since: "0.5.0"
@@ -26,18 +28,14 @@ defmodule Mix.Tasks.Expo.Msguniq do
   alias Expo.PO
   alias Expo.PO.DuplicateMessagesError
 
-  @switches [
-    output_file: :string
-  ]
-  @aliases [
-    o: :output_file
-  ]
+  @switches [output_file: :string]
+  @aliases [o: :output_file]
   @default_options [output_file: "-"]
 
   @impl Mix.Task
   def run(args) do
-    Application.ensure_all_started(:expo)
-    {opts, argv} = OptionParser.parse!(args, switches: @switches, aliases: @aliases)
+    {:ok, _} = Application.ensure_all_started(:expo)
+    {opts, argv} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
     opts = Keyword.merge(@default_options, opts)
 

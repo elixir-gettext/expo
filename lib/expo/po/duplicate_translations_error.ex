@@ -6,6 +6,9 @@ defmodule Expo.PO.DuplicateMessagesError do
   alias Expo.Message
   alias Expo.Messages
 
+  @typedoc """
+  The type for this exception struct.
+  """
   @type t :: %__MODULE__{
           file: Path.t() | nil,
           duplicates: [
@@ -19,21 +22,26 @@ defmodule Expo.PO.DuplicateMessagesError do
 
   @impl Exception
   def message(%__MODULE__{file: file, duplicates: duplicates}) do
-    file = if file, do: Path.relative_to_cwd(file)
+    file = file && Path.relative_to_cwd(file)
 
     prefix = if file, do: [file, ":"], else: []
 
     fix_description =
-      if file,
-        do: ["Run mix expo.msguniq ", file, " to merge the duplicates"],
-        else: "Run mix expo.msguniq with the input file to merge the duplicates"
+      if file do
+        """
+        To merge the duplicates, run:
 
-    IO.iodata_to_binary([
+          mix expo.msguniq #{file}
+        """
+      else
+        ~s(To merge the duplicates, run "mix expo.msguniq" with the input file)
+      end
+
+    errors =
       Enum.map(duplicates, fn {_message, error_message, new_line, _old_line} ->
         [prefix, Integer.to_string(new_line), ": ", error_message]
-      end),
-      "\n",
-      fix_description
-    ])
+      end)
+
+    IO.iodata_to_binary([errors, "\n\n", fix_description])
   end
 end
