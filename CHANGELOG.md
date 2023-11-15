@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.5.0
+
+  * Add `mix expo.msquniq` Mix task.
+  * Detect duplicates for messages and *plural* messages.
+  * Fix the `Expo.Message.msgctxt/0` type.
+  * Add the `Expo.Message.split_lines/0` type.
+  * Add `Expo.Message.merge/2`, `Expo.Message.Singular.merge/2`, and `Expo.Message.Plural.merge/2`.
+  * Add `Expo.Message.Plural.key/1`.
+
 ## v0.4.1
 
   * Fix a bug with parsing multiline strings for plural messages
