@@ -8,6 +8,9 @@ defmodule Expo.Messages do
 
   alias Expo.{Message, Util}
 
+  @typedoc """
+  The type for this struct.
+  """
   @type t :: %__MODULE__{
           headers: [String.t()],
           top_comments: [[String.t()]],

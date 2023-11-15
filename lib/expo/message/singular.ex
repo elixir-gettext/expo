@@ -18,10 +18,21 @@ defmodule Expo.Message.Singular do
   """
   @type block :: :msgid | :msgstr | :msgctxt
 
+  @typedoc """
+  Metadata for this struct.
+  """
   @opaque meta :: %{optional(:source_line) => %{block() => non_neg_integer()}}
 
+  @typedoc """
+  The key that identifies this message.
+  """
   @opaque key :: {msgctxt :: String.t(), msgid :: String.t()}
 
+  @typedoc """
+  The type for this struct.
+
+  See [`%__MODULE__{}`](`__struct__/0`) for documentation on the fields of this struct.
+  """
   @type t :: %__MODULE__{
           msgid: Message.msgid(),
           msgstr: Message.msgstr(),

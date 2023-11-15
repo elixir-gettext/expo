@@ -13,10 +13,33 @@ defmodule Expo.Message do
 
   alias Expo.Message.{Plural, Singular}
 
-  @type msgid :: [String.t(), ...]
-  @type msgstr :: [String.t(), ...]
-  @type msgctxt :: [String.t(), ...]
+  @typedoc """
+  A list of strings representing *lines*.
 
+  This type is used for types such as `t:msgid/0`. The list of strings
+  represents the message split into multiple lines, as parsed from a PO(T) file.
+  """
+  @typedoc since: "0.5.0"
+  @type split_string() :: [String.t(), ...]
+
+  @typedoc """
+  The `msgid` of a message.
+  """
+  @type msgid :: split_string()
+
+  @typedoc """
+  The `msgstr` of a message.
+  """
+  @type msgstr :: split_string()
+
+  @typedoc """
+  The `msgctxt` of a message.
+  """
+  @type msgctxt :: split_string()
+
+  @typedoc """
+  A type for either a singular or a plural message.
+  """
   @type t :: Singular.t() | Plural.t()
 
   @typedoc """
