@@ -118,7 +118,6 @@ defmodule Expo.Message do
       when mod in [Singular, Plural] and is_binary(flag),
       do: raw_has_flag?(flags, flag)
 
-  @spec raw_has_flag?([[String.t()]], String.t()) :: boolean()
   defp raw_has_flag?(flags, flag) when is_list(flags) when is_binary(flag),
     do: flag in List.flatten(flags)
 
