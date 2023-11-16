@@ -188,31 +188,36 @@ defmodule Expo.Message.Plural do
 
   ## Examples
 
-      iex> msg1 = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["one"], flags: ["one"], msgstr: %{0 => "une"}}
-      ...> msg2 = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: ["two"], msgstr: %{2 => "deux"}}
+      iex> msg1 = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["one"], flags: [["one"]], msgstr: %{0 => "une"}}
+      ...> msg2 = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: [["two"]], msgstr: %{2 => "deux"}}
       ...> Expo.Message.Plural.merge(msg1, msg2)
-      %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: ["one", "two"], msgstr: %{0 => "une", 2 => "deux"}}
+      %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["two"], flags: [["two", "one"]], msgstr: %{0 => "une", 2 => "deux"}}
 
   """
   @doc since: "0.5.0"
   @spec merge(t(), t()) :: t()
-  def merge(message1, message2) do
+  def merge(%__MODULE__{} = message1, %__MODULE__{} = message2) do
     Map.merge(message1, message2, fn
-      key, value_1, value_2 when key in [:msgid, :msgid_plural] ->
-        if IO.iodata_length(value_2) > 0, do: value_2, else: value_1
+      key, value1, value2 when key in [:msgid, :msgid_plural] ->
+        if IO.iodata_length(value2) > 0, do: value2, else: value1
 
-      :msgctxt, _msgctxt_a, msgctxt_b ->
-        msgctxt_b
+      :msgctxt, _msgctxt1, msgctxt2 ->
+        msgctxt2
 
-      key, value_1, value_2
-      when key in [:comments, :extracted_comments, :flags, :previous_messages, :references] ->
-        Enum.concat(value_1, value_2)
+      :flags, flags1, flags2 ->
+        flags1
+        |> List.flatten()
+        |> Enum.reduce(flags2, &Message.raw_append_flag(&2, &1))
 
-      :msgstr, msgstr_a, msgstr_b ->
-        merge_msgstr(msgstr_a, msgstr_b)
+      key, value1, value2
+      when key in [:comments, :extracted_comments, :previous_messages, :references] ->
+        Enum.uniq(Enum.concat(value2, value1))
 
-      _key, _value_1, value_2 ->
-        value_2
+      :msgstr, msgstr1, msgstr2 ->
+        merge_msgstr(msgstr1, msgstr2)
+
+      _key, _value1, value2 ->
+        value2
     end)
   end
 
