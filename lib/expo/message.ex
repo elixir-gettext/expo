@@ -115,9 +115,12 @@ defmodule Expo.Message do
   """
   @spec has_flag?(t(), String.t()) :: boolean()
   def has_flag?(%mod{flags: flags} = _message, flag)
-      when mod in [Singular, Plural] and is_binary(flag) do
-    flag in List.flatten(flags)
-  end
+      when mod in [Singular, Plural] and is_binary(flag),
+      do: raw_has_flag?(flags, flag)
+
+  @spec raw_has_flag?([[String.t()]], String.t()) :: boolean()
+  defp raw_has_flag?(flags, flag) when is_list(flags) when is_binary(flag),
+    do: flag in List.flatten(flags)
 
   @doc """
   Appends the given `flag` to the given `message`.
@@ -132,19 +135,21 @@ defmodule Expo.Message do
 
   """
   @spec append_flag(t(), String.t()) :: t()
-  def append_flag(%mod{flags: flags} = message, flag) when mod in [Singular, Plural] do
-    flags =
-      if has_flag?(message, flag) do
-        flags
-      else
-        case flags do
-          [] -> [[flag]]
-          [flag_line] -> [flag_line ++ [flag]]
-          _multiple_lines -> flags ++ [[flag]]
-        end
-      end
+  def append_flag(%mod{flags: flags} = message, flag) when mod in [Singular, Plural],
+    do: struct!(message, flags: raw_append_flag(flags, flag))
 
-    struct!(message, flags: flags)
+  @doc false
+  @spec raw_append_flag([[String.t()]], String.t()) :: [[String.t()]]
+  def raw_append_flag(flags, flag) when is_list(flags) when is_binary(flag) do
+    if raw_has_flag?(flags, flag) do
+      flags
+    else
+      case flags do
+        [] -> [[flag]]
+        [flag_line] -> [flag_line ++ [flag]]
+        _multiple_lines -> flags ++ [[flag]]
+      end
+    end
   end
 
   @doc """
@@ -178,10 +183,10 @@ defmodule Expo.Message do
 
   ## Examples
 
-      iex> msg1 = %Expo.Message.Singular{msgid: ["test"], flags: ["one"]}
-      ...> msg2 = %Expo.Message.Singular{msgid: ["test"], flags: ["two"]}
+      iex> msg1 = %Expo.Message.Singular{msgid: ["test"], flags: [["one"]]}
+      ...> msg2 = %Expo.Message.Singular{msgid: ["test"], flags: [["one", "two"]]}
       ...> Expo.Message.merge(msg1, msg2)
-      %Expo.Message.Singular{msgid: ["test"], flags: ["one", "two"]}
+      %Expo.Message.Singular{msgid: ["test"], flags: [["one", "two"]]}
 
       iex> msg1 = %Expo.Message.Singular{msgid: ["test"]}
       ...> msg2 = %Expo.Message.Plural{msgid: ["test"], msgid_plural: ["tests"]}

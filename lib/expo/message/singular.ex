@@ -179,25 +179,30 @@ defmodule Expo.Message.Singular do
 
   ## Examples
 
-      iex> msg1 = %Expo.Message.Singular{msgid: ["test"], flags: ["one"]}
-      ...> msg2 = %Expo.Message.Singular{msgid: ["test"], flags: ["two"]}
+      iex> msg1 = %Expo.Message.Singular{msgid: ["test"], flags: [["one"]]}
+      ...> msg2 = %Expo.Message.Singular{msgid: ["test"], flags: [["two"]]}
       ...> Expo.Message.Singular.merge(msg1, msg2)
-      %Expo.Message.Singular{msgid: ["test"], flags: ["one", "two"]}
+      %Expo.Message.Singular{msgid: ["test"], flags: [["two", "one"]]}
 
   """
   @doc since: "0.5.0"
   @spec merge(t(), t()) :: t()
-  def merge(message1, message2) do
+  def merge(%__MODULE__{} = message1, %__MODULE__{} = message2) do
     Map.merge(message1, message2, fn
       key, value1, value2 when key in [:msgid, :msgstr] ->
         if IO.iodata_length(value2) > 0, do: value2, else: value1
 
-      :msgctxt, _msgctxt_a, msgctxt_b ->
-        msgctxt_b
+      :msgctxt, _msgctxt1, msgctxt2 ->
+        msgctxt2
+
+      :flags, flags1, flags2 ->
+        flags1
+        |> List.flatten()
+        |> Enum.reduce(flags2, &Message.raw_append_flag(&2, &1))
 
       key, value1, value2
-      when key in [:comments, :extracted_comments, :flags, :previous_messages, :references] ->
-        Enum.concat(value1, value2)
+      when key in [:comments, :extracted_comments, :previous_messages, :references] ->
+        Enum.uniq(Enum.concat(value1, value2))
 
       _key, _value1, value2 ->
         value2

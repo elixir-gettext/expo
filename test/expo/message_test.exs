@@ -98,4 +98,31 @@ defmodule Expo.MessageTest do
       assert %Message.Plural{flags: [["one"]]} = Message.append_flag(plural, "one")
     end
   end
+
+  describe "merge/2" do
+    test "merges messages" do
+      msg1 = %Message.Singular{
+        msgid: ["test"],
+        flags: [["one"], ["two"]],
+        comments: ["one", "two"],
+        msgstr: ["une"]
+      }
+
+      msg2 = %Message.Plural{
+        msgid: ["test"],
+        msgid_plural: ["two"],
+        flags: [["two"]],
+        comments: ["two"],
+        msgstr: %{2 => ["deux"]}
+      }
+
+      assert %Message.Plural{
+               msgid: ["test"],
+               msgid_plural: ["two"],
+               flags: [["two", "one"]],
+               comments: ["two", "one"],
+               msgstr: %{0 => ["une"], 2 => ["deux"]}
+             } = Message.merge(msg1, msg2)
+    end
+  end
 end
