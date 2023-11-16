@@ -926,7 +926,7 @@ defmodule Expo.POTest do
 
       To merge the duplicates, run:
 
-        mix expo.msguniq file
+        mix expo.msguniq file --output-file file
       """
 
       assert_raise DuplicateMessagesError, msg, fn ->
@@ -1071,7 +1071,7 @@ defmodule Expo.POTest do
 
       To merge the duplicates, run:
 
-        mix expo.msguniq #{fixture_path}
+        mix expo.msguniq #{fixture_path} --output-file #{fixture_path}
       """
 
       assert_raise DuplicateMessagesError, message, fn ->
