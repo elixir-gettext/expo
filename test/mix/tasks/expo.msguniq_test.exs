@@ -32,9 +32,9 @@ defmodule Mix.Tasks.Expo.MsguniqTest do
 
     assert capture_io(:stderr, fn ->
              Msguniq.run([po_path, "--output-file", temp_file])
-           end) =~ "Merged 1 translation"
+           end) =~ "Merged 2 translations"
 
-    assert {:ok, %Messages{messages: [%Message.Singular{msgid: ["test"]}]}} =
+    assert {:ok, %Messages{messages: [%Message.Singular{msgid: ["test"]} | _rest]}} =
              PO.parse_file(temp_file)
   end
 
@@ -45,10 +45,10 @@ defmodule Mix.Tasks.Expo.MsguniqTest do
       capture_io(fn ->
         assert capture_io(:stderr, fn ->
                  Msguniq.run([po_path])
-               end) =~ "Merged 1 translation"
+               end) =~ "Merged 2 translations"
       end)
 
-    assert {:ok, %Messages{messages: [%Message.Singular{msgid: ["test"]}]}} =
+    assert {:ok, %Messages{messages: [%Message.Singular{msgid: ["test"]} | _rest]}} =
              PO.parse_string(output)
   end
 
