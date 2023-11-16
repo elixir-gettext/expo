@@ -11,7 +11,7 @@ defmodule Mix.Tasks.Expo.Msguniq do
 
   ## Usage
 
-      mix expo.msguniq PO_FILE [--output=OUTPUT_FILE]
+      mix expo.msguniq PO_FILE [--output-file=OUTPUT_FILE]
 
   ## Options
 
@@ -71,6 +71,7 @@ defmodule Mix.Tasks.Expo.Msguniq do
           duplicates
           |> Enum.reduce(catalogue, &merge_duplicate/2)
           |> PO.compose()
+          |> Enum.map(&List.wrap/1)
 
         _output = Enum.into(po, output)
 

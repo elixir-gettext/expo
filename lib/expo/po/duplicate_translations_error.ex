@@ -31,7 +31,7 @@ defmodule Expo.PO.DuplicateMessagesError do
         """
         To merge the duplicates, run:
 
-          mix expo.msguniq #{file}
+          mix expo.msguniq #{file} --output-file #{file}
         """
       else
         ~s(To merge the duplicates, run "mix expo.msguniq" with the input file)
@@ -39,9 +39,9 @@ defmodule Expo.PO.DuplicateMessagesError do
 
     errors =
       Enum.map(duplicates, fn {_message, error_message, new_line, _old_line} ->
-        [prefix, Integer.to_string(new_line), ": ", error_message]
+        [prefix, Integer.to_string(new_line), ": ", error_message, ?\n]
       end)
 
-    IO.iodata_to_binary([errors, "\n\n", fix_description])
+    IO.iodata_to_binary([errors, ?\n, fix_description])
   end
 end
