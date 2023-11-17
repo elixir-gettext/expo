@@ -923,6 +923,7 @@ defmodule Expo.POTest do
 
       msg = """
       file:4: found duplicate on line 4 for msgid: 'test'
+      file:10: found duplicate on line 10 for msgid: 'other'
 
       To merge the duplicates, run:
 
@@ -1068,6 +1069,7 @@ defmodule Expo.POTest do
 
       message = """
       #{fixture_path}:4: found duplicate on line 4 for msgid: 'test'
+      #{fixture_path}:10: found duplicate on line 10 for msgid: 'other'
 
       To merge the duplicates, run:
 

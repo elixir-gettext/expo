@@ -3,3 +3,9 @@ msgstr ""
 
 msgid "test"
 msgstr ""
+
+msgid "other"
+msgstr ""
+
+msgid "other"
+msgstr ""
