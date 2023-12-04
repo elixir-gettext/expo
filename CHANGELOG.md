@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+* Fix instruction commands for `Expo.PO.DuplicateMessagesError`.
+* Fix `FunctionClauseError` in `msguniq` Mix task.
+* Fix duplicated flags and comments for `Expo.Message.merge/2`.
+
 ## v0.5.0
 
   * Add `mix expo.msquniq` Mix task.
