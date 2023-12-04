@@ -4,7 +4,7 @@
 
 * Fix instruction commands for `Expo.PO.DuplicateMessagesError`.
 * Fix `FunctionClauseError` in `msguniq` Mix task.
-* Fix duplicated flags & comments for `Expo.Message.merge/2`.
+* Fix duplicated flags and comments for `Expo.Message.merge/2`.
 
 ## v0.5.0
 
