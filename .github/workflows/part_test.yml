@@ -38,7 +38,7 @@ jobs:
           key: deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
             deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-
-      - run: mix deps.get
+      - run: mix deps.get --check-locked
       - uses: actions/cache@v3
         with:
           path: _build/test
@@ -87,7 +87,7 @@ jobs:
           key: deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
             deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-
-      - run: mix deps.get
+      - run: mix deps.get --check-locked
       - uses: actions/cache@v3
         with:
           path: _build/test
@@ -126,7 +126,7 @@ jobs:
           key: deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
             deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-
-      - run: mix deps.get
+      - run: mix deps.get --check-locked
       - uses: actions/cache@v3
         with:
           path: _build/dev
@@ -159,7 +159,7 @@ jobs:
           key: deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
             deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-
-      - run: mix deps.get
+      - run: mix deps.get --check-locked
       - uses: actions/cache@v3
         with:
           path: _build/dev
@@ -204,7 +204,7 @@ jobs:
           key: deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
             deps-${{ secrets.CACHE_VERSION }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-
-      - run: mix deps.get
+      - run: mix deps.get --check-locked
       - uses: actions/cache@v3
         with:
           path: _build/dev
