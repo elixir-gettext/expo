@@ -12,6 +12,7 @@ defmodule Expo.MixProject do
       version: @version,
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
+      compilers: [:yecc] ++ Mix.compilers(),
       deps: deps(),
       docs: docs(),
       test_coverage: [tool: ExCoveralls],
