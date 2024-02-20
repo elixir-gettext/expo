@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.2
+
+* Fix Elixir 1.16 deprecations
+
 ## v0.5.1
 
 * Fix instruction commands for `Expo.PO.DuplicateMessagesError`.
