@@ -42,7 +42,7 @@ defmodule Expo.PO.Composer do
 
     [
       dump_comments(t.comments, line_prefix),
-      dump_comments(t.extracted_comments, line_prefix),
+      dump_extracted_comments(t.extracted_comments, line_prefix),
       dump_references(t.references, line_prefix),
       dump_flags(t.flags, line_prefix),
       dump_previous_messages(t.previous_messages, line_prefix),
