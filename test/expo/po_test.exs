@@ -135,6 +135,110 @@ defmodule Expo.POTest do
              """
     end
 
+    test "message with both comments and extracted comments" do
+      messages = %Messages{
+        headers: [],
+        messages: [
+          %Message.Singular{
+            msgid: ["foo"],
+            msgstr: ["bar"],
+            extracted_comments: [" some comment", " another extracted comment"],
+            comments: [" comment", " another comment"]
+          }
+        ]
+      }
+
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
+             # comment
+             # another comment
+             #. some comment
+             #. another extracted comment
+             msgid "foo"
+             msgstr "bar"
+             """
+    end
+
+    test "plural message with comments" do
+      messages = %Messages{
+        headers: [],
+        messages: [
+          %Message.Plural{
+            msgid: ["one foo"],
+            msgid_plural: ["%{count} foos"],
+            msgstr: %{
+              0 => ["one bar"],
+              1 => ["%{count} bars"]
+            },
+            comments: [" comment", " another comment"]
+          }
+        ]
+      }
+
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
+             # comment
+             # another comment
+             msgid "one foo"
+             msgid_plural "%{count} foos"
+             msgstr[0] "one bar"
+             msgstr[1] "%{count} bars"
+             """
+    end
+
+    test "plural message with extracted comments" do
+      messages = %Messages{
+        headers: [],
+        messages: [
+          %Message.Plural{
+            msgid: ["one foo"],
+            msgid_plural: ["%{count} foos"],
+            msgstr: %{
+              0 => ["one bar"],
+              1 => ["%{count} bars"]
+            },
+            extracted_comments: [" some comment", " another comment"]
+          }
+        ]
+      }
+
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
+             #. some comment
+             #. another comment
+             msgid "one foo"
+             msgid_plural "%{count} foos"
+             msgstr[0] "one bar"
+             msgstr[1] "%{count} bars"
+             """
+    end
+
+    test "plural message with both comments and extracted comments" do
+      messages = %Messages{
+        headers: [],
+        messages: [
+          %Message.Plural{
+            msgid: ["one foo"],
+            msgid_plural: ["%{count} foos"],
+            msgstr: %{
+              0 => ["one bar"],
+              1 => ["%{count} bars"]
+            },
+            extracted_comments: [" some comment", " another extracted comment"],
+            comments: [" comment", " another comment"]
+          }
+        ]
+      }
+
+      assert IO.iodata_to_binary(PO.compose(messages)) == ~S"""
+             # comment
+             # another comment
+             #. some comment
+             #. another extracted comment
+             msgid "one foo"
+             msgid_plural "%{count} foos"
+             msgstr[0] "one bar"
+             msgstr[1] "%{count} bars"
+             """
+    end
+
     test "references" do
       messages = %Messages{
         messages: [
@@ -609,6 +713,29 @@ defmodule Expo.POTest do
                #.Another extracted comment
                msgid "foo"
                msgstr "bar"
+               """)
+
+      assert message.extracted_comments == [
+               " Extracted comment",
+               "Another extracted comment"
+             ]
+
+      # All the reference comments are removed.
+      assert message.comments == [
+               " Not an extracted comment"
+             ]
+    end
+
+    test "extracted comments are extracted into the :extracted_comments field of a plural message" do
+      assert {:ok, %Messages{messages: [%Message.Plural{} = message]}} =
+               PO.parse_string("""
+               #. Extracted comment
+               # Not an extracted comment
+               #.Another extracted comment
+               msgid "foo"
+               msgid_plural "foos"
+               msgstr[0] "bar"
+               msgstr[1] "bars"
                """)
 
       assert message.extracted_comments == [

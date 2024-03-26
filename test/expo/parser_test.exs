@@ -390,6 +390,29 @@ defmodule Expo.ParserTest do
                msgstr[0] "bar"
                """)
     end
+
+    test "are associated with plural messages" do
+      assert [
+               %Message.Plural{
+                 msgid: ["foo"],
+                 msgid_plural: ["foos"],
+                 msgstr: %{0 => ["bar"], 1 => ["bars"]},
+                 comments: [" This is a message", " Ah, another comment!"],
+                 extracted_comments: [" An extracted comment"],
+                 references: [[{"lib/foo.ex", 32}]]
+               }
+             ] =
+               parse("""
+               # This is a message
+               #: lib/foo.ex:32
+               # Ah, another comment!
+               #. An extracted comment
+               msgid "foo"
+               msgid_plural "foos"
+               msgstr[0] "bar"
+               msgstr[1] "bars"
+               """)
+    end
   end
 
   defp parse(string) do
