@@ -27,7 +27,7 @@ It can also *write* well-formed PO, POT, and MO files:
 "priv/gettext/default.pot"
 |> Expo.PO.parse_file!()
 |> Expo.PO.compose()
-|> then(fn content -> File.write!("priv/gettext/copy.pot") end)
+|> then(fn content -> File.write!("priv/gettext/copy.pot", content) end)
 ```
 
 This library can also parse [`Plural-Form`
