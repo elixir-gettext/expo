@@ -29,10 +29,3 @@ jobs:
       otpVersion: "26.2"
     secrets:
       CACHE_VERSION: "${{ secrets.CACHE_VERSION }}"
-
-  dependabot:
-    name: "Dependabot"
-
-    needs: ["test", "docs"]
-
-    uses: ./.github/workflows/part_dependabot.yml
