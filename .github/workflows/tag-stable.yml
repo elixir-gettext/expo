@@ -36,8 +36,8 @@ jobs:
 
     uses: ./.github/workflows/part_docs.yml
     with:
-      elixirVersion: "1.16.0"
-      otpVersion: "26.2"
+      elixirVersion: "1.17.0"
+      otpVersion: "27.0"
       releaseName: "${{ github.ref_name }}"
     secrets:
       CACHE_VERSION: "${{ secrets.CACHE_VERSION }}"

@@ -60,10 +60,10 @@ jobs:
           - otp: '21.3'
             elixir: '1.11'
             runs-on: ubuntu-20.04
-          - otp: '26.2'
-            elixir: '1.16'
+          - otp: '27.0'
+            elixir: '1.17'
             runs-on: ubuntu-latest
-          - otp: '26.2'
+          - otp: '27.0'
             elixir: 'main'
             runs-on: ubuntu-latest
           - otp: '${{ inputs.otpVersion }}'
