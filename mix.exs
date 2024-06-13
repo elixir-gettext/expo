@@ -67,7 +67,7 @@ defmodule Expo.MixProject do
   defp deps do
     [
       # Dev/test dependencies
-      {:credo, "~> 1.0", only: [:dev], runtime: false},
+      {:credo, "~> 1.7", only: [:dev], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:ex_doc, ">= 0.0.0", only: [:dev], runtime: false},
       {:excoveralls, "~> 0.17", only: [:test], runtime: false}
