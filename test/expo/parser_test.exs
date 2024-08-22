@@ -415,6 +415,45 @@ defmodule Expo.ParserTest do
     end
   end
 
+  describe "unescaping" do
+    test "unescapes special characters" do
+      assert [
+               %Message.Singular{
+                 msgid: ["backslash"],
+                 msgstr: [<<?\\::utf8>>]
+               },
+               %Message.Singular{
+                 msgid: ["double backslash"],
+                 msgstr: [<<?\\::utf8, ?\\::utf8>>]
+               },
+               %Message.Singular{
+                 msgid: ["tab"],
+                 msgstr: [<<?\t::utf8>>]
+               },
+               %Message.Singular{
+                 msgid: ["newline"],
+                 msgstr: [<<?\r::utf8, ?\n::utf8>>]
+               },
+               %Message.Singular{
+                 msgid: ["quote"],
+                 msgstr: [<<?"::utf8>>]
+               }
+             ] =
+               parse(~S"""
+               msgid "backslash"
+               msgstr "\\"
+               msgid "double backslash"
+               msgstr "\\\\"
+               msgid "tab"
+               msgstr "\t"
+               msgid "newline"
+               msgstr "\r\n"
+               msgid "quote"
+               msgstr "\""
+               """)
+    end
+  end
+
   defp parse(string) do
     case PO.parse_string(string) do
       {:ok, %Messages{messages: messages}} ->

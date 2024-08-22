@@ -135,5 +135,6 @@ defmodule Expo.PO.Composer do
   defp escape_char(?\n), do: ~S(\n)
   defp escape_char(?\t), do: ~S(\t)
   defp escape_char(?\r), do: ~S(\r)
+  defp escape_char(?\\), do: <<?\\::utf8, ?\\::utf8>>
   defp escape_char(char), do: <<char>>
 end
