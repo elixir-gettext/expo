@@ -417,7 +417,8 @@ defmodule Expo.POTest do
         headers: [],
         messages: [
           %Message.Singular{msgid: [~s("quotes")], msgstr: [~s(foo "bar" baz)]},
-          %Message.Singular{msgid: [~s(new\nlines\r)], msgstr: [~s(and\ttabs)]}
+          %Message.Singular{msgid: [~s(new\nlines\r)], msgstr: [~s(and\ttabs)]},
+          %Message.Singular{msgid: [~s(backslashes\\)], msgstr: [~s(and \\\\ double backslashes)]}
         ]
       }
 
@@ -427,6 +428,9 @@ defmodule Expo.POTest do
 
              msgid "new\nlines\r"
              msgstr "and\ttabs"
+
+             msgid "backslashes\\"
+             msgstr "and \\\\ double backslashes"
              """
     end
 
