@@ -5,26 +5,19 @@ on:
 
 name: "Main Branch"
 
-# Secrets:
-# * CACHE_VERSION - Set to `date +%s`, set new when the cache should be busted
-
 jobs:
   test:
     name: "Test"
 
     uses: ./.github/workflows/part_test.yml
     with:
-      elixirVersion: "1.17.0"
-      otpVersion: "27.0"
-    secrets:
-      CACHE_VERSION: "${{ secrets.CACHE_VERSION }}"
+      elixirVersion: "1.17.2"
+      otpVersion: "27.0.1"
 
   docs:
     name: "Docs"
 
     uses: ./.github/workflows/part_docs.yml
     with:
-      elixirVersion: "1.17.0"
-      otpVersion: "27.0"
-    secrets:
-      CACHE_VERSION: "${{ secrets.CACHE_VERSION }}"
+      elixirVersion: "1.17.2"
+      otpVersion: "27.0.1"

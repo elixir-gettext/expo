@@ -5,9 +5,6 @@ on:
 
 name: "Stable Tag"
 
-# Secrets:
-# * CACHE_VERSION - Set to `date +%s`, set new when the cache should be busted
-
 jobs:
   release:
     name: Create Release
@@ -36,8 +33,6 @@ jobs:
 
     uses: ./.github/workflows/part_docs.yml
     with:
-      elixirVersion: "1.17.0"
-      otpVersion: "27.0"
+      elixirVersion: "1.17.2"
+      otpVersion: "27.0.1"
       releaseName: "${{ github.ref_name }}"
-    secrets:
-      CACHE_VERSION: "${{ secrets.CACHE_VERSION }}"
