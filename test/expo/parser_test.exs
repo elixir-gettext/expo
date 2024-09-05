@@ -454,8 +454,36 @@ defmodule Expo.ParserTest do
     end
   end
 
-  defp parse(string) do
-    case PO.parse_string(string) do
+  describe "strip meta" do
+    test "does not include extra information" do
+      assert [
+               %Message.Plural{
+                 msgid: ["foo"],
+                 msgid_plural: ["foos"],
+                 msgstr: %{0 => ["bar"], 1 => ["bars"]},
+                 comments: [],
+                 extracted_comments: [],
+                 references: []
+               }
+             ] =
+               parse(
+                 """
+                 # This is a message
+                 #: lib/foo.ex:32
+                 # Ah, another comment!
+                 #. An extracted comment
+                 msgid "foo"
+                 msgid_plural "foos"
+                 msgstr[0] "bar"
+                 msgstr[1] "bars"
+                 """,
+                 strip_meta: true
+               )
+    end
+  end
+
+  defp parse(string, options \\ []) do
+    case PO.parse_string(string, options) do
       {:ok, %Messages{messages: messages}} ->
         messages
 

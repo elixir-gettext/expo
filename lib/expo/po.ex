@@ -6,7 +6,17 @@ defmodule Expo.PO do
   alias Expo.Messages
   alias Expo.PO.{DuplicateMessagesError, Parser, SyntaxError}
 
-  @type parse_option :: {:file, Path.t()}
+  @typedoc """
+  Parsing option.
+
+    * `:file` (`t:Path.t/0`) - path to use in error messages when using `parse_string/2`. If not present, errors
+      don't have a path.
+
+    * `:strip_meta` (`t:boolean/0`) - include only messages (no comments and other metadata) from the `.po` file
+    to reduce memory usage when meta information is not needed.
+    Defaults to `false`.
+  """
+  @type parse_option :: {:file, Path.t()} | {:strip_meta, boolean()}
 
   @doc """
   Dumps a `Expo.Messages` struct as iodata.
