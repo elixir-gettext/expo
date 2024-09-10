@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.0
+
+* Add PO Parser Metadata Stripping
+
 ## v1.0.1
 
 * Fix backslash escaping in `Expo.PO.compose/1`
