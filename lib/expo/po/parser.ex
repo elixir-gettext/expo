@@ -12,7 +12,7 @@ defmodule Expo.PO.Parser do
   def parse(content, opts) do
     content = prune_bom(content, Keyword.get(opts, :file, "nofile"))
 
-    with {:ok, tokens} <- tokenize(content),
+    with {:ok, tokens} <- tokenize(content, opts),
          {:ok, po} <- parse_tokens(tokens),
          {:ok, po} <- check_for_duplicates(po) do
       {:ok, %Messages{po | file: Keyword.get(opts, :file)}}
@@ -22,8 +22,8 @@ defmodule Expo.PO.Parser do
     end
   end
 
-  defp tokenize(content) do
-    case Tokenizer.tokenize(content) do
+  defp tokenize(content, opts) do
+    case Tokenizer.tokenize(content, opts) do
       {:ok, tokens} -> {:ok, tokens}
       {:error, line, message} -> {:error, %SyntaxError{line: line, reason: message}}
     end
