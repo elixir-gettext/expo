@@ -33,6 +33,6 @@ jobs:
 
     uses: ./.github/workflows/part_docs.yml
     with:
-      elixirVersion: "1.17.2"
-      otpVersion: "27.0.1"
+      elixirVersion: "1.18"
+      otpVersion: "27.2"
       releaseName: "${{ github.ref_name }}"
