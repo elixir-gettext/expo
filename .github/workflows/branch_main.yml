@@ -5,6 +5,9 @@ on:
 
 name: "Main Branch"
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: "Test"
@@ -16,6 +19,9 @@ jobs:
 
   docs:
     name: "Docs"
+
+    permissions:
+      contents: write
 
     uses: ./.github/workflows/part_docs.yml
     with:
