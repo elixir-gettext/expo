@@ -16,6 +16,9 @@ name: "Documentation"
 env:
   BUILD_EMBEDDED: true
 
+permissions:
+  contents: read
+
 jobs:
   generate:
     name: "Generate"
@@ -26,20 +29,20 @@ jobs:
       MIX_ENV: dev
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: erlef/setup-beam@v1
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: erlef/setup-beam@8aa8a857c6be0daae6e97272bb299d5b942675a4 # v1.19.0
         id: setupBEAM
         with:
           otp-version: ${{ inputs.otpVersion }}
           elixir-version: ${{ inputs.elixirVersion }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: deps
           key: deps-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
             deps-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-
       - run: mix deps.get --check-locked
-      - uses: actions/cache@v4
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: _build/dev
           key: compile-${{ env.MIX_ENV }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
@@ -48,7 +51,7 @@ jobs:
       - run: mix deps.compile
       - run: mix compile --warning-as-errors
       - run: mix docs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: docs
           path: doc
@@ -66,8 +69,8 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: docs
           path: docs

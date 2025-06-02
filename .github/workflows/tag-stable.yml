@@ -5,6 +5,9 @@ on:
 
 name: "Stable Tag"
 
+permissions:
+  contents: read
+
 jobs:
   release:
     name: Create Release
@@ -28,6 +31,9 @@ jobs:
 
   docs:
     name: "Docs"
+
+    permissions:
+      contents: write
 
     needs: ["release"]
 
