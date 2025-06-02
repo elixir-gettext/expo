@@ -190,7 +190,7 @@ defmodule Expo.PO.Tokenizer do
   # (with the codepoint of the char).
   defp tokenize_line(binary, line, _strip_meta?, _acc) when is_binary(binary) do
     # To get the first Unicode char, we convert to char list first.
-    [char | _] = String.to_charlist(binary)
+    [char | _rest] = String.to_charlist(binary)
     msg = :io_lib.format(~c"unexpected token: \"~ts\" (codepoint U+~4.16.0B)", [[char], char])
     {:error, line, :unicode.characters_to_binary(msg)}
   end

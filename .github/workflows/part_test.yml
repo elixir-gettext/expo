@@ -57,9 +57,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - otp: '21.3'
+          - otp: '24.2'
             elixir: '1.11'
-            runs-on: ubuntu-20.04
+            runs-on: ubuntu-22.04
           - otp: '${{ inputs.otpVersion }}'
             elixir: '${{ inputs.elixirVersion }}'
             runs-on: ubuntu-latest

@@ -34,7 +34,7 @@ defmodule Mix.Tasks.Expo.Msguniq do
 
   @impl Mix.Task
   def run(args) do
-    {:ok, _} = Application.ensure_all_started(:expo)
+    {:ok, _apps} = Application.ensure_all_started(:expo)
     {opts, argv} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
     opts = Keyword.merge(@default_options, opts)
