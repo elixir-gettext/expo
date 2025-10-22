@@ -14,7 +14,7 @@ defmodule Expo.PO.Parser do
 
     with {:ok, tokens} <- tokenize(content, opts),
          {:ok, po} <- parse_tokens(tokens),
-         {:ok, po} <- check_for_duplicates(po) do
+         {:ok, %Messages{} = po} <- check_for_duplicates(po) do
       {:ok, %Messages{po | file: Keyword.get(opts, :file)}}
     else
       {:error, %mod{} = error} when mod in [SyntaxError, DuplicateMessagesError] ->
