@@ -129,7 +129,7 @@ defmodule Expo.MO do
           | {:error, InvalidFileError.t() | UnsupportedVersionError.t() | File.posix()}
   def parse_file(path, options \\ []) when is_list(options) do
     with {:ok, contents} <- File.read(path),
-         {:ok, po} <- Parser.parse(contents, Keyword.put_new(options, :file, path)) do
+         {:ok, %Messages{} = po} <- Parser.parse(contents, Keyword.put_new(options, :file, path)) do
       {:ok, %Messages{po | file: path}}
     else
       {:error, %mod{} = error} when mod in [InvalidFileError, UnsupportedVersionError] ->

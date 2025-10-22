@@ -24,14 +24,6 @@ defmodule Expo.MixProject do
           else
             []
           end,
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.html": :test,
-        "coveralls.json": :test,
-        "coveralls.post": :test,
-        "coveralls.xml": :test
-      ],
       package: package(),
       yecc_options: if(Mix.env() in [:dev, :test], do: [verbose: true])
     ]
@@ -52,6 +44,19 @@ defmodule Expo.MixProject do
   def application do
     [
       extra_applications: []
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test,
+        "coveralls.post": :test,
+        "coveralls.xml": :test
+      ]
     ]
   end
 
