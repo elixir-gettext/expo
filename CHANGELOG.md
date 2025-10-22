@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.1
+
+* Fix Elixir 1.19 warnings
+
 ## v1.1.0
 
 * Add PO Parser Metadata Stripping

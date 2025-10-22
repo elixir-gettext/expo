@@ -2,9 +2,9 @@
 defmodule Expo.MixProject do
   use Mix.Project
 
-  @version "1.1.0"
+  @version "1.1.1"
   @source_url "https://github.com/elixir-gettext/expo"
-  @description "Low-level Gettext file handling (.po/.pot/.mo file writer and parser)."
+  @description "Low-level Gettext file handling (.po/.pot/.mo file writer and parser)"
 
   def project do
     [
