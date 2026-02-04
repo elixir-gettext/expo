@@ -42,12 +42,9 @@ defmodule Expo.Message do
   """
   @type t :: Singular.t() | Plural.t()
 
-  @typedoc """
-  The key that can be used to identify a message.
-
-  See `key/1`.
-  """
-  @opaque key :: Singular.key() | Plural.key()
+  @typep key ::
+           {msgctxt :: String.t(), msgid :: String.t()}
+           | {msgctxt :: String.t(), msgid :: String.t()}
 
   @doc """
   Returns a "key" that can be used to identify a message.
