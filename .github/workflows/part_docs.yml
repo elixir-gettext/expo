@@ -35,14 +35,14 @@ jobs:
         with:
           otp-version: ${{ inputs.otpVersion }}
           elixir-version: ${{ inputs.elixirVersion }}
-      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: deps
           key: deps-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
             deps-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-
       - run: mix deps.get --check-locked
-      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: _build/dev
           key: compile-${{ env.MIX_ENV }}-${{ runner.os }}test-${{ steps.setupBEAM.outputs.elixir-version }}-${{ steps.setupBEAM.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
