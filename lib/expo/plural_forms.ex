@@ -25,18 +25,12 @@ defmodule Expo.PluralForms do
           plural: plural_ast()
         }
 
-  @typedoc """
-  The AST of a plural forms expression.
-
-  This is evaluated internally to determine the plural form for a given number
-  using `index/2`, and is not meant to be inspected directly.
-  """
-  @opaque plural_ast() ::
-            :n
-            | integer()
-            | {:!= | :> | :< | :== | :% | :<= | :>= | :&& | :||, plural_ast(), plural_ast()}
-            | {:if, plural_ast(), plural_ast(), plural_ast()}
-            | {:paren, plural_ast()}
+  @typep plural_ast() ::
+           :n
+           | integer()
+           | {:!= | :> | :< | :== | :% | :<= | :>= | :&& | :||, plural_ast(), plural_ast()}
+           | {:if, plural_ast(), plural_ast(), plural_ast()}
+           | {:paren, plural_ast()}
 
   @doc """
   Parses a plural forms string into a `t:t/0` struct.
