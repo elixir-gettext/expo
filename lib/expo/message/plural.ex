@@ -19,15 +19,8 @@ defmodule Expo.Message.Plural do
   """
   @type block :: :msgid | {:msgstr, non_neg_integer()} | :msgctxt | :msgid_plural
 
-  @typedoc """
-  Metadata for this struct.
-  """
-  @opaque meta :: %{optional(:source_line) => %{block() => non_neg_integer()}}
-
-  @typedoc """
-  The key that identifies this message.
-  """
-  @opaque key :: {msgctxt :: String.t(), msgid :: String.t()}
+  @typep meta :: %{optional(:source_line) => %{block() => non_neg_integer()}}
+  @typep key :: {msgctxt :: String.t(), msgid :: String.t()}
 
   @typedoc """
   The type for this struct.
